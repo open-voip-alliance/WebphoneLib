@@ -112,7 +112,7 @@ constructor?
     }
 
     showCallScreen();
-    await session.active();
+    await session.terminated();
   } catch (e) {
 
   } finally {

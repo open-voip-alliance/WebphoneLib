@@ -1,0 +1,22 @@
+{
+  "name": "vialer-siplib",
+  "version": "0.0.1",
+  "description": "Vialer SipLib",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.wearespindle.com:vialer/vialer-siplib.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "sip.js": "^0.14.1",
+    "tslib": "^1.9.3"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.3"
+  }
+}
