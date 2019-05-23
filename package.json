@@ -17,6 +17,7 @@
     "tslib": "^1.9.3"
   },
   "devDependencies": {
+    "eslint": "^5.16.0",
     "parcel-bundler": "^1.12.3"
   }
 }
