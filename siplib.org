@@ -61,34 +61,67 @@ constructor?
 
 * Example flows
 
-#+begin_src javascript
+#+begin_src js
   const client = new SipLibClient({
     proxy: 'websocket.voipgrid.nl',
-  });
-
-  await client.register({
     username: 'jos@vialerapp.com',
     password: 'xxxx',
+    userMediaFlags
   });
 
+  await client.register();
+
+  // incoming call below
   sessions = {};
   client.on('invite', (session) => {
+    // If DND, session.reject()
     sessions[session.id] = session;
     // reinvite..
     try {
-      await session.accept();
-      await sleep(1);
-      await session.hold();
-      await sleep(1);
-      await session.blindTransfer({number: '456', name: 'Bob'});
-    } catch (t) {
-      if (state == accepted) await session.hold();
+      ringer();
+      spawnNotification(session).then(action => session.accept());
+
+      let accepted = await session.accepted();
+      if (!accepted) {
+        return;
+      }
+
+      showCallScreen();
+
+      await session.active();
+    } catch (e) {
+      showErrorMessage(e)
     } finally {
+      closeCallScreen();
+
       delete sessions[session.id];
     }
   });
 
+
   const session = client.call({number: '123', name: 'Alice'});
+  sessions[session.id] = session;
+
+  try {
+    showOutgoingCallInProgress()
+
+    let isAccepted = await session.accepted()
+    if (!isAccepted) {
+      showRejectedScreen();
+      return;
+    }
+
+    showCallScreen();
+    await session.active();
+  } catch (e) {
+
+  } finally {
+    closeCallScreen();
+
+    delete sessions[session.id];
+  }
+
+
   if (await session.active()) { // wait until the call is picked up)
     await session.dtmf('#123');
     await session.hold();
@@ -98,4 +131,3 @@ constructor?
     await session.transfer(other);
   }
 #+end_src
-
