@@ -1,17 +1,20 @@
 #+TITLE: Vialer Webphone SIPLib
 
-
 * Goals
 
-Hide the complexities of SIP, SDP and WebRTC from the implementation
-of the Webphone through an easy to use modern Javascript API.
+1. Hide the complexities of SIP, SDP and WebRTC from the
+   implementation of the Webphone through an easy to use modern Javascript API.
 
-Uses =Promises= and =async= where possible, use events only where
-neccessary (not in request/response flows).
+2. Uses =Promises= and =async= where possible, use events only where
+   neccessary (not in request/response flows).
 
-** SIPLib has clear error handling.
-** TODO .. does not keep state (which calls are open atm)?
+3. Export as ESM module.
 
+4. Error handling is clear and where possible Promise based.
+
+5. SIPlib does not keep state.
+
+6. Wraps SIP.js in such a way that upgrades are easy.
 
 * Use cases
 
@@ -61,6 +64,8 @@ constructor?
 
 * Example flows
 
+** Connecting and registering
+
 #+begin_src js
   const client = new SipLibClient({
     proxy: 'websocket.voipgrid.nl',
@@ -70,7 +75,11 @@ constructor?
   });
 
   await client.register();
+#+end_src
 
+** Incoming call
+
+#+begin_src js
   // incoming call below
   sessions = {};
   client.on('invite', (session) => {
@@ -98,7 +107,11 @@ constructor?
     }
   });
 
+#+end_src
 
+** Outgoing call
+
+#+begin_src js
   const session = client.call({number: '123', name: 'Alice'});
   sessions[session.id] = session;
 

@@ -3,7 +3,10 @@
         "browser": true,
         "es6": true
     },
-    "extends": "eslint:recommended",
+    "extends": [
+        "eslint:recommended",
+        "plugin:prettier/recommended"
+    ],
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
@@ -13,5 +16,10 @@
         "sourceType": "module"
     },
     "rules": {
+        "curly": ["error", "all"],
+        "brace-style": ["error", "1tbs"],
+        "indent": ["warn", 2],
+        "no-console": "off",
+        "prettier/prettier": "off"
     }
 }
