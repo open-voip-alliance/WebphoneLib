@@ -22,6 +22,11 @@
     "eslint-config-prettier": "^4.3.0",
     "eslint-plugin-prettier": "^3.1.0",
     "parcel-bundler": "^1.12.3",
+    "rollup": "^1.12.4",
+    "rollup-plugin-commonjs": "^10.0.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-resolve": "^5.0.0",
     "tslib": "^1.9.3"
   }
 }
