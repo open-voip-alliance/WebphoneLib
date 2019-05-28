@@ -2,60 +2,78 @@ import SipLibClient from './index.mjs';
 import * as CREDS from '../creds.mjs';
 import { sleep } from './time.mjs';
 
-const client = new SipLibClient({
-  authorizationUser: CREDS.authorizatoinUser,
+
+const caller = document.querySelector('#caller');
+const ringer = document.querySelector('#ring');
+const remoteAudio = document.querySelector('#remote');
+const localAudio = document.querySelector('#local');
+
+const account = {
+  user: CREDS.authorizationUser,
   password: CREDS.password,
   uri: CREDS.uri,
-  log: {
-    level: 'warn'
-  },
-  noanswertimeout: 60,
-  transportOptions: {
-    maxReconnectAttempts: 0,
-    wsServers: "wss://websocket.voipgrid.nl",
-    traceSip: true
-  },
-  userAgentString: "vialer-calling-lib",
-  register: false,
-  registerOptions: {
-    expires: 3600
-  }
-});
+  name: 'test'
+};
+
+const transport = {
+  wsServers: 'wss://websocket.voipgrid.nl',
+  iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
+};
+
+const media = { remoteAudio, localAudio };
+
+const client = new SipLibClient({account, transport, media});
 
 (async () => {
-  console.log('Registering client..');
+  console.log('registering client..');
   try {
-    client.on('invite', async (session) => {
-      console.log('received invite!', session);
-      
-      const ringer = document.querySelector('#ring');
-      ringer.addEventListener('click', () => {
-        session.accept();
-      }, {once: true});
+    client.on('invite', async session => {
+      console.log('invited', session.id);
+
+      const { number, displayName } = session.getIdentity();
+      caller.innerHTML = `${displayName} (${number})`;
+      caller.hidden = false;
+
+      ringer.addEventListener(
+        'click',
+        () => {
+          session.accept();
+        },
+        { once: true }
+      );
       ringer.hidden = false;
 
       try {
         if (await session.accepted()) {
-          console.log('session is accepted \o/');
-
-          console.log('letting session run for 3 seconds...');
+          console.log('session is accepted \\o/', session.id);
           await sleep(3000);
-
-          console.log('terminating session...');
           await session.terminate();
         } else {
-          console.log('session was rejected...');
+          console.log('session was rejected...', session.id);
         }
       } catch (e) {
-        console.error('session failed', e);
+        console.error('session failed', session.id, e);
       } finally {
-        console.log('closing session...');
+        console.log('closing session...', session.id);
         ringer.hidden = true;
+        caller.hidden = true;
       }
     });
 
     await client.register();
-    console.log('!!Registration successful');
+    console.log('Registration successful');
+
+    document.querySelector('#out').addEventListener('click', async () => {
+      const session = client.invite('sip:303@voipgrid.nl');
+      console.log('created outgoing call', session.id);
+
+      if (await session.accepted()) {
+        console.log('outgoing call got accepted', session.id);
+      }
+
+      await session.terminated();
+      console.log('session is terminated', session.id);
+    });
   } catch (e) {
     console.error(e);
   }

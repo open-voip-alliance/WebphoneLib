@@ -2,9 +2,13 @@
 <html>
   <head>
     <title>SipLib test</title>
-    <script src="./test.mjs"></script>
   </head>
   <body>
+    <audio id="local" autoplay="true"></audio>
+    <audio id="remote" autoplay="true"></audio>
+    <h3 id="caller" hidden></h3>
     <input id="ring" type="button" value="Ring ring ring..." hidden />
+    <input id="out" type="button" value="Call out" />
+    <script src="./test.mjs"></script>
   </body>
 </html>
