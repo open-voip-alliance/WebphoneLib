@@ -1,14 +1,14 @@
 {
-  "name": "vialer-siplib",
+  "name": "vialer-web-calling",
   "version": "0.0.1",
-  "description": "Vialer SipLib",
+  "description": "Vialer Web Calling",
   "main": "index.js",
   "scripts": {
     "start": "parcel index.html --port 1235"
   },
   "repository": {
     "type": "git",
-    "url": "git@gitlab.wearespindle.com:vialer/vialer-siplib.git"
+    "url": "git@gitlab.wearespindle.com:vialer/vialer-web-calling.git"
   },
   "author": "",
   "license": "ISC",
