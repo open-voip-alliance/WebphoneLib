@@ -9,7 +9,7 @@ import { Grammar } from 'sip.js';
 // see: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L327
 // and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
 // and: https://github.com/ringcentral/ringcentral-web-phone/blob/49a07377ac319217e0a95affb57d2d0b274ca01a/src/session.ts#L656
-export class SipLibSession extends EventEmitter {
+export class WebCallingSession extends EventEmitter {
   constructor({ session, constraints, media }) {
     super();
     this.session = session;
@@ -17,7 +17,7 @@ export class SipLibSession extends EventEmitter {
     this.constraints = constraints;
     this.media = media;
 
-    this.acceptedPromise = new Promise((resolve, reject) => {
+    this.acceptedPromise = new Promise(resolve => {
       this.session.once('accepted', () => resolve(true));
       this.session.once('rejected', () => resolve(false));
       // this.session.once('bye', () => resolve(false));
@@ -57,7 +57,7 @@ export class SipLibSession extends EventEmitter {
       displayName = identity.displayName;
     }
 
-    return {number, displayName};
+    return { number, displayName };
   }
 
   accept() {
@@ -75,7 +75,7 @@ export class SipLibSession extends EventEmitter {
         this.session.removeListener('failed', onFail);
       };
 
-      const onFail = (e) => {
+      const onFail = e => {
         reject(e);
         this.session.removeListener('accepted', onAnswered);
       };
@@ -140,8 +140,7 @@ export class SipLibSession extends EventEmitter {
     this.session.dtmf(key);
   }
 
-  transfer() {
-  }
+  transfer() {}
 
   addTrack() {
     const pc = this.session.sessionDescriptionHandler.peerConnection;

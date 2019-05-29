@@ -1,3 +1,3 @@
-import { SipLibClient } from './client.mjs';
+import { WebCallingClient } from "./client.mjs";
 
-export default SipLibClient;
+export default WebCallingClient;

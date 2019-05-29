@@ -1,13 +1,12 @@
 import { UA } from 'sip.js';
 import EventEmitter from 'events';
-import { SipLibSession } from './session.mjs';
+import { WebCallingSession } from './session.mjs';
 
-
-export class SipLibClient extends EventEmitter {
+export class WebCallingClient extends EventEmitter {
   constructor(options) {
     super();
 
-    const {account, transport, media} = options;
+    const { account, transport, media } = options;
 
     this.options = {
       authorizationUser: account.user,
@@ -26,10 +25,10 @@ export class SipLibClient extends EventEmitter {
       sessionDescriptionHandlerFactoryOptions: {
         peerConnectionOptions: {
           rtcConfiguration: {
-            iceServers: transport.iceServers.map(s => {return {urls: s};})
+            iceServers: transport.iceServers.map(s => ({ urls: s }))
           }
         },
-        constraints: {audio: true, video: false},
+        constraints: { audio: true, video: false }
       },
       media,
       register: false,
@@ -43,9 +42,13 @@ export class SipLibClient extends EventEmitter {
 
     console.log(this.options);
 
+    this.configureUA();
+  }
+
+  configureUA() {
     this.ua = new UA(this.options);
 
-    this.connectedPromise = new Promise((resolve, reject) => {
+    this.transportConnectedPromise = new Promise(resolve => {
       this.ua.on('transportCreated', () => {
         console.log('transport created');
         this.ua.transport.on('connected', () => {
@@ -63,11 +66,24 @@ export class SipLibClient extends EventEmitter {
       // TODO don't hardcode these..
       const constraints = { audio: true, video: false };
       const media = this.options.media;
-      this.emit('invite', new SipLibSession({ session, constraints, media }));
+      this.emit('invite', new WebCallingSession({ session, constraints, media }));
     });
   }
 
-  async register() {
+  // Connected (and subsequently registered) to server
+  async connected() {
+    if (!this.ua) {
+      this.configureUA();
+    }
+
+    if (this.unregisteredPromise) {
+      console.error(
+        'Cannot connect while unregistering takes place. Waiting until unregistering is resolved.'
+      );
+
+      await this.unregisteredPromise;
+    }
+
     if (this.registeredPromise) {
       return this.registeredPromise;
     }
@@ -79,24 +95,46 @@ export class SipLibClient extends EventEmitter {
 
     this.ua.start();
 
-    await this.connectedPromise;
+    await this.transportConnectedPromise;
 
     this.ua.register();
 
     return this.registeredPromise;
   }
 
-  async unregister() {
-    // TODO: wait for unregistered event.
-    this.ua.unregister();
+  // Unregistered (and subsequently disconnected) to server
+  async disconnected() {
+    if (this.unregisteredPromise) {
+      return this.unregisteredPromise;
+    }
+
+    this.unregisteredPromise = new Promise(resolve => {
+      this.ua.once('unregistered', () => resolve(true));
+    });
+
+    // 'disconnect' event is not actually emitted by ua.transport as it is
+    // only used for unexpected disconnect events for ua's internal
+    // reconnection strategy. Active subscriptions are gracefully killed by
+    // ua.stop().
+    this.ua.stop();
+
+    // Little protection to make sure our account is actually unregistered
+    // before other functions are called (i.e. connect)
+    await this.unregisteredPromise;
+
+    this.ua.transport.removeAllListeners();
+    this.ua.removeAllListeners();
+
+    this.ua = undefined;
+
+    return this.unregisteredPromise;
   }
 
   invite(number, options = {}) {
-    return new SipLibSession({
+    return new WebCallingSession({
       session: this.ua.invite(number, options),
-      constraints: {audio: true},
-      media: this.options.media,
+      constraints: { audio: true },
+      media: this.options.media
     });
   }
 }
-

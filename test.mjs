@@ -2,7 +2,6 @@ import SipLibClient from './index.mjs';
 import * as CREDS from '../creds.mjs';
 import { sleep } from './time.mjs';
 
-
 const caller = document.querySelector('#caller');
 const ringer = document.querySelector('#ring');
 const remoteAudio = document.querySelector('#remote');
@@ -22,7 +21,7 @@ const transport = {
 
 const media = { remoteAudio, localAudio };
 
-const client = new SipLibClient({account, transport, media});
+const client = new SipLibClient({ account, transport, media });
 
 (async () => {
   console.log('registering client..');
@@ -73,6 +72,10 @@ const client = new SipLibClient({account, transport, media});
 
       await session.terminated();
       console.log('session is terminated', session.id);
+    });
+
+    document.querySelector('#register').addEventListener('click', async () => {
+      console.log('clicketylcick');
     });
   } catch (e) {
     console.error(e);
