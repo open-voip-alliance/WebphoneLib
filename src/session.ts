@@ -1,15 +1,35 @@
-import EventEmitter from 'events';
-import { Grammar } from 'sip.js';
+import { EventEmitter } from 'events';
+import { Grammar, InviteServerContext, InviteClientContext } from 'sip.js';
 
-// TODO: make design decision:
-// - patch (like ring central)
-// - or wrap (like this is now)
+
+interface RTCPeerConnectionLegacy extends RTCPeerConnection {
+  getRemoteStreams: () => MediaStream[];
+  getLocalStreams: () => MediaStream[];
+}
+
+
+type InternalSession = InviteClientContext & InviteServerContext & {
+  sessionDescriptionHandler: {
+    peerConnection: RTCPeerConnectionLegacy;
+  }
+};
+
 
 // TODO: media handling
 // see: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L327
 // and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
 // and: https://github.com/ringcentral/ringcentral-web-phone/blob/49a07377ac319217e0a95affb57d2d0b274ca01a/src/session.ts#L656
 export class WebCallingSession extends EventEmitter {
+  private id: string;
+  private session: InternalSession;
+  private constraints: any;
+  private media: any;
+  private acceptedPromise: Promise<boolean>;
+  private acceptPromise: Promise<void>;
+  private rejectPromise: Promise<void>;
+  private terminatedPromise: Promise<void>;
+  private holdState: boolean;
+
   constructor({ session, constraints, media }) {
     super();
     this.session = session;
@@ -26,16 +46,17 @@ export class WebCallingSession extends EventEmitter {
     this.terminatedPromise = new Promise(resolve => {
       this.session.once('terminated', () => {
         console.log('on.terminated');
-        resolve('ill be back');
+        resolve();
       });
     });
 
-    this.onHoldState = false;
+    this.holdState = false;
 
     this.session.on('trackAdded', this.addTrack.bind(this));
   }
 
-  getIdentityFromRequest(request) {
+  get remoteIdentity() {
+    const request = this.session.request;
     let identity;
     ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
       if (request.hasHeader(header)) {
@@ -43,14 +64,9 @@ export class WebCallingSession extends EventEmitter {
         return true;
       }
     });
-    return identity;
-  }
 
-  getIdentity() {
-    console.log(this.session);
-    let identity = this.getIdentityFromRequest(this.session.request);
     let number = this.session.remoteIdentity.uri.user;
-    let displayName;
+    let displayName: string;
 
     if (identity) {
       number = identity.uri.normal.user;
@@ -60,7 +76,7 @@ export class WebCallingSession extends EventEmitter {
     return { number, displayName };
   }
 
-  accept() {
+  accept(options: any = {}) {
     if (this.rejectPromise) {
       throw new Error('invalid operation: session is rejected');
     }
@@ -71,7 +87,7 @@ export class WebCallingSession extends EventEmitter {
 
     this.acceptPromise = new Promise((resolve, reject) => {
       const onAnswered = () => {
-        resolve(this);
+        resolve();
         this.session.removeListener('failed', onFail);
       };
 
@@ -83,13 +99,13 @@ export class WebCallingSession extends EventEmitter {
       this.session.once('accepted', onAnswered);
       this.session.once('failed', onFail);
 
-      this.session.accept({ constraints: this.constraints });
+      this.session.accept(options);
     });
 
     return this.acceptPromise;
   }
 
-  reject(options = {}) {
+  reject(options: any = {}) {
     if (this.acceptPromise) {
       throw new Error('invalid operation: session is accepted');
     }
@@ -128,12 +144,14 @@ export class WebCallingSession extends EventEmitter {
     return this.setHoldState(false);
   }
 
-  async setHoldState(flag) {
+  private async setHoldState(flag) {
     if (flag) {
       await this.session.hold();
     } else {
       await this.session.unhold();
     }
+
+    this.holdState = flag;
   }
 
   dtmf(key) {
@@ -155,7 +173,7 @@ export class WebCallingSession extends EventEmitter {
         }
       });
     } else {
-      remoteStream = pc.getRemoteStream()[0];
+      remoteStream = pc.getRemoteStreams()[0];
     }
 
     this.media.remoteAudio.srcObject = remoteStream;

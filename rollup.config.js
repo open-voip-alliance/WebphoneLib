@@ -1,7 +1,8 @@
-import resolve from "rollup-plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
-import builtins from "rollup-plugin-node-builtins";
-import json from "rollup-plugin-json";
+import builtins from 'rollup-plugin-node-builtins';
+import resolve from 'rollup-plugin-node-resolve';
+import commonjs from 'rollup-plugin-commonjs';
+import json from 'rollup-plugin-json';
+import typescript from 'rollup-plugin-typescript';
 
 function onwarn(warning) {
   console.log(warning.toString());
@@ -9,10 +10,16 @@ function onwarn(warning) {
 
 export default {
   onwarn,
-  input: "index.mjs",
+  input: 'src/index.ts',
   output: {
-    file: "dist/vialer-web-calling.prod.mjs",
-    format: "esm"
+    file: 'dist/vialer-web-calling.prod.mjs',
+    format: 'esm'
   },
-  plugins: [resolve(), commonjs(), builtins(), json()]
+  plugins: [
+    resolve({ preferBuiltins: true }),
+    commonjs(),
+    builtins(),
+    json(),
+    typescript({ target: 'es2019' })
+  ]
 };

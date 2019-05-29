@@ -1,9 +1,17 @@
 import { UA } from 'sip.js';
-import EventEmitter from 'events';
-import { WebCallingSession } from './session.mjs';
+import { EventEmitter } from 'events';
+import { WebCallingSession } from './session';
+
 
 export class WebCallingClient extends EventEmitter {
-  constructor(options) {
+  public options: any;
+  public ua: UA;
+
+  private transportConnectedPromise: Promise<any> | undefined;
+  private unregisteredPromise: Promise<any> | undefined;
+  private registeredPromise: Promise<any> | undefined;
+
+  constructor(options: any) {
     super();
 
     const { account, transport, media } = options;
@@ -25,7 +33,7 @@ export class WebCallingClient extends EventEmitter {
       sessionDescriptionHandlerFactoryOptions: {
         peerConnectionOptions: {
           rtcConfiguration: {
-            iceServers: transport.iceServers.map(s => ({ urls: s }))
+            iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
           }
         },
         constraints: { audio: true, video: false }
@@ -41,11 +49,9 @@ export class WebCallingClient extends EventEmitter {
     };
 
     console.log(this.options);
-
-    this.configureUA();
   }
 
-  configureUA() {
+  private configureUA() {
     this.ua = new UA(this.options);
 
     this.transportConnectedPromise = new Promise(resolve => {
@@ -70,8 +76,8 @@ export class WebCallingClient extends EventEmitter {
     });
   }
 
-  // Connected (and subsequently registered) to server
-  async connected() {
+  // Connect (and subsequently register) to server
+  async connect() {
     if (!this.ua) {
       this.configureUA();
     }
@@ -102,10 +108,14 @@ export class WebCallingClient extends EventEmitter {
     return this.registeredPromise;
   }
 
-  // Unregistered (and subsequently disconnected) to server
-  async disconnected() {
+  // Unregister (and subsequently disconnect) to server
+  async disconnect(): Promise<void> {
     if (this.unregisteredPromise) {
       return this.unregisteredPromise;
+    }
+
+    if (!this.ua) {
+      throw new Error('not connected');
     }
 
     this.unregisteredPromise = new Promise(resolve => {
@@ -116,6 +126,7 @@ export class WebCallingClient extends EventEmitter {
     // only used for unexpected disconnect events for ua's internal
     // reconnection strategy. Active subscriptions are gracefully killed by
     // ua.stop().
+    console.log('stopping ua');
     this.ua.stop();
 
     // Little protection to make sure our account is actually unregistered
@@ -125,12 +136,17 @@ export class WebCallingClient extends EventEmitter {
     this.ua.transport.removeAllListeners();
     this.ua.removeAllListeners();
 
-    this.ua = undefined;
-
-    return this.unregisteredPromise;
+    delete this.ua;
+    delete this.unregisteredPromise;
   }
 
-  invite(number, options = {}) {
+  async invite(number: string, options: any = {}) {
+    if (!this.registeredPromise) {
+      throw new Error('Register first!');
+    }
+
+    await this.registeredPromise;
+
     return new WebCallingSession({
       session: this.ua.invite(number, options),
       constraints: { audio: true },
