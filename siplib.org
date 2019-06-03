@@ -16,6 +16,8 @@
 
 6. Wraps SIP.js in such a way that upgrades are easy.
 
+7. Abstract over differences between browsers.
+
 * Use cases
 
 - Register phone

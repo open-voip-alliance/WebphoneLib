@@ -1,4 +1,4 @@
-import WebCallingClient from '../dist/vialer-web-calling.prod.mjs';
+import { WebCallingClient, Media } from '../dist/vialer-web-calling.prod.mjs';
 import * as CREDS from './creds.js';
 import { sleep } from './time.js';
 
@@ -32,6 +32,11 @@ outBtn.addEventListener('click', () => outgoingCall('503').catch(console.error))
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 
+Media.on('permissionGranted', () => console.log('Permission granted'));
+Media.on('permissionRevoked', () => console.log('Permission revoked'));
+Media.on('devicesChanged', () => console.log('Devices changed: ', Media.devices));
+
+window.Media = Media;
 
 async function outgoingCall(number) {
   const session = await client.invite(`sip:${number}@voipgrid.nl`);

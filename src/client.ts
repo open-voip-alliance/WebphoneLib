@@ -3,6 +3,9 @@ import { EventEmitter } from 'events';
 import { WebCallingSession } from './session';
 
 
+// TODO: BLF
+// TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
+
 export class WebCallingClient extends EventEmitter {
   public options: any;
   public ua: UA;
