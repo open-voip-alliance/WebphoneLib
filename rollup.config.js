@@ -13,7 +13,8 @@ export default {
   input: 'src/index.ts',
   output: {
     file: 'dist/vialer-web-calling.prod.mjs',
-    format: 'esm'
+    format: 'esm',
+    sourcemap: true
   },
   plugins: [
     resolve({ preferBuiltins: true }),

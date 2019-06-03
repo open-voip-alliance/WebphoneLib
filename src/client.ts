@@ -6,6 +6,10 @@ import { WebCallingSession } from './session';
 // TODO: BLF
 // TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
 
+interface Sessions {
+  [index: string]: WebCallingSession;
+}
+
 export class WebCallingClient extends EventEmitter {
   public options: any;
   public ua: UA;
@@ -13,6 +17,8 @@ export class WebCallingClient extends EventEmitter {
   private transportConnectedPromise: Promise<any> | undefined;
   private unregisteredPromise: Promise<any> | undefined;
   private registeredPromise: Promise<any> | undefined;
+
+  readonly sessions: Sessions = {};
 
   constructor(options: any) {
     super();
@@ -71,11 +77,14 @@ export class WebCallingClient extends EventEmitter {
       });
     });
 
-    this.ua.on('invite', session => {
+    this.ua.on('invite', _session => {
       // TODO don't hardcode these..
       const constraints = { audio: true, video: false };
       const media = this.options.media;
-      this.emit('invite', new WebCallingSession({ session, constraints, media }));
+      const session = new WebCallingSession({ session: _session, constraints, media })
+      this.sessions[session.id] = session;
+      this.emit('invite', session);
+      // TODO: remove session when it is terminated.
     });
   }
 
@@ -150,10 +159,14 @@ export class WebCallingClient extends EventEmitter {
 
     await this.registeredPromise;
 
-    return new WebCallingSession({
+    const session = new WebCallingSession({
       session: this.ua.invite(number, options),
       constraints: { audio: true },
       media: this.options.media
     });
+
+    this.sessions[session.id] = session;
+    // TODO: remove from _sessions when session is terminated. (bind handler?)
+    return session;
   }
 }

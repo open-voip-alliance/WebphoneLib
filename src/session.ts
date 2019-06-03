@@ -20,7 +20,7 @@ type InternalSession = InviteClientContext & InviteServerContext & {
 // and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
 // and: https://github.com/ringcentral/ringcentral-web-phone/blob/49a07377ac319217e0a95affb57d2d0b274ca01a/src/session.ts#L656
 export class WebCallingSession extends EventEmitter {
-  private id: string;
+  readonly id: string;
   private session: InternalSession;
   private constraints: any;
   private media: any;
