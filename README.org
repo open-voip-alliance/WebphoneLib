@@ -1,0 +1,191 @@
+#+TITLE: Vialer Webphone SIPLib
+
+* Goals
+
+1. Hide the complexities of SIP, SDP and WebRTC from the
+   implementation of the Webphone through an easy to use modern Javascript API.
+
+2. Uses =Promises= and =async= where possible, use events only where
+   neccessary (not in request/response flows).
+
+3. Export as ESM module.
+
+4. Error handling is clear and where possible Promise based.
+
+5. SIPlib does not keep state.
+
+6. Wraps SIP.js in such a way that upgrades are easy.
+
+7. Abstract over differences between browsers.
+
+* Use cases
+
+- Register phone
+- Unregister phone
+- Accepting an incoming call
+- Denying an incoming call
+- Creating an outgoing call
+- Hanging up a call (in or out)
+- Putting a call on hold
+- Putting a call out of hold
+- Blind transfering a call
+- Attended transfer of call
+- Getting presence updates for contacts (blf)
+- Enter DTMF keys in a call
+- Muting a call?
+- Switching audio devices during a call?
+
+* Accidental complexity
+
+- Websocket connection to the SIP proxy.
+  - Connecting/disconnecting
+  - Handling failures
+
+- Setting up the WebRTC channels (SIP.js) does this.
+- Requesting the audio/video devices to be used (SIP.js)
+  - Is done by the SessionDescriptionHandler, maybe the audio stream
+    handling could be decoupled from the SDH. Right now the SDH always
+    does a =getUserMedia= call to get /a/ microphone.
+- Negotiating the SDP (SIP.js).
+
+- Logging..
+  - Logging all SIP traffic?
+
+* SIPlib client setup
+
+- Which audio/video devices to use?
+  - /how to switch/ a/v during a call? Is this possible?
+- ice servers (stun)
+- transport options (reconnection etc.?)
+- user agent
+- noanswertimeout?
+- etc.
+
+Maybe best to first just pass through the =options= to the =SIP.UA=
+constructor?
+
+* Example flows
+
+** Connecting and registering
+
+#+begin_src js
+  const client = new SipLibClient({
+    proxy: 'websocket.voipgrid.nl',
+    username: 'jos@vialerapp.com',
+    password: 'xxxx',
+    userMediaFlags
+  });
+
+  await client.register();
+#+end_src
+
+** Incoming call
+
+#+begin_src js
+  // incoming call below
+  sessions = {};
+  client.on('invite', (session) => {
+    // If DND, session.reject()
+    sessions[session.id] = session;
+    // reinvite..
+    try {
+      ringer();
+      spawnNotification(session).then(action => session.accept());
+
+      let accepted = await session.accepted();
+      if (!accepted) {
+        return;
+      }
+
+      showCallScreen();
+
+      await session.active();
+    } catch (e) {
+      showErrorMessage(e)
+    } finally {
+      closeCallScreen();
+
+      delete sessions[session.id];
+    }
+  });
+
+#+end_src
+
+** Outgoing call
+
+#+begin_src js
+  const session = client.call({number: '123', name: 'Alice'});
+  sessions[session.id] = session;
+
+  try {
+    showOutgoingCallInProgress()
+
+    let isAccepted = await session.accepted()
+    if (!isAccepted) {
+      showRejectedScreen();
+      return;
+    }
+
+    showCallScreen();
+    await session.terminated();
+  } catch (e) {
+
+  } finally {
+    closeCallScreen();
+
+    delete sessions[session.id];
+  }
+
+
+  if (await session.active()) { // wait until the call is picked up)
+    await session.dtmf('#123');
+    await session.hold();
+    const other = client.call({number: '456', name: 'Bob'});
+    if (await other.active()) {
+    }
+    await session.transfer(other);
+  }
+#+end_src
+
+
+
+* Tickets
+
+For import into Gitlab issues. With point in the table do =M-x org-export-table=
+to export it to a =.csv=, then import the csv file into Gitlab.
+
+| Title                                       | Description                                                                                                                                  |
+|---------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------|
+| Design interface for Media devices handling |                                                                                                                                              |
+| Implement Media device enumeration          |                                                                                                                                              |
+| Implement getUserMedia permission checking  |                                                                                                                                              |
+| Refresh Media devices periodically          |                                                                                                                                              |
+| Set up project structure                    | Export as ESM module, investigate if rollup is suited for this                                                                               |
+| Write a small demo application              | It should be able to register, accept incoming calls and place an outgoing call                                                              |
+| Build a feature detection check             | Detect if the browser is capable of running the web-calling library                                                                          |
+| Design interface for WebCalling(Client)     |                                                                                                                                              |
+| Design interface for WebCallingSession      |                                                                                                                                              |
+| Design interface for BLF                    | BLF: Busy Lamp Field, also known as presence                                                                                                 |
+| Implement connecting/disconnecting          | In WebCallingClient: implement connecting and disconnecting to a SIP websocket server via sip.js                                             |
+| Implement registering of client             |                                                                                                                                              |
+| Implement unregister                        |                                                                                                                                              |
+| Incoming calls                              |                                                                                                                                              |
+| Outgoing calls                              |                                                                                                                                              |
+| Accepting/denying incoming calls            |                                                                                                                                              |
+| Terminating a call                          |                                                                                                                                              |
+| Putting a call on hold                      |                                                                                                                                              |
+| Blind transfering a call                    |                                                                                                                                              |
+| Attended transfer of a call                 |                                                                                                                                              |
+| DTMF in a call                              |                                                                                                                                              |
+| Muting a call                               |                                                                                                                                              |
+| Improve on sip.js reconnection handling     | Goal is twofold: 1) prevent thundering hurds 2) act nice and recover from network failure as best we can.                                    |
+| Extensive testing of reconnection handling  |                                                                                                                                              |
+| Implement a helper for playing of audio     | Audio helper for playing sounds like ringtone, busy tone, dtmf etc.                                                                          |
+| Audio device selection for calls            | Provide an interface to select which audio devices to use for in- and output of calls                                                        |
+| Extensive testing of failure handling       | Verify that failures are handled and documented well                                                                                         |
+| Write documentation                         | TODO: expand this                                                                                                                            |
+| Tracking of open sessions                   | Keep track of all open sessions                                                                                                              |
+| Switch to Typescript                        | Rewrite library to Typescript because type hinting is very useful for libraries, especially considering sip.js is also written in Typescript |
+| Investigate usage of unit tests             | A lot of code is dependent on browser API's, investigate what can be tested with unit tests                                                  |
+| Investigate integration tests               | Investigate what the best location for integration tests are: in the library and/or in the Web Phone.                                        |
+|                                             |                                                                                                                                              |
