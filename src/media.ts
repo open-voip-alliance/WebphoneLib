@@ -23,7 +23,7 @@ export declare interface MediaDevices {
   on(event: 'permissionRevoked', listener: () => void): this;
 }
 
-const UPDATE_INTERVAL = 5000;
+const UPDATE_INTERVAL = 1000;
 
 /**
  * Offers an abstraction over Media permissions and device enumeration for use
@@ -142,12 +142,14 @@ class MediaSingleton extends EventEmitter {
       }
     }
 
-    // TODO: when running on localhost, and Features.isFirefox, the permission
-    // can't be stored (unless over https). The timer will clear the devices list
-    // on the next timeout. Prevent this behaviour because it's annoying to
-    // develop with.
     this._hadPermission = havePermission;
-    this._timer = window.setTimeout(() => this._update(), UPDATE_INTERVAL);
+
+    // When running on localhost in Firefox, the permission can't be stored
+    // (unless over https). The timer will clear the devices list on the next
+    // timeout. Prevent this behaviour because it's annoying to develop with.
+    if (!(Features.isFirefox && Features.isLocalhost)) {
+      this._timer = window.setTimeout(() => this._update(), UPDATE_INTERVAL);
+    }
   }
 
   private _updateDevices(enumeratedDevices: MediaDeviceInfo[]) {
