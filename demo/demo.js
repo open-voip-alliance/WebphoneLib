@@ -36,6 +36,8 @@ Media.on('permissionGranted', () => console.log('Permission granted'));
 Media.on('permissionRevoked', () => console.log('Permission revoked'));
 Media.on('devicesChanged', () => console.log('Devices changed: ', Media.devices));
 
+Media.requestPermission();
+
 window.Media = Media;
 
 async function outgoingCall(number) {
