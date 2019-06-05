@@ -18,7 +18,7 @@ type InternalSession = InviteClientContext &
 // and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
 // and: https://github.com/ringcentral/ringcentral-web-phone/blob/49a07377ac319217e0a95affb57d2d0b274ca01a/src/session.ts#L656
 export class WebCallingSession extends EventEmitter {
-  readonly id: string;
+  public readonly id: string;
   private session: InternalSession;
   private constraints: any;
   private media: any;
@@ -44,6 +44,7 @@ export class WebCallingSession extends EventEmitter {
     this.terminatedPromise = new Promise(resolve => {
       this.session.once('terminated', () => {
         console.log('on.terminated');
+        this.emit('terminated', this.session);
         resolve();
       });
     });
@@ -74,7 +75,7 @@ export class WebCallingSession extends EventEmitter {
     return { number, displayName };
   }
 
-  accept(options: any = {}) {
+  public accept(options: any = {}) {
     if (this.rejectPromise) {
       throw new Error('invalid operation: session is rejected');
     }
@@ -103,7 +104,7 @@ export class WebCallingSession extends EventEmitter {
     return this.acceptPromise;
   }
 
-  reject(options: any = {}) {
+  public reject(options: any = {}) {
     if (this.acceptPromise) {
       throw new Error('invalid operation: session is accepted');
     }
@@ -121,7 +122,7 @@ export class WebCallingSession extends EventEmitter {
     return this.rejectPromise;
   }
 
-  accepted() {
+  public accepted() {
     return this.acceptedPromise;
   }
 
