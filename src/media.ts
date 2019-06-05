@@ -6,7 +6,7 @@ import { eqSet } from './utils';
 //   which device?
 //   enable audio processing (yes/no)
 
-export interface AudioDevice {
+export interface IAudioDevice {
   /**
    * Unique identifier for the presented device that is persisted across
    * sessions. It is reset when the user clears cookies. See
@@ -17,10 +17,11 @@ export interface AudioDevice {
   kind: 'audioinput' | 'audiooutput';
 }
 
-export declare interface MediaDevices {
-  on(event: 'devicesChanged', listener: () => void): this;
-  on(event: 'permissionGranted', listener: () => void): this;
-  on(event: 'permissionRevoked', listener: () => void): this;
+export declare interface IMediaDevices {
+  on(
+    event: 'devicesChanged' | 'permissionGranted' | 'permissionRevoked',
+    listener: () => void
+  ): this;
 }
 
 const UPDATE_INTERVAL = 1000;
@@ -30,7 +31,7 @@ const UPDATE_INTERVAL = 1000;
  * with WebRTC.
  */
 class MediaSingleton extends EventEmitter {
-  private _devices: AudioDevice[] = [];
+  private _devices: IAudioDevice[] = [];
   private _requestPermissionPromise: Promise<void>;
   private _timer: number = undefined;
   private _hadPermission: boolean = false;
@@ -53,15 +54,15 @@ class MediaSingleton extends EventEmitter {
     this._timer = window.setTimeout(() => this._update(), 0);
   }
 
-  get devices(): AudioDevice[] {
+  get devices(): IAudioDevice[] {
     return this._devices;
   }
 
-  get inputs(): AudioDevice[] {
+  get inputs(): IAudioDevice[] {
     return this._devices.filter(d => d.kind === 'audioinput');
   }
 
-  get outputs(): AudioDevice[] {
+  get outputs(): IAudioDevice[] {
     return this._devices.filter(d => d.kind === 'audiooutput');
   }
 
@@ -70,7 +71,7 @@ class MediaSingleton extends EventEmitter {
    * This only checks the permission and does not ask the user for anything. Use
    * `requestPermission` to ask the user to approve the request.
    */
-  async checkPermission(): Promise<boolean> {
+  public async checkPermission(): Promise<boolean> {
     const devices = await navigator.mediaDevices.enumerateDevices();
 
     if (devices.length && devices[0].label) {
@@ -80,7 +81,7 @@ class MediaSingleton extends EventEmitter {
     return false;
   }
 
-  requestPermission(): Promise<void> {
+  public requestPermission(): Promise<void> {
     if (this._requestPermissionPromise) {
       return this._requestPermissionPromise;
     }
@@ -156,7 +157,7 @@ class MediaSingleton extends EventEmitter {
     // Map the found devices to our own format, and filter out videoinput's.
     const allDevices = enumeratedDevices
       .map(
-        (d: MediaDeviceInfo): AudioDevice => {
+        (d: MediaDeviceInfo): IAudioDevice => {
           if (!d.label) {
             // This should not happen, but safe guard that devices without a name
             // cannot enter our device state.

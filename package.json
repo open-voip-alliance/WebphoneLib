@@ -8,7 +8,8 @@
     "build-watch": "rollup -cw",
     "serve": "serve -l 1235",
     "demo": "run-p build-watch serve",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "lint": "tslint src/**/*.ts"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,9 @@
     "rollup-plugin-node-resolve": "^5.0.0",
     "rollup-plugin-typescript": "^1.0.1",
     "serve": "^11.0.1",
+    "tslint": "^5.17.0",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-plugin-prettier": "^2.0.1",
     "typescript": "^3.4.5"
   }
 }

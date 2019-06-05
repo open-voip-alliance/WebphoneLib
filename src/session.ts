@@ -1,19 +1,17 @@
 import { EventEmitter } from 'events';
 import { Grammar, InviteServerContext, InviteClientContext } from 'sip.js';
 
-
-interface RTCPeerConnectionLegacy extends RTCPeerConnection {
+interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
   getLocalStreams: () => MediaStream[];
 }
 
-
-type InternalSession = InviteClientContext & InviteServerContext & {
-  sessionDescriptionHandler: {
-    peerConnection: RTCPeerConnectionLegacy;
-  }
-};
-
+type InternalSession = InviteClientContext &
+  InviteServerContext & {
+    sessionDescriptionHandler: {
+      peerConnection: IRTCPeerConnectionLegacy;
+    };
+  };
 
 // TODO: media handling
 // see: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L327

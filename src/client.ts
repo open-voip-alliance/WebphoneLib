@@ -1,12 +1,11 @@
-import { UA } from 'sip.js';
 import { EventEmitter } from 'events';
+import { UA } from 'sip.js';
 import { WebCallingSession } from './session';
-
 
 // TODO: BLF
 // TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
 
-interface Sessions {
+interface ISessions {
   [index: string]: WebCallingSession;
 }
 
@@ -14,11 +13,11 @@ export class WebCallingClient extends EventEmitter {
   public options: any;
   public ua: UA;
 
+  public readonly sessions: ISessions = {};
+
   private transportConnectedPromise: Promise<any> | undefined;
   private unregisteredPromise: Promise<any> | undefined;
   private registeredPromise: Promise<any> | undefined;
-
-  readonly sessions: Sessions = {};
 
   constructor(options: any) {
     super();
@@ -27,69 +26,41 @@ export class WebCallingClient extends EventEmitter {
 
     this.options = {
       authorizationUser: account.user,
-      password: account.password,
-      uri: account.uri,
+      autostart: false,
+      autostop: false,
       displayName: account.name,
       log: {
         level: 'warn'
       },
+      media,
       noanswertimeout: 60,
-      transportOptions: {
-        maxReconnectAttempts: 0,
-        wsServers: transport.wsServers,
-        traceSip: true
+      password: account.password,
+      register: false,
+      registerOptions: {
+        expires: 3600
       },
       sessionDescriptionHandlerFactoryOptions: {
+        constraints: { audio: true, video: false },
         peerConnectionOptions: {
           rtcConfiguration: {
             iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
           }
-        },
-        constraints: { audio: true, video: false }
+        }
       },
-      media,
-      register: false,
-      autostart: false,
-      autostop: false,
-      userAgentString: 'vialer-calling-lib',
-      registerOptions: {
-        expires: 3600
-      }
+      transportOptions: {
+        maxReconnectAttempts: 0,
+        traceSip: true,
+        wsServers: transport.wsServers
+      },
+      uri: account.uri,
+      userAgentString: 'vialer-calling-lib'
     };
 
     console.log(this.options);
   }
 
-  private configureUA() {
-    this.ua = new UA(this.options);
-
-    this.transportConnectedPromise = new Promise(resolve => {
-      this.ua.on('transportCreated', () => {
-        console.log('transport created');
-        this.ua.transport.on('connected', () => {
-          console.log('connected');
-          resolve();
-        });
-
-        this.ua.transport.on('disconnected', () => {
-          console.log('disconnected');
-        });
-      });
-    });
-
-    this.ua.on('invite', _session => {
-      // TODO don't hardcode these..
-      const constraints = { audio: true, video: false };
-      const media = this.options.media;
-      const session = new WebCallingSession({ session: _session, constraints, media })
-      this.sessions[session.id] = session;
-      this.emit('invite', session);
-      // TODO: remove session when it is terminated.
-    });
-  }
-
   // Connect (and subsequently register) to server
-  async connect() {
+  public async connect() {
     if (!this.ua) {
       this.configureUA();
     }
@@ -121,7 +92,7 @@ export class WebCallingClient extends EventEmitter {
   }
 
   // Unregister (and subsequently disconnect) to server
-  async disconnect(): Promise<void> {
+  public async disconnect(): Promise<void> {
     if (this.unregisteredPromise) {
       return this.unregisteredPromise;
     }
@@ -152,7 +123,7 @@ export class WebCallingClient extends EventEmitter {
     delete this.unregisteredPromise;
   }
 
-  async invite(number: string, options: any = {}) {
+  public async invite(phoneNumber: string, options: any = {}) {
     if (!this.registeredPromise) {
       throw new Error('Register first!');
     }
@@ -160,13 +131,41 @@ export class WebCallingClient extends EventEmitter {
     await this.registeredPromise;
 
     const session = new WebCallingSession({
-      session: this.ua.invite(number, options),
       constraints: { audio: true },
-      media: this.options.media
+      media: this.options.media,
+      session: this.ua.invite(phoneNumber, options)
     });
 
     this.sessions[session.id] = session;
     // TODO: remove from _sessions when session is terminated. (bind handler?)
     return session;
+  }
+
+  private configureUA() {
+    this.ua = new UA(this.options);
+
+    this.transportConnectedPromise = new Promise(resolve => {
+      this.ua.on('transportCreated', () => {
+        console.log('transport created');
+        this.ua.transport.on('connected', () => {
+          console.log('connected');
+          resolve();
+        });
+
+        this.ua.transport.on('disconnected', () => {
+          console.log('disconnected');
+        });
+      });
+    });
+
+    this.ua.on('invite', _session => {
+      // TODO don't hardcode these..
+      const constraints = { audio: true, video: false };
+      const media = this.options.media;
+      const session = new WebCallingSession({ session: _session, constraints, media });
+      this.sessions[session.id] = session;
+      this.emit('invite', session);
+      // TODO: remove session when it is terminated.
+    });
   }
 }
