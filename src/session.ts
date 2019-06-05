@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { Grammar, InviteServerContext, InviteClientContext } from 'sip.js';
+import { Grammar, InviteClientContext, InviteServerContext } from 'sip.js';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -64,15 +64,15 @@ export class WebCallingSession extends EventEmitter {
       }
     });
 
-    let number = this.session.remoteIdentity.uri.user;
+    let phoneNumber = this.session.remoteIdentity.uri.user;
     let displayName: string;
 
     if (identity) {
-      number = identity.uri.normal.user;
+      phoneNumber = identity.uri.normal.user;
       displayName = identity.displayName;
     }
 
-    return { number, displayName };
+    return { phoneNumber, displayName };
   }
 
   public accept(options: any = {}) {
@@ -126,40 +126,30 @@ export class WebCallingSession extends EventEmitter {
     return this.acceptedPromise;
   }
 
-  terminated() {
+  public terminated() {
     return this.terminatedPromise;
   }
 
-  terminate(options = {}) {
+  public terminate(options = {}) {
     this.session.terminate(options);
     return this.terminatedPromise;
   }
 
-  hold() {
+  public hold() {
     return this.setHoldState(true);
   }
 
-  unhold() {
+  public unhold() {
     return this.setHoldState(false);
   }
 
-  private async setHoldState(flag) {
-    if (flag) {
-      await this.session.hold();
-    } else {
-      await this.session.unhold();
-    }
-
-    this.holdState = flag;
-  }
-
-  dtmf(key) {
+  public dtmf(key) {
     this.session.dtmf(key);
   }
 
-  transfer() {}
+  // public transfer() {}
 
-  addTrack() {
+  public addTrack() {
     const pc = this.session.sessionDescriptionHandler.peerConnection;
     console.log('addTrack', arguments);
 
@@ -195,5 +185,15 @@ export class WebCallingSession extends EventEmitter {
     this.media.localAudio.play().catch(() => {
       console.error('local play was rejected');
     });
+  }
+
+  private async setHoldState(flag) {
+    if (flag) {
+      await this.session.hold();
+    } else {
+      await this.session.unhold();
+    }
+
+    this.holdState = flag;
   }
 }

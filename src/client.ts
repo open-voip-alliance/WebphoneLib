@@ -187,14 +187,14 @@ export class WebCallingClient extends EventEmitter {
       });
     });
 
-    this.ua.on('invite', _session => {
+    this.ua.on('invite', uaSession => {
       // TODO don't hardcode these..
       const constraints = { audio: true, video: false };
       const media = this.options.media;
       const session = new WebCallingSession({
         constraints,
         media: this.options.media,
-        session: _session
+        session: uaSession
       });
 
       this.sessions[session.id] = session;
