@@ -3,7 +3,4 @@ import { Media } from './media';
 
 export default WebCallingClient;
 
-export {
-  WebCallingClient,
-  Media
-};
+export { WebCallingClient, Media };
