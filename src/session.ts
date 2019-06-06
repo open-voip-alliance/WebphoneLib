@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { Grammar, InviteServerContext, InviteClientContext } from 'sip.js';
+import { Grammar, InviteClientContext, InviteServerContext } from 'sip.js';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -18,7 +18,7 @@ type InternalSession = InviteClientContext &
 // and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
 // and: https://github.com/ringcentral/ringcentral-web-phone/blob/49a07377ac319217e0a95affb57d2d0b274ca01a/src/session.ts#L656
 export class WebCallingSession extends EventEmitter {
-  readonly id: string;
+  public readonly id: string;
   private session: InternalSession;
   private constraints: any;
   private media: any;
@@ -44,6 +44,7 @@ export class WebCallingSession extends EventEmitter {
     this.terminatedPromise = new Promise(resolve => {
       this.session.once('terminated', () => {
         console.log('on.terminated');
+        this.emit('terminated', this.session);
         resolve();
       });
     });
@@ -63,18 +64,18 @@ export class WebCallingSession extends EventEmitter {
       }
     });
 
-    let number = this.session.remoteIdentity.uri.user;
+    let phoneNumber = this.session.remoteIdentity.uri.user;
     let displayName: string;
 
     if (identity) {
-      number = identity.uri.normal.user;
+      phoneNumber = identity.uri.normal.user;
       displayName = identity.displayName;
     }
 
-    return { number, displayName };
+    return { phoneNumber, displayName };
   }
 
-  accept(options: any = {}) {
+  public accept(options: any = {}) {
     if (this.rejectPromise) {
       throw new Error('invalid operation: session is rejected');
     }
@@ -103,7 +104,7 @@ export class WebCallingSession extends EventEmitter {
     return this.acceptPromise;
   }
 
-  reject(options: any = {}) {
+  public reject(options: any = {}) {
     if (this.acceptPromise) {
       throw new Error('invalid operation: session is accepted');
     }
@@ -121,44 +122,34 @@ export class WebCallingSession extends EventEmitter {
     return this.rejectPromise;
   }
 
-  accepted() {
+  public accepted() {
     return this.acceptedPromise;
   }
 
-  terminated() {
+  public terminated() {
     return this.terminatedPromise;
   }
 
-  terminate(options = {}) {
+  public terminate(options = {}) {
     this.session.terminate(options);
     return this.terminatedPromise;
   }
 
-  hold() {
+  public hold() {
     return this.setHoldState(true);
   }
 
-  unhold() {
+  public unhold() {
     return this.setHoldState(false);
   }
 
-  private async setHoldState(flag) {
-    if (flag) {
-      await this.session.hold();
-    } else {
-      await this.session.unhold();
-    }
-
-    this.holdState = flag;
-  }
-
-  dtmf(key) {
+  public dtmf(key) {
     this.session.dtmf(key);
   }
 
-  transfer() {}
+  // public transfer() {}
 
-  addTrack() {
+  public addTrack() {
     const pc = this.session.sessionDescriptionHandler.peerConnection;
     console.log('addTrack', arguments);
 
@@ -194,5 +185,15 @@ export class WebCallingSession extends EventEmitter {
     this.media.localAudio.play().catch(() => {
       console.error('local play was rejected');
     });
+  }
+
+  private async setHoldState(flag) {
+    if (flag) {
+      await this.session.hold();
+    } else {
+      await this.session.unhold();
+    }
+
+    this.holdState = flag;
   }
 }

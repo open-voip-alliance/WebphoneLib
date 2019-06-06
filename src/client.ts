@@ -9,8 +9,35 @@ interface ISessions {
   [index: string]: WebCallingSession;
 }
 
+interface IAccount {
+  user: string;
+  password: string;
+  uri: string;
+  name: string;
+}
+
+interface ITransport {
+  wsServers: string;
+  iceServers: string[];
+}
+
+interface IMedia {
+  remoteAudio: HTMLElement;
+  localAudio: HTMLElement;
+}
+
+interface IWebCallingClientOptions {
+  account: IAccount;
+  transport: ITransport;
+  media: IMedia;
+}
+
+interface IWrappedUAOptions extends UA.Options {
+  media: IMedia;
+}
+
 export class WebCallingClient extends EventEmitter {
-  public options: any;
+  public options: IWrappedUAOptions;
   public ua: UA;
 
   public readonly sessions: ISessions = {};
@@ -19,7 +46,7 @@ export class WebCallingClient extends EventEmitter {
   private unregisteredPromise: Promise<any> | undefined;
   private registeredPromise: Promise<any> | undefined;
 
-  constructor(options: any) {
+  constructor(options: IWebCallingClientOptions) {
     super();
 
     const { account, transport, media } = options;
@@ -30,10 +57,12 @@ export class WebCallingClient extends EventEmitter {
       autostop: false,
       displayName: account.name,
       log: {
+        builtinEnabled: true,
+        connector: undefined,
         level: 'warn'
       },
       media,
-      noanswertimeout: 60,
+      noAnswerTimeout: 60,
       password: account.password,
       register: false,
       registerOptions: {
@@ -158,14 +187,20 @@ export class WebCallingClient extends EventEmitter {
       });
     });
 
-    this.ua.on('invite', _session => {
+    this.ua.on('invite', uaSession => {
       // TODO don't hardcode these..
       const constraints = { audio: true, video: false };
       const media = this.options.media;
-      const session = new WebCallingSession({ session: _session, constraints, media });
+      const session = new WebCallingSession({
+        constraints,
+        media: this.options.media,
+        session: uaSession
+      });
+
       this.sessions[session.id] = session;
+
       this.emit('invite', session);
-      // TODO: remove session when it is terminated.
+      session.once('terminated', () => delete this.sessions[session.id]);
     });
   }
 }

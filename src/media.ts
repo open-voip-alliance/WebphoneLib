@@ -31,10 +31,10 @@ const UPDATE_INTERVAL = 1000;
  * with WebRTC.
  */
 class MediaSingleton extends EventEmitter {
-  private _devices: IAudioDevice[] = [];
-  private _requestPermissionPromise: Promise<void>;
-  private _timer: number = undefined;
-  private _hadPermission: boolean = false;
+  private allDevices: IAudioDevice[] = [];
+  private requestPermissionPromise: Promise<void>;
+  private timer: number = undefined;
+  private hadPermission: boolean = false;
 
   constructor() {
     super();
@@ -51,19 +51,19 @@ class MediaSingleton extends EventEmitter {
     });
 
     // Immediately try to update the devices.
-    this._timer = window.setTimeout(() => this._update(), 0);
+    this.timer = window.setTimeout(() => this._update(), 0);
   }
 
   get devices(): IAudioDevice[] {
-    return this._devices;
+    return this.allDevices;
   }
 
   get inputs(): IAudioDevice[] {
-    return this._devices.filter(d => d.kind === 'audioinput');
+    return this.allDevices.filter(d => d.kind === 'audioinput');
   }
 
   get outputs(): IAudioDevice[] {
-    return this._devices.filter(d => d.kind === 'audiooutput');
+    return this.allDevices.filter(d => d.kind === 'audiooutput');
   }
 
   /**
@@ -82,20 +82,20 @@ class MediaSingleton extends EventEmitter {
   }
 
   public requestPermission(): Promise<void> {
-    if (this._requestPermissionPromise) {
-      return this._requestPermissionPromise;
+    if (this.requestPermissionPromise) {
+      return this.requestPermissionPromise;
     }
 
-    this._requestPermissionPromise = new Promise(async (resolve, reject) => {
+    this.requestPermissionPromise = new Promise(async (resolve, reject) => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: false
         });
 
-        if (!this._hadPermission) {
-          if (this._timer) {
-            window.clearTimeout(this._timer);
+        if (!this.hadPermission) {
+          if (this.timer) {
+            window.clearTimeout(this.timer);
           }
 
           await this._update();
@@ -108,11 +108,11 @@ class MediaSingleton extends EventEmitter {
       } catch (err) {
         reject(err);
       } finally {
-        delete this._requestPermissionPromise;
+        delete this.requestPermissionPromise;
       }
     });
 
-    return this._requestPermissionPromise;
+    return this.requestPermissionPromise;
   }
 
   private async _enumerateDevices(): Promise<MediaDeviceInfo[]> {
@@ -130,26 +130,26 @@ class MediaSingleton extends EventEmitter {
     const havePermission = devices !== undefined;
 
     if (havePermission) {
-      if (!this._hadPermission) {
+      if (!this.hadPermission) {
         this.emit('permissionGranted');
       }
 
       this._updateDevices(devices);
     } else {
-      if (this._hadPermission) {
+      if (this.hadPermission) {
         this.emit('permissionRevoked');
-        this._devices = [];
+        this.allDevices = [];
         this.emit('devicesChanged');
       }
     }
 
-    this._hadPermission = havePermission;
+    this.hadPermission = havePermission;
 
     // When running on localhost in Firefox, the permission can't be stored
     // (unless over https). The timer will clear the devices list on the next
     // timeout. Prevent this behaviour because it's annoying to develop with.
     if (!(Features.isFirefox && Features.isLocalhost)) {
-      this._timer = window.setTimeout(() => this._update(), UPDATE_INTERVAL);
+      this.timer = window.setTimeout(() => this._update(), UPDATE_INTERVAL);
     }
   }
 
@@ -175,10 +175,10 @@ class MediaSingleton extends EventEmitter {
       .filter(d => d !== undefined);
 
     const newIds = new Set(allDevices.map(d => d.id));
-    const oldIds = new Set(this._devices.map(d => d.id));
+    const oldIds = new Set(this.allDevices.map(d => d.id));
 
     if (!eqSet(newIds, oldIds)) {
-      this._devices = allDevices;
+      this.allDevices = allDevices;
       this.emit('devicesChanged');
     }
   }
