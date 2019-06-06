@@ -61,7 +61,6 @@ async function outgoingCall(number) {
   unholdBtn.removeEventListener('click', unhold);
 }
 
-
 async function incomingCall(session) {
   console.log('invited', session.id);
 
@@ -81,8 +80,19 @@ async function incomingCall(session) {
   try {
     if (await session.accepted()) {
       console.log('session is accepted \\o/', session.id);
-      await sleep(3000);
-      await session.terminate();
+
+      // Terminate the session after 10 seconds
+      setTimeout(() => {
+        console.log('terminating the session');
+        session.terminate();
+      }, 10000);
+
+      await session.terminated();
+
+      // It could happen that the session was broken somehow
+      if (session.saidBye) {
+        console.log('The session was polite to you.');
+      }
     } else {
       console.log('session was rejected...', session.id);
     }

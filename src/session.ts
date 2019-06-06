@@ -19,6 +19,7 @@ type InternalSession = InviteClientContext &
 // and: https://github.com/ringcentral/ringcentral-web-phone/blob/49a07377ac319217e0a95affb57d2d0b274ca01a/src/session.ts#L656
 export class WebCallingSession extends EventEmitter {
   public readonly id: string;
+  public saidBye: boolean;
   private session: InternalSession;
   private constraints: any;
   private media: any;
@@ -38,7 +39,6 @@ export class WebCallingSession extends EventEmitter {
     this.acceptedPromise = new Promise(resolve => {
       this.session.once('accepted', () => resolve(true));
       this.session.once('rejected', () => resolve(false));
-      // this.session.once('bye', () => resolve(false));
     });
 
     this.terminatedPromise = new Promise(resolve => {
@@ -50,6 +50,8 @@ export class WebCallingSession extends EventEmitter {
     });
 
     this.holdState = false;
+    this.saidBye = false;
+    this.session.once('bye', () => (this.saidBye = true));
 
     this.session.on('trackAdded', this.addTrack.bind(this));
   }
@@ -181,6 +183,7 @@ export class WebCallingSession extends EventEmitter {
     } else {
       localStream = pc.getLocalStreams()[0];
     }
+
     this.media.localAudio.srcObject = localStream;
     this.media.localAudio.play().catch(() => {
       console.error('local play was rejected');
