@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
-import { UA } from 'sip.js';
+import { UA as UABase } from 'sip.js';
 import { WebCallingSession } from './session';
+import { UA } from './ua';
 
 // TODO: BLF
 // TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
@@ -32,7 +33,7 @@ interface IWebCallingClientOptions {
   media: IMedia;
 }
 
-interface IWrappedUAOptions extends UA.Options {
+interface IWrappedUAOptions extends UABase.Options {
   media: IMedia;
 }
 
@@ -42,9 +43,10 @@ export class WebCallingClient extends EventEmitter {
 
   public readonly sessions: ISessions = {};
 
-  private transportConnectedPromise: Promise<any> | undefined;
-  private unregisteredPromise: Promise<any> | undefined;
-  private registeredPromise: Promise<any> | undefined;
+  private transportConnectedPromise?: Promise<any>;
+  private unregisteredPromise?: Promise<any>;
+  private registeredPromise?: Promise<any>;
+  private disconnectPromise?: Promise<any>;
 
   constructor(options: IWebCallingClientOptions) {
     super();
@@ -91,6 +93,7 @@ export class WebCallingClient extends EventEmitter {
   // Connect (and subsequently register) to server
   public async connect() {
     if (!this.ua) {
+      console.log('configuring ua');
       this.configureUA();
     }
 
@@ -122,28 +125,32 @@ export class WebCallingClient extends EventEmitter {
 
   // Unregister (and subsequently disconnect) to server
   public async disconnect(): Promise<void> {
-    if (this.unregisteredPromise) {
-      return this.unregisteredPromise;
+    if (this.disconnectPromise) {
+      return this.disconnectPromise;
     }
 
     if (!this.ua) {
       throw new Error('not connected');
     }
 
-    this.unregisteredPromise = new Promise(resolve => {
-      this.ua.once('unregistered', () => resolve(true));
-    });
+    this.unregisteredPromise = new Promise(resolve =>
+      this.ua.once('unregistered', () => resolve(true))
+    );
 
-    // 'disconnect' event is not actually emitted by ua.transport as it is
-    // only used for unexpected disconnect events for ua's internal
-    // reconnection strategy. Active subscriptions are gracefully killed by
-    // ua.stop().
-    console.log('stopping ua');
-    this.ua.stop();
+    delete this.registeredPromise;
+
+    this.ua.unregister();
 
     // Little protection to make sure our account is actually unregistered
-    // before other functions are called (i.e. connect)
+    // and received an ACK before other functions are called
+    // (i.e. ua.disconnect)
     await this.unregisteredPromise;
+
+    console.log('unregistered!');
+
+    await this.ua.disconnect();
+
+    console.log('disconnected!');
 
     this.ua.transport.removeAllListeners();
     this.ua.removeAllListeners();
@@ -152,6 +159,10 @@ export class WebCallingClient extends EventEmitter {
     delete this.unregisteredPromise;
   }
 
+  // TODO: consider having a separate register/unregister to support the usecase
+  // of switching voip accounts.
+  // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
+  // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
   public async invite(phoneNumber: string, options: any = {}) {
     if (!this.registeredPromise) {
       throw new Error('Register first!');
@@ -181,8 +192,9 @@ export class WebCallingClient extends EventEmitter {
           resolve();
         });
 
+        // TODO: Implement reconnection strategies here
         this.ua.transport.on('disconnected', () => {
-          console.log('disconnected');
+          console.log('unexpected disconnect');
         });
       });
     });
