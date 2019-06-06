@@ -5,5 +5,8 @@
         "tslint-config-prettier"
     ],
     "jsRules": {},
-    "rulesDirectory": ["tslint-plugin-prettier"]
+    "rulesDirectory": ["tslint-plugin-prettier"],
+    "rules": {
+      "no-console": false
+    }
 }
