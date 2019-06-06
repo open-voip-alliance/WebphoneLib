@@ -30,7 +30,7 @@ const client = new WebCallingClient({ account, transport, media });
 client.on('invite', incomingCall);
 outBtn.addEventListener('click', () => outgoingCall('503').catch(console.error));
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
-unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
+unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error).then(() => console.log('disconnected')));
 
 Media.on('permissionGranted', () => console.log('Permission granted'));
 Media.on('permissionRevoked', () => console.log('Permission revoked'));

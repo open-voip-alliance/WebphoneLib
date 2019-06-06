@@ -91,6 +91,7 @@ export class WebCallingClient extends EventEmitter {
   // Connect (and subsequently register) to server
   public async connect() {
     if (!this.ua) {
+      console.log('configuring ua');
       this.configureUA();
     }
 
@@ -131,26 +132,32 @@ export class WebCallingClient extends EventEmitter {
     }
 
     this.unregisteredPromise = new Promise(resolve => {
-      this.ua.once('unregistered', () => resolve(true));
+      this.ua.once('unregistered', async () => {
+        console.log('unregistered');
+        // TODO: terminate all sessions, unsubscribe all the things.
+        await this.ua.transport.disconnect();
+        this.ua.transport.disposeWs();
+        this.ua.transport.removeAllListeners();
+        this.ua.removeAllListeners();
+        delete this.ua;
+        delete this.unregisteredPromise;
+        resolve(true);
+      });
     });
 
-    // 'disconnect' event is not actually emitted by ua.transport as it is
-    // only used for unexpected disconnect events for ua's internal
-    // reconnection strategy. Active subscriptions are gracefully killed by
-    // ua.stop().
-    console.log('stopping ua');
-    this.ua.stop();
+    console.log('unregistering');
+    delete this.registeredPromise;
+    // this should work, but strangely no answer is received on the websocket for
+    // the unregister call...  this.ua.stop();
+    this.ua.unregister();
 
-    // Little protection to make sure our account is actually unregistered
-    // before other functions are called (i.e. connect)
-    await this.unregisteredPromise;
-
-    this.ua.transport.removeAllListeners();
-    this.ua.removeAllListeners();
-
-    delete this.ua;
-    delete this.unregisteredPromise;
+    return this.unregisteredPromise;
   }
+
+  // TODO: consider having a separate register/unregister to support the usecase
+  // of switching voip accounts.
+  // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
+  // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
 
   public async invite(phoneNumber: string, options: any = {}) {
     if (!this.registeredPromise) {
