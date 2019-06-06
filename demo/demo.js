@@ -30,7 +30,7 @@ const client = new WebCallingClient({ account, transport, media });
 client.on('invite', incomingCall);
 outBtn.addEventListener('click', () => outgoingCall('503').catch(console.error));
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
-unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error).then(() => console.log('disconnected')));
+unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 
 Media.on('permissionGranted', () => console.log('Permission granted'));
 Media.on('permissionRevoked', () => console.log('Permission revoked'));
@@ -61,7 +61,6 @@ async function outgoingCall(number) {
   unholdBtn.removeEventListener('click', unhold);
 }
 
-
 async function incomingCall(session) {
   console.log('invited', session.id);
 
@@ -81,8 +80,19 @@ async function incomingCall(session) {
   try {
     if (await session.accepted()) {
       console.log('session is accepted \\o/', session.id);
-      await sleep(3000);
-      await session.terminate();
+
+      // Terminate the session after 10 seconds
+      setTimeout(() => {
+        console.log('terminating the session');
+        session.terminate();
+      }, 10000);
+
+      await session.terminated();
+
+      // It could happen that the session was broken somehow
+      if (session.saidBye) {
+        console.log('The session was polite to you.');
+      }
     } else {
       console.log('session was rejected...', session.id);
     }
