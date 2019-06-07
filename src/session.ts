@@ -13,6 +13,11 @@ type InternalSession = InviteClientContext &
     };
   };
 
+interface IRemoteIdentity {
+  phoneNumber: string;
+  displayName: string;
+}
+
 // TODO: media handling
 // see: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L327
 // and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
@@ -27,7 +32,7 @@ export class WebCallingSession extends EventEmitter {
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
-  private holdState: boolean;
+  private reinvitePromise: Promise<boolean>;
 
   constructor({ session, constraints, media }) {
     super();
@@ -37,8 +42,18 @@ export class WebCallingSession extends EventEmitter {
     this.media = media;
 
     this.acceptedPromise = new Promise(resolve => {
-      this.session.once('accepted', () => resolve(true));
-      this.session.once('rejected', () => resolve(false));
+      const accepted = () => resolve(true);
+      const rejected = () => resolve(false);
+
+      this.session.once('accepted', () => {
+        accepted();
+        this.session.removeListener('rejected', rejected);
+      });
+
+      this.session.once('rejected', () => {
+        rejected();
+        this.session.removeListener('accepted', accepted);
+      });
     });
 
     this.terminatedPromise = new Promise(resolve => {
@@ -55,7 +70,7 @@ export class WebCallingSession extends EventEmitter {
     this.session.on('trackAdded', this.addTrack.bind(this));
   }
 
-  get remoteIdentity() {
+  get remoteIdentity(): IRemoteIdentity {
     const request = this.session.request;
     let identity;
     ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
@@ -76,7 +91,7 @@ export class WebCallingSession extends EventEmitter {
     return { phoneNumber, displayName };
   }
 
-  public accept(options: any = {}) {
+  public accept(options: any = {}): Promise<void> {
     if (this.rejectPromise) {
       throw new Error('invalid operation: session is rejected');
     }
@@ -105,7 +120,7 @@ export class WebCallingSession extends EventEmitter {
     return this.acceptPromise;
   }
 
-  public reject(options: any = {}) {
+  public reject(options: any = {}): Promise<void> {
     if (this.acceptPromise) {
       throw new Error('invalid operation: session is accepted');
     }
@@ -123,27 +138,35 @@ export class WebCallingSession extends EventEmitter {
     return this.rejectPromise;
   }
 
-  public accepted() {
+  public accepted(): Promise<boolean> {
     return this.acceptedPromise;
   }
 
-  public terminated() {
+  public terminated(): Promise<void> {
     return this.terminatedPromise;
   }
 
-  public terminate(options = {}) {
+  public terminate(options = {}): Promise<void> {
     this.session.terminate(options);
     return this.terminatedPromise;
   }
 
-  public hold() {
+  public hold(): Promise<boolean> {
+    this.reinvitePromise = this.getReinvitePromise();
+
     console.log('hold is clicked!');
     this.session.hold();
+
+    return this.reinvitePromise;
   }
 
-  public unhold() {
+  public unhold(): Promise<boolean> {
+    this.reinvitePromise = this.getReinvitePromise();
+
     console.log('unhold is clicked!');
     this.session.unhold();
+
+    return this.reinvitePromise;
   }
 
   /**
@@ -197,5 +220,22 @@ export class WebCallingSession extends EventEmitter {
     // this.media.localAudio.play().catch(() => {
     //   console.error('local play was rejected');
     // });
+  }
+
+  private getReinvitePromise(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const reinviteAccepted = () => resolve(true);
+      const reinviteFailed = e => reject(e);
+
+      this.session.once('reinviteAccepted', () => {
+        reinviteAccepted();
+        this.session.removeListener('reinviteFailed', reinviteFailed);
+      });
+
+      this.session.once('reinviteFailed', e => {
+        reinviteFailed(e);
+        this.session.removeListener('reinviteAccepted', reinviteAccepted);
+      });
+    });
   }
 }

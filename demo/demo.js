@@ -46,8 +46,8 @@ async function outgoingCall(number) {
   console.log('created outgoing call', session.id, 'to', number);
 
   const bye = () => session.bye();
-  const hold = () => session.hold();
-  const unhold = () => session.unhold();
+  const hold = async () => await session.hold();
+  const unhold = async () => await session.unhold();
 
   if (await session.accepted()) {
     console.log('outgoing call got accepted', session.id);
@@ -73,8 +73,12 @@ async function incomingCall(session) {
   console.log('invited', session.id);
 
   const bye = () => session.bye();
-  const hold = () => session.hold();
-  const unhold = () => session.unhold();
+  const hold = async () => {
+    console.log('holding...');
+    await session.hold();
+    console.log('reinvite is sent...');
+  };
+  const unhold = async () => await session.unhold();
 
   const { number, displayName } = session.remoteIdentity;
   caller.innerHTML = `${displayName} (${number})`;
