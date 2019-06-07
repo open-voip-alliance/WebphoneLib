@@ -13,6 +13,7 @@ const unregisterBtn = document.querySelector('#unregister');
 const byeBtn = document.querySelector('#bye');
 const holdBtn = document.querySelector('#hold');
 const unholdBtn = document.querySelector('#unhold');
+const blindTransferBtn = document.querySelector('#blindtransfer');
 
 const account = {
   user: CREDS.authorizationUser,
@@ -52,14 +53,17 @@ async function outgoingCall(number) {
   const bye = () => session.bye();
   const hold = async () => await session.hold();
   const unhold = async () => await session.unhold();
+  const blindTransfer = async () => await session.transfer('sip:318@voipgrid.nl');
 
   if (await session.accepted()) {
     console.log('outgoing call got accepted', session.id);
 
     byeBtn.hidden = false;
+    blindTransferBtn.hidden = false;
     byeBtn.addEventListener('click', bye);
     holdBtn.addEventListener('click', hold);
     unholdBtn.addEventListener('click', unhold);
+    blindTransferBtn.addEventListener('click', blindTransfer);
   } else {
     console.log('outgoing call was rejected', session.id);
   }
@@ -71,6 +75,8 @@ async function outgoingCall(number) {
   byeBtn.removeEventListener('click', bye);
   holdBtn.removeEventListener('click', hold);
   unholdBtn.removeEventListener('click', unhold);
+  blindTransferBtn.removeEventListener('click', blindTransfer);
+  blindTransferBtn.hidden = true;
 }
 
 async function incomingCall(session) {
@@ -83,6 +89,7 @@ async function incomingCall(session) {
     console.log('reinvite is sent...');
   };
   const unhold = async () => await session.unhold();
+  const blindTransfer = async () => await session.transfer('sip:318@voipgrid.nl');
 
   const { number, displayName } = session.remoteIdentity;
   caller.innerHTML = `${displayName} (${number})`;
@@ -101,10 +108,12 @@ async function incomingCall(session) {
     if (await session.accepted()) {
       console.log('session is accepted \\o/', session.id);
 
+      blindTransferBtn.hidden = false;
       byeBtn.hidden = false;
       byeBtn.addEventListener('click', bye);
       holdBtn.addEventListener('click', hold);
       unholdBtn.addEventListener('click', unhold);
+      blindTransferBtn.addEventListener('click', blindTransfer);
 
       // Terminate the session after 10 seconds
       setTimeout(() => {
@@ -117,6 +126,7 @@ async function incomingCall(session) {
       byeBtn.removeEventListener('click', bye);
       holdBtn.removeEventListener('click', hold);
       unholdBtn.removeEventListener('click', unhold);
+      blindTransferBtn.removeEventListener('click', blindTransfer);
 
       // It could happen that the session was broken somehow
       if (session.saidBye) {
@@ -132,5 +142,6 @@ async function incomingCall(session) {
     byeBtn.hidden = true;
     ringerBtn.hidden = true;
     caller.hidden = true;
+    blindTransferBtn.hidden = true;
   }
 }
