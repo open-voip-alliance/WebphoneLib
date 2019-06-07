@@ -1,4 +1,4 @@
-import { WebCallingClient, Media } from '../dist/vialer-web-calling.prod.mjs';
+import { WebCallingClient, Media, AudioHelper } from '../dist/vialer-web-calling.prod.mjs';
 import * as CREDS from './creds.js';
 import { sleep } from './time.js';
 
@@ -24,11 +24,18 @@ const transport = {
   iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
 };
 
-const media = { remoteAudio, localAudio };
+const mp3 = AudioHelper.loadIntoBuffer('/demo/random.mp3');
+
+const media = {
+  remoteAudio,
+  localAudio,
+  input: () => mp3,
+  output: () => {return undefined;}
+};
 
 const client = new WebCallingClient({ account, transport, media });
 client.on('invite', incomingCall);
-outBtn.addEventListener('click', () => outgoingCall('503').catch(console.error));
+outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 
@@ -39,6 +46,7 @@ Media.on('devicesChanged', () => console.log('Devices changed: ', Media.devices)
 Media.requestPermission();
 
 window.Media = Media;
+window.AudioHelper = AudioHelper;
 
 async function outgoingCall(number) {
   const session = await client.invite(`sip:${number}@voipgrid.nl`);

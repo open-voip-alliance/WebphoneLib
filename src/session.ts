@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { Grammar, InviteClientContext, InviteServerContext } from 'sip.js';
+import { IMedia, MediaInput, MediaOutput } from './types';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -20,21 +21,22 @@ type InternalSession = InviteClientContext &
 export class WebCallingSession extends EventEmitter {
   public readonly id: string;
   public saidBye: boolean;
+
   private session: InternalSession;
-  private constraints: any;
-  private media: any;
+  private media: IMedia;
+
   private acceptedPromise: Promise<boolean>;
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
+
   private holdState: boolean;
 
-  constructor({ session, constraints, media }) {
+  constructor({ session, media }) {
     super();
     this.session = session;
-    this.id = session.request.callId;
-    this.constraints = constraints;
     this.media = media;
+    this.id = session.request.callId;
 
     this.acceptedPromise = new Promise(resolve => {
       this.session.once('accepted', () => resolve(true));
@@ -53,7 +55,14 @@ export class WebCallingSession extends EventEmitter {
     this.saidBye = false;
     this.session.once('bye', () => (this.saidBye = true));
 
-    this.session.on('trackAdded', this.addTrack.bind(this));
+    // this.session.on('trackAdded', this.addTrack.bind(this));
+    this.session.on('directionChanged', () => console.log('directionChanged:', this.session.sessionDescriptionHandler.direction));
+
+    this.session.on('SessionDescriptionHandler-created', (sdh) => {
+      console.log('sdh created:', sdh.direction);
+      sdh.on('userMediaRequest', (constraints) => console.log('userMediaRequest: ', constraints));
+      sdh.on('userMedia', (streams) => console.log('userMedia acquired: ', streams));
+    });
   }
 
   get remoteIdentity() {

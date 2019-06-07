@@ -1,47 +1,24 @@
 import { EventEmitter } from 'events';
-import { UA as UABase } from 'sip.js';
-import { WebCallingSession } from './session';
 import { UA } from './ua';
+import { UA as UABase } from 'sip.js';
+import { Web, SessionDescriptionHandlerModifier } from 'sip.js';
+import { WebCallingSession } from './session';
+import { IWebCallingClientOptions, IMedia, MediaInput, MediaOutput } from './types';
+import { sessionDescriptionHandlerFactory } from './session-description-handler';
 
 // TODO: BLF
-// TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
 
 interface ISessions {
   [index: string]: WebCallingSession;
 }
 
-interface IAccount {
-  user: string;
-  password: string;
-  uri: string;
-  name: string;
-}
-
-interface ITransport {
-  wsServers: string;
-  iceServers: string[];
-}
-
-interface IMedia {
-  remoteAudio: HTMLElement;
-  localAudio: HTMLElement;
-}
-
-interface IWebCallingClientOptions {
-  account: IAccount;
-  transport: ITransport;
-  media: IMedia;
-}
-
-interface IWrappedUAOptions extends UABase.Options {
-  media: IMedia;
-}
 
 export class WebCallingClient extends EventEmitter {
-  public options: IWrappedUAOptions;
-  public ua: UA;
-
   public readonly sessions: ISessions = {};
+
+  private ua: UA;
+  private uaOptions: UABase.Options;
+  private defaultMedia: IMedia;
 
   private transportConnectedPromise?: Promise<any>;
   private unregisteredPromise?: Promise<any>;
@@ -53,30 +30,37 @@ export class WebCallingClient extends EventEmitter {
 
     const { account, transport, media } = options;
 
-    this.options = {
+    this.defaultMedia = media;
+
+    this.uaOptions = {
       authorizationUser: account.user,
       autostart: false,
       autostop: false,
       displayName: account.name,
       log: {
         builtinEnabled: true,
-        connector: undefined,
+        connector: undefined, // console.log,
         level: 'warn'
       },
-      media,
       noAnswerTimeout: 60,
       password: account.password,
       register: false,
       registerOptions: {
         expires: 3600
       },
+      sessionDescriptionHandlerFactory: sessionDescriptionHandlerFactory,
       sessionDescriptionHandlerFactoryOptions: {
+        media: media,
         constraints: { audio: true, video: false },
         peerConnectionOptions: {
           rtcConfiguration: {
             iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
           }
-        }
+        },
+        modifiers: [
+          Web.Modifiers.stripVideo,
+          // stripPrivateIps
+        ]
       },
       transportOptions: {
         maxReconnectAttempts: 0,
@@ -86,8 +70,6 @@ export class WebCallingClient extends EventEmitter {
       uri: account.uri,
       userAgentString: 'vialer-calling-lib'
     };
-
-    console.log(this.options);
   }
 
   // Connect (and subsequently register) to server
@@ -163,7 +145,7 @@ export class WebCallingClient extends EventEmitter {
   // of switching voip accounts.
   // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
   // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
-  public async invite(phoneNumber: string, options: any = {}) {
+  public async invite(phoneNumber: string) {
     if (!this.registeredPromise) {
       throw new Error('Register first!');
     }
@@ -171,18 +153,18 @@ export class WebCallingClient extends EventEmitter {
     await this.registeredPromise;
 
     const session = new WebCallingSession({
-      constraints: { audio: true },
-      media: this.options.media,
-      session: this.ua.invite(phoneNumber, options)
+      media: this.defaultMedia,
+      session: this.ua.invite(phoneNumber)
     });
 
     this.sessions[session.id] = session;
-    // TODO: remove from _sessions when session is terminated. (bind handler?)
+    session.once('terminated', () => delete this.sessions[session.id]);
+
     return session;
   }
 
   private configureUA() {
-    this.ua = new UA(this.options);
+    this.ua = new UA(this.uaOptions);
 
     this.transportConnectedPromise = new Promise(resolve => {
       this.ua.on('transportCreated', () => {
@@ -200,12 +182,8 @@ export class WebCallingClient extends EventEmitter {
     });
 
     this.ua.on('invite', uaSession => {
-      // TODO don't hardcode these..
-      const constraints = { audio: true, video: false };
-      const media = this.options.media;
       const session = new WebCallingSession({
-        constraints,
-        media: this.options.media,
+        media: this.defaultMedia,
         session: uaSession
       });
 
@@ -214,5 +192,6 @@ export class WebCallingClient extends EventEmitter {
       this.emit('invite', session);
       session.once('terminated', () => delete this.sessions[session.id]);
     });
+
   }
 }
