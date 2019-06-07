@@ -42,22 +42,19 @@ export class WebCallingSession extends EventEmitter {
     this.media = media;
 
     this.acceptedPromise = new Promise(resolve => {
-      // Explicitly using var here to make use of hoisting to enable a
-      // 2-way-reference.
-      // tslint:disable-next-line:prefer-const no-var-keyword
-      var onAccepted = () => {
-        this.session.removeListener('rejected', onRejected);
-        resolve(true);
+      const handlers = {
+        onAccepted: () => {
+          this.session.removeListener('rejected', handlers.onRejected);
+          resolve(true);
+        },
+        onRejected: () => {
+          this.session.removeListener('accepted', handlers.onAccepted);
+          resolve(false);
+        }
       };
 
-      // tslint:disable-next-line:prefer-const no-var-keyword
-      var onRejected = () => {
-        this.session.removeListener('accepted', onAccepted);
-        resolve(false);
-      };
-
-      this.session.once('accepted', onAccepted);
-      this.session.once('rejected', onRejected);
+      this.session.once('accepted', handlers.onAccepted);
+      this.session.once('rejected', handlers.onRejected);
     });
 
     this.terminatedPromise = new Promise(resolve => {
@@ -105,23 +102,18 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.acceptPromise = new Promise((resolve, reject) => {
-      // Explicitly using var here to make use of hoisting to enable a
-      // 2-way-reference.
-      //
-      // tslint:disable-next-line:prefer-const no-var-keyword
-      var onAnswered = () => {
-        this.session.removeListener('failed', onFail);
-        resolve();
+      const handlers = {
+        onAnswered: () => {
+          this.session.removeListener('failed', handlers.onFail);
+          resolve();
+        },
+        onFail: e => {
+          this.session.removeListener('accepted', handlers.onAnswered);
+          reject(e);
+        }
       };
-
-      // tslint:disable-next-line:prefer-const no-var-keyword
-      var onFail = e => {
-        this.session.removeListener('accepted', onAnswered);
-        reject(e);
-      };
-
-      this.session.once('accepted', onAnswered);
-      this.session.once('failed', onFail);
+      this.session.once('accepted', handlers.onAnswered);
+      this.session.once('failed', handlers.onFail);
 
       this.session.accept(options);
     });
@@ -233,30 +225,24 @@ export class WebCallingSession extends EventEmitter {
 
   private getReinvitePromise(): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      // Explicitly using var here to make use of hoisting to enable a
-      // 2-way-reference.
-      //
-      // tslint:disable-next-line:prefer-const no-var-keyword
-      var onReinviteAccepted = e => {
-        console.log('reinviteaccepted called!', e);
-        this.session.removeListener('reinviteFailed', onReinviteFailed);
-        // Calling resolve after removeListener, otherwise, when it fails,
-        // the resolved promise can not be rejected with an error trace
-        // anymore.
-        resolve(true);
+      const handlers = {
+        onReinviteAccepted: e => {
+          this.session.removeListener('reinviteFailed', handlers.onReinviteFailed);
+          // Calling resolve after removeListener, otherwise, when it fails,
+          // the resolved promise can not be rejected with an error trace
+          // anymore.
+          resolve(true);
+        },
+        onReinviteFailed: e => {
+          this.session.removeListener('reinviteAccepted', handlers.onReinviteAccepted);
+          // Calling reject after removeListener, otherwise, when it fails,
+          // reject returns the wrong trace.
+          reject(e);
+        }
       };
 
-      // tslint:disable-next-line:prefer-const no-var-keyword
-      var onReinviteFailed = e => {
-        console.log(onReinviteAccepted);
-        this.session.removeListener('reinviteAccepted', onReinviteAccepted);
-        // Calling reject after removeListener, otherwise, when it fails,
-        // reject returns the wrong trace.
-        reject(e);
-      };
-
-      this.session.once('reinviteAccepted', onReinviteAccepted);
-      this.session.once('reinviteFailed', onReinviteFailed);
+      this.session.once('reinviteAccepted', handlers.onReinviteAccepted);
+      this.session.once('reinviteFailed', handlers.onReinviteFailed);
     });
   }
 }
