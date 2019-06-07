@@ -1,4 +1,4 @@
-#+TITLE: Vialer Webphone SIPLib
+#+TITLE: Web Calling Library
 
 * Goals
 
@@ -147,6 +147,40 @@ constructor?
   }
 #+end_src
 
+
+* Audio device selection
+
+1. Set a primary input & output device:
+
+#+begin_src js
+const client = new WebCallingClient({
+  media: {
+    input: 'default',
+    output: 'default',
+  }
+})
+#+end_src
+
+2. Change the primary I/O devices:
+
+#+begin_src js
+client.setInput(null); // first available
+client.setInput('123098210938120398'); // deviceId in MediaDevices.inputs
+client.setOutput(async () => {
+  return new MediaStream(..);
+});
+#+end_src
+
+3. Change the media of a session:
+
+Sessions always start on the default media (=client.media=) but it's media can
+be changed at any time.
+
+#+begin_src js
+const session = client.invite('123');
+await session.accepted();
+await session.setInput(getUserMedia({audio: true}));
+#+end_src
 
 
 * Tickets

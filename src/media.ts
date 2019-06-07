@@ -1,10 +1,8 @@
 import { EventEmitter } from 'events';
 import * as Features from './feature-detection';
 import { eqSet } from './utils';
-
-// getUserMedia:
-//   which device?
-//   enable audio processing (yes/no)
+import * as Time from './time';
+import { audioContext } from './audio-context';
 
 export interface IAudioDevice {
   /**
@@ -17,20 +15,21 @@ export interface IAudioDevice {
   kind: 'audioinput' | 'audiooutput';
 }
 
-export declare interface IMediaDevices {
-  on(
-    event: 'devicesChanged' | 'permissionGranted' | 'permissionRevoked',
-    listener: () => void
-  ): this;
+interface MediaDevices {
+  readonly devices: IAudioDevice[];
+  readonly inputs: IAudioDevice[];
+  readonly outputs: IAudioDevice[];
+  on(event: 'devicesChanged', listener: () => void): this;
+  on(event: 'permissionGranted' | 'permissionRevoked', listener: () => void): this;
 }
 
-const UPDATE_INTERVAL = 1000;
+const UPDATE_INTERVAL = 1 * Time.second;
 
 /**
  * Offers an abstraction over Media permissions and device enumeration for use
  * with WebRTC.
  */
-class MediaSingleton extends EventEmitter {
+class MediaSingleton extends EventEmitter implements MediaDevices {
   private allDevices: IAudioDevice[] = [];
   private requestPermissionPromise: Promise<void>;
   private timer: number = undefined;
@@ -43,26 +42,21 @@ class MediaSingleton extends EventEmitter {
       // TODO: centralize this?
       throw new Error('Media devices are not supported in this browser.');
     }
-
-    // TODO: This doesn't seem to do much on my system..
-    navigator.mediaDevices.addEventListener('devicechange', () => {
-      console.log('devices updated');
-      // this._update();
-    });
-
-    // Immediately try to update the devices.
-    this.timer = window.setTimeout(() => this._update(), 0);
   }
 
-  get devices(): IAudioDevice[] {
+  public init() {
+    this.update();
+  }
+
+  get devices() {
     return this.allDevices;
   }
 
-  get inputs(): IAudioDevice[] {
+  get inputs() {
     return this.allDevices.filter(d => d.kind === 'audioinput');
   }
 
-  get outputs(): IAudioDevice[] {
+  get outputs() {
     return this.allDevices.filter(d => d.kind === 'audiooutput');
   }
 
@@ -98,12 +92,11 @@ class MediaSingleton extends EventEmitter {
             window.clearTimeout(this.timer);
           }
 
-          await this._update();
+          await this.update();
         }
 
         // Close the stream and delete the promise.
-        stream.getTracks().forEach(track => track.stop());
-
+        this.closeStream(stream);
         resolve();
       } catch (err) {
         reject(err);
@@ -115,7 +108,38 @@ class MediaSingleton extends EventEmitter {
     return this.requestPermissionPromise;
   }
 
-  private async _enumerateDevices(): Promise<MediaDeviceInfo[]> {
+  public async openDevice(
+    id?: string,
+    audioProcessing = true
+  ): Promise<MediaStreamAudioSourceNode> {
+    const presets = audioProcessing
+      ? {}
+      : {
+          echoCancellation: false,
+          googAudioMirroring: false,
+          googAutoGainControl: false,
+          googAutoGainControl2: false,
+          googEchoCancellation: false,
+          googHighpassFilter: false,
+          googNoiseSuppression: false,
+          googTypingNoiseDetection: false
+        };
+
+    let constraints: MediaStreamConstraints = { audio: presets, video: false };
+    if (id) {
+      (constraints.audio as MediaTrackConstraints).deviceId = id;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    return audioContext.createMediaStreamSource(stream);
+  }
+
+  // move to Audio Helper?
+  public closeStream(stream: MediaStream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+
+  private async enumerateDevices(): Promise<MediaDeviceInfo[]> {
     const devices = await navigator.mediaDevices.enumerateDevices();
 
     if (devices.length && devices[0].label) {
@@ -125,8 +149,8 @@ class MediaSingleton extends EventEmitter {
     return undefined;
   }
 
-  private async _update() {
-    const devices = await this._enumerateDevices();
+  private async update() {
+    const devices = await this.enumerateDevices();
     const havePermission = devices !== undefined;
 
     if (havePermission) {
@@ -134,7 +158,7 @@ class MediaSingleton extends EventEmitter {
         this.emit('permissionGranted');
       }
 
-      this._updateDevices(devices);
+      this.updateDevices(devices);
     } else {
       if (this.hadPermission) {
         this.emit('permissionRevoked');
@@ -149,11 +173,11 @@ class MediaSingleton extends EventEmitter {
     // (unless over https). The timer will clear the devices list on the next
     // timeout. Prevent this behaviour because it's annoying to develop with.
     if (!(Features.isFirefox && Features.isLocalhost)) {
-      this.timer = window.setTimeout(() => this._update(), UPDATE_INTERVAL);
+      this.timer = window.setTimeout(() => this.update(), UPDATE_INTERVAL);
     }
   }
 
-  private _updateDevices(enumeratedDevices: MediaDeviceInfo[]) {
+  private updateDevices(enumeratedDevices: MediaDeviceInfo[]) {
     // Map the found devices to our own format, and filter out videoinput's.
     const allDevices = enumeratedDevices
       .map(
