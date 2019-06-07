@@ -3,12 +3,13 @@ import * as CREDS from './creds.js';
 import { sleep } from './time.js';
 
 const caller = document.querySelector('#caller');
-const ringer = document.querySelector('#ring');
+const ringerBtn = document.querySelector('#ring');
 const remoteAudio = document.querySelector('#remote');
 const localAudio = document.querySelector('#local');
 const outBtn = document.querySelector('#out');
 const registerBtn = document.querySelector('#register');
 const unregisterBtn = document.querySelector('#unregister');
+const byeBtn = document.querySelector('#bye');
 const holdBtn = document.querySelector('#hold');
 const unholdBtn = document.querySelector('#unhold');
 
@@ -28,7 +29,7 @@ const media = { remoteAudio, localAudio };
 
 const client = new WebCallingClient({ account, transport, media });
 client.on('invite', incomingCall);
-outBtn.addEventListener('click', () => outgoingCall('503').catch(console.error));
+outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 
@@ -44,11 +45,15 @@ async function outgoingCall(number) {
   const session = await client.invite(`sip:${number}@voipgrid.nl`);
   console.log('created outgoing call', session.id, 'to', number);
 
+  const bye = () => session.bye();
   const hold = () => session.hold();
   const unhold = () => session.unhold();
 
   if (await session.accepted()) {
     console.log('outgoing call got accepted', session.id);
+
+    byeBtn.hidden = false;
+    byeBtn.addEventListener('click', bye);
     holdBtn.addEventListener('click', hold);
     unholdBtn.addEventListener('click', unhold);
   } else {
@@ -57,6 +62,9 @@ async function outgoingCall(number) {
 
   await session.terminated();
   console.log('session is terminated', session.id);
+
+  byeBtn.hidden = true;
+  byeBtn.removeEventListener('click', bye);
   holdBtn.removeEventListener('click', hold);
   unholdBtn.removeEventListener('click', unhold);
 }
@@ -64,30 +72,43 @@ async function outgoingCall(number) {
 async function incomingCall(session) {
   console.log('invited', session.id);
 
+  const bye = () => session.bye();
+  const hold = () => session.hold();
+  const unhold = () => session.unhold();
+
   const { number, displayName } = session.remoteIdentity;
   caller.innerHTML = `${displayName} (${number})`;
   caller.hidden = false;
 
-  ringer.addEventListener(
+  ringerBtn.addEventListener(
     'click',
     () => {
       session.accept();
     },
     { once: true }
   );
-  ringer.hidden = false;
+  ringerBtn.hidden = false;
 
   try {
     if (await session.accepted()) {
       console.log('session is accepted \\o/', session.id);
 
+      byeBtn.hidden = false;
+      byeBtn.addEventListener('click', bye);
+      holdBtn.addEventListener('click', hold);
+      unholdBtn.addEventListener('click', unhold);
+
       // Terminate the session after 10 seconds
       setTimeout(() => {
         console.log('terminating the session');
         session.terminate();
-      }, 10000);
+      }, 60000);
 
       await session.terminated();
+
+      byeBtn.removeEventListener('click', bye);
+      holdBtn.removeEventListener('click', hold);
+      unholdBtn.removeEventListener('click', unhold);
 
       // It could happen that the session was broken somehow
       if (session.saidBye) {
@@ -100,7 +121,8 @@ async function incomingCall(session) {
     console.error('session failed', session.id, e);
   } finally {
     console.log('closing session...', session.id);
-    ringer.hidden = true;
+    byeBtn.hidden = true;
+    ringerBtn.hidden = true;
     caller.hidden = true;
   }
 }

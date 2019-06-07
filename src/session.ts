@@ -138,11 +138,20 @@ export class WebCallingSession extends EventEmitter {
   }
 
   public hold() {
+    console.log('hold is clicked!');
     return this.setHoldState(true);
   }
 
   public unhold() {
     return this.setHoldState(false);
+  }
+
+  /**
+   * Function this.session.bye triggers terminated, so nothing else has to be
+   * done here.
+   */
+  public bye() {
+    this.session.bye();
   }
 
   public dtmf(key) {
@@ -168,9 +177,9 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.media.remoteAudio.srcObject = remoteStream;
-    this.media.remoteAudio.play().catch(() => {
-      console.error('local play was rejected');
-    });
+    //this.media.remoteAudio.play().catch(() => {
+    //  console.error('local play was rejected');
+    //});
 
     let localStream = new MediaStream();
     if (pc.getSenders) {
@@ -185,13 +194,15 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.media.localAudio.srcObject = localStream;
-    this.media.localAudio.play().catch(() => {
-      console.error('local play was rejected');
-    });
+    //this.media.localAudio.play().catch(() => {
+    //  console.error('local play was rejected');
+    //});
   }
 
   private async setHoldState(flag) {
     if (flag) {
+      // Could pass {sessionDescriptoinHandlerOptions: {constraints}} with
+      // hold or unhold to pass new config along with renegotiation/reinvite.
       await this.session.hold();
     } else {
       await this.session.unhold();
