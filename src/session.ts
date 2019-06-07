@@ -49,7 +49,6 @@ export class WebCallingSession extends EventEmitter {
       });
     });
 
-    this.holdState = false;
     this.saidBye = false;
     this.session.once('bye', () => (this.saidBye = true));
 
@@ -139,11 +138,12 @@ export class WebCallingSession extends EventEmitter {
 
   public hold() {
     console.log('hold is clicked!');
-    return this.setHoldState(true);
+    this.session.hold();
   }
 
   public unhold() {
-    return this.setHoldState(false);
+    console.log('unhold is clicked!');
+    this.session.unhold();
   }
 
   /**
@@ -197,17 +197,5 @@ export class WebCallingSession extends EventEmitter {
     // this.media.localAudio.play().catch(() => {
     //   console.error('local play was rejected');
     // });
-  }
-
-  private async setHoldState(flag) {
-    if (flag) {
-      // Could pass {sessionDescriptoinHandlerOptions: {constraints}} with
-      // hold or unhold to pass new config along with renegotiation/reinvite.
-      await this.session.hold();
-    } else {
-      await this.session.unhold();
-    }
-
-    this.holdState = flag;
   }
 }
