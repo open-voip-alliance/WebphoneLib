@@ -42,18 +42,18 @@ export class WebCallingSession extends EventEmitter {
     this.media = media;
 
     this.acceptedPromise = new Promise(resolve => {
-      const accepted = () => resolve(true);
-      const rejected = () => resolve(false);
+      const onAccepted = () => {
+        resolve(true);
+        this.session.removeListener('rejected', onRejected);
+      };
 
-      this.session.once('accepted', () => {
-        accepted();
-        this.session.removeListener('rejected', rejected);
-      });
+      const onRejected = () => {
+        resolve(false);
+        this.session.removeListener('accepted', onAccepted);
+      };
 
-      this.session.once('rejected', () => {
-        rejected();
-        this.session.removeListener('accepted', accepted);
-      });
+      this.session.once('accepted', onAccepted);
+      this.session.once('rejected', onRejected);
     });
 
     this.terminatedPromise = new Promise(resolve => {
@@ -224,18 +224,18 @@ export class WebCallingSession extends EventEmitter {
 
   private getReinvitePromise(): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      const reinviteAccepted = () => resolve(true);
-      const reinviteFailed = e => reject(e);
+      const onReinviteAccepted = () => {
+        resolve(true);
+        this.session.removeListener('reinviteFailed', onReinviteFailed);
+      };
 
-      this.session.once('reinviteAccepted', () => {
-        reinviteAccepted();
-        this.session.removeListener('reinviteFailed', reinviteFailed);
-      });
+      const onReinviteFailed = e => {
+        reject(e);
+        this.session.removeListener('reinviteAccepted', onReinviteAccepted);
+      };
 
-      this.session.once('reinviteFailed', e => {
-        reinviteFailed(e);
-        this.session.removeListener('reinviteAccepted', reinviteAccepted);
-      });
+      this.session.once('reinviteAccepted', onReinviteAccepted);
+      this.session.once('reinviteFailed', onReinviteFailed);
     });
   }
 }
