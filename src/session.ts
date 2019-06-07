@@ -25,6 +25,7 @@ interface IRemoteIdentity {
 export class WebCallingSession extends EventEmitter {
   public readonly id: string;
   public saidBye: boolean;
+  public holdState: boolean;
   private session: InternalSession;
   private constraints: any;
   private media: any;
@@ -65,6 +66,7 @@ export class WebCallingSession extends EventEmitter {
       });
     });
 
+    this.holdState = false;
     this.saidBye = false;
     this.session.once('bye', () => (this.saidBye = true));
 
@@ -153,21 +155,11 @@ export class WebCallingSession extends EventEmitter {
   }
 
   public hold(): Promise<boolean> {
-    this.reinvitePromise = this.getReinvitePromise();
-
-    console.log('hold is clicked!');
-    this.session.hold();
-
-    return this.reinvitePromise;
+    return this.setHoldState(true);
   }
 
   public unhold(): Promise<boolean> {
-    this.reinvitePromise = this.getReinvitePromise();
-
-    console.log('unhold is clicked!');
-    this.session.unhold();
-
-    return this.reinvitePromise;
+    return this.setHoldState(false);
   }
 
   /**
@@ -244,5 +236,25 @@ export class WebCallingSession extends EventEmitter {
       this.session.once('reinviteAccepted', handlers.onReinviteAccepted);
       this.session.once('reinviteFailed', handlers.onReinviteFailed);
     });
+  }
+
+  private setHoldState(flag) {
+    if (this.holdState === flag) {
+      return this.reinvitePromise;
+    }
+
+    this.reinvitePromise = this.getReinvitePromise();
+
+    if (flag) {
+      console.log('hold!');
+      this.session.hold();
+    } else {
+      console.log('unhold!');
+      this.session.unhold();
+    }
+
+    this.holdState = flag;
+
+    return this.reinvitePromise;
   }
 }
