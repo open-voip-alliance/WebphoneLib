@@ -7,6 +7,7 @@ const ringerBtn = document.querySelector('#ring');
 const remoteAudio = document.querySelector('#remote');
 const localAudio = document.querySelector('#local');
 const outBtn = document.querySelector('#out');
+const reconfigureBtn = document.querySelector('#reconfigure');
 const registerBtn = document.querySelector('#register');
 const unregisterBtn = document.querySelector('#unregister');
 const byeBtn = document.querySelector('#bye');
@@ -30,6 +31,9 @@ const media = { remoteAudio, localAudio };
 const client = new WebCallingClient({ account, transport, media });
 client.on('invite', incomingCall);
 outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
+reconfigureBtn.addEventListener('click', () =>
+  client.reconfigure({ account, transport, media }).catch(console.error)
+);
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 
