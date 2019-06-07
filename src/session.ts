@@ -177,9 +177,9 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.media.remoteAudio.srcObject = remoteStream;
-    //this.media.remoteAudio.play().catch(() => {
-    //  console.error('local play was rejected');
-    //});
+    // this.media.remoteAudio.play().catch(() => {
+    //   console.error('local play was rejected');
+    // });
 
     let localStream = new MediaStream();
     if (pc.getSenders) {
@@ -194,9 +194,9 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.media.localAudio.srcObject = localStream;
-    //this.media.localAudio.play().catch(() => {
-    //  console.error('local play was rejected');
-    //});
+    // this.media.localAudio.play().catch(() => {
+    //   console.error('local play was rejected');
+    // });
   }
 
   private async setHoldState(flag) {
