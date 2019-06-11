@@ -24,18 +24,29 @@ const transport = {
   iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
 };
 
-const mp3 = AudioHelper.loadIntoBuffer('/demo/random.mp3');
+// const mp3 = AudioHelper.loadIntoBuffer('/demo/random.mp3');
 
 const media = {
   remoteAudio,
   localAudio,
-  input: () => mp3,
+  input: () => {return undefined;}, //mp3,
   output: () => {return undefined;}
 };
 
+(async () => {
+  await AudioHelper.autoplayAllowed;
+  const a = await AudioHelper.loadForPlay('/demo/dtmf-3.mp3');
+  a.play();
+})();
+
 const client = new WebCallingClient({ account, transport, media });
 client.on('invite', incomingCall);
-outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
+outBtn.addEventListener('click', async () => {
+  await AudioHelper.autoplayAllowed;
+  const a = await AudioHelper.loadForPlay('/demo/dtmf-0.mp3');
+  a.play();
+  //outgoingCall('999').catch(console.error)
+});
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 
@@ -43,7 +54,9 @@ Media.on('permissionGranted', () => console.log('Permission granted'));
 Media.on('permissionRevoked', () => console.log('Permission revoked'));
 Media.on('devicesChanged', () => console.log('Devices changed: ', Media.devices));
 
-Media.requestPermission();
+// Media.requestPermission();
+
+AudioHelper.autoplayAllowed.then(() => console.log('Autoplay allowed!!'));
 
 window.Media = Media;
 window.AudioHelper = AudioHelper;

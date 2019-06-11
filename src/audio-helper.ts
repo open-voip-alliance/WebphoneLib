@@ -1,9 +1,28 @@
-const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+import { EventEmitter } from 'events';
+import { audioContext } from './audio-context';
 
-export const audioContext = new AudioContext();
+// As short as possible mp3 file.
+// source: https://gist.github.com/westonruter/253174
+// prettier-ignore
+const audioTestSample = 'data:audio/mpeg;base64,/+MYxAAAAANIAUAAAASEEB/jwOFM/0MM/90b/+RhST//w4NFwOjf///PZu////9lns5GFDv//l9GlUIEEIAAAgIg8Ir/JGq3/+MYxDsLIj5QMYcoAP0dv9HIjUcH//yYSg+CIbkGP//8w0bLVjUP///3Z0x5QCAv/yLjwtGKTEFNRTMuOTeqqqqqqqqqqqqq/+MYxEkNmdJkUYc4AKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
 
-export namespace AudioHelper {
-  export async function loadIntoBuffer(url: string): Promise<AudioBufferSourceNode> {
+interface IAudioHelper {
+  on(event: 'autoplayAllowed', listener: () => void): this;
+}
+
+class AudioHelperSingleton extends EventEmitter implements IAudioHelper {
+  private timeoutId?: number;
+  public readonly autoplayAllowed: Promise<void>;
+
+  constructor() {
+    super();
+    this.autoplayAllowed = new Promise(resolve => {
+      this.once('autoplayAllowed', resolve);
+    });
+    this.timeoutId = window.setTimeout(() => this.update(), 0);
+  }
+
+  public async fetchIntoBuffer(url: string): Promise<AudioBufferSourceNode> {
     const response = await fetch(url);
     const data = await response.arrayBuffer();
     const buffer = await audioContext.decodeAudioData(data);
@@ -13,15 +32,41 @@ export namespace AudioHelper {
     return soundSource;
   }
 
-  // TODO: possible to request permission for autoplay?
-  export async function loadForPlay(url: string, sinkId: string, volume = 1.0, loop = false) {
+  public async load(url: string, options: {sinkId?: string, volume?: number, loop?: boolean} = {}) {
     const audio = new Audio(url);
-    audio.volume = volume;
-    audio.loop = loop;
+    audio.volume = options.volume === undefined ? 1.0 : options.volume;
+    audio.loop = options.loop;
     await audioContext.resume();
-    if (sinkId) {
-      await (audio as any).setSinkId(sinkId);
+    if (options.sinkId) {
+      await (audio as any).setSinkId(options.sinkId);
     }
     return audio;
   }
-};
+
+  private async update() {
+    if (await this.testAutoplay()) {
+      this.emit('autoplayAllowed');
+      delete this.timeoutId;
+    } else {
+      this.timeoutId = window.setTimeout(() => this.update(), 1000);
+    }
+  }
+
+  private async testAutoplay() {
+    const audio = new Audio();
+    audio.src = audioTestSample;
+    const playPromise = audio.play();
+    if (playPromise === undefined) {
+      return false;
+    }
+
+    try {
+      await playPromise;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
+export const AudioHelper = new AudioHelperSingleton();

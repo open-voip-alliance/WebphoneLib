@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import * as Features from './feature-detection';
 import { eqSet } from './utils';
 import * as Time from './time';
-import { audioContext } from './audio-helper';
+import { audioContext } from './audio-context';
 
 export interface IAudioDevice {
   /**
@@ -15,13 +15,13 @@ export interface IAudioDevice {
   kind: 'audioinput' | 'audiooutput';
 }
 
-export declare interface IMediaDevices {
-  on(
-    event: 'devicesChanged' | 'permissionGranted' | 'permissionRevoked',
-    listener: () => void
-  ): this;
+interface MediaDevices {
+  readonly devices: IAudioDevice[];
+  readonly inputs: IAudioDevice[];
+  readonly outputs: IAudioDevice[];
+  on(event: 'devicesChanged', listener: () => void): this;
+  on(event: 'permissionGranted' | 'permissionRevoked', listener: () => void): this;
 }
-
 
 const UPDATE_INTERVAL = 1 * Time.second;
 
@@ -29,7 +29,7 @@ const UPDATE_INTERVAL = 1 * Time.second;
  * Offers an abstraction over Media permissions and device enumeration for use
  * with WebRTC.
  */
-class MediaSingleton extends EventEmitter {
+class MediaSingleton extends EventEmitter implements MediaDevices {
   private allDevices: IAudioDevice[] = [];
   private requestPermissionPromise: Promise<void>;
   private timer: number = undefined;
@@ -42,26 +42,21 @@ class MediaSingleton extends EventEmitter {
       // TODO: centralize this?
       throw new Error('Media devices are not supported in this browser.');
     }
-
-    // TODO: This doesn't seem to do much on my system..
-    navigator.mediaDevices.addEventListener('devicechange', () => {
-      console.log('devices updated');
-      // this._update();
-    });
-
-    // Immediately try to update the devices.
-    this.timer = window.setTimeout(() => this.update(), 0);
   }
 
-  get devices(): IAudioDevice[] {
+  public init() {
+    this.update();
+  }
+
+  get devices() {
     return this.allDevices;
   }
 
-  get inputs(): IAudioDevice[] {
+  get inputs() {
     return this.allDevices.filter(d => d.kind === 'audioinput');
   }
 
-  get outputs(): IAudioDevice[] {
+  get outputs() {
     return this.allDevices.filter(d => d.kind === 'audiooutput');
   }
 
@@ -113,7 +108,10 @@ class MediaSingleton extends EventEmitter {
     return this.requestPermissionPromise;
   }
 
-  public async openDevice(id?: string, audioProcessing = true): Promise<MediaStreamAudioSourceNode> {
+  public async openDevice(
+    id?: string,
+    audioProcessing = true
+  ): Promise<MediaStreamAudioSourceNode> {
     const presets = audioProcessing
       ? {}
       : {
