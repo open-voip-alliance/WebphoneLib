@@ -100,7 +100,6 @@ export class WebCallingClient extends EventEmitter {
       await this.transportConnectedPromise;
     } catch (e) {
       throw new Error(`Tried to connect ${this.retries + 1} times, didn't work. Sorry.`);
-      return Promise.reject();
     }
 
     this.ua.register();
