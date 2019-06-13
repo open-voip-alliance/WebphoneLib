@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import pRetry from 'p-retry';
 import { UA as UABase } from 'sip.js';
 import { WebCallingSession } from './session';
 import { UA } from './ua';
@@ -47,6 +48,9 @@ export class WebCallingClient extends EventEmitter {
   private unregisteredPromise?: Promise<any>;
   private registeredPromise?: Promise<any>;
   private disconnectPromise?: Promise<any>;
+  private registered: boolean = false;
+  private isReconnecting: boolean = false;
+  private retries: number = 10;
 
   constructor(options: IWebCallingClientOptions) {
     super();
@@ -83,13 +87,20 @@ export class WebCallingClient extends EventEmitter {
     }
 
     this.registeredPromise = new Promise((resolve, reject) => {
-      this.ua.once('registered', () => resolve(true));
+      this.ua.once('registered', () => {
+        this.registered = true;
+        resolve(true);
+      });
       this.ua.once('registrationFailed', e => reject(e));
     });
 
     this.ua.start();
 
-    await this.transportConnectedPromise;
+    try {
+      await this.transportConnectedPromise;
+    } catch (e) {
+      throw new Error(`Tried to connect ${this.retries + 1} times, didn't work. Sorry.`);
+    }
 
     this.ua.register();
 
@@ -106,18 +117,24 @@ export class WebCallingClient extends EventEmitter {
       throw new Error('not connected');
     }
 
-    this.unregisteredPromise = new Promise(resolve =>
-      this.ua.once('unregistered', () => resolve(true))
-    );
-
     delete this.registeredPromise;
 
-    this.ua.unregister();
+    if (this.registered) {
+      this.unregisteredPromise = new Promise(resolve =>
+        this.ua.once('unregistered', () => {
+          this.registered = false;
+          resolve(true);
+        })
+      );
 
-    // Little protection to make sure our account is actually unregistered
-    // and received an ACK before other functions are called
-    // (i.e. ua.disconnect)
-    await this.unregisteredPromise;
+      console.log('trying to unregister..');
+      this.ua.unregister();
+
+      // Little protection to make sure our account is actually unregistered
+      // and received an ACK before other functions are called
+      // (i.e. ua.disconnect)
+      await this.unregisteredPromise;
+    }
 
     console.log('unregistered!');
 
@@ -132,8 +149,6 @@ export class WebCallingClient extends EventEmitter {
     delete this.unregisteredPromise;
   }
 
-  // TODO: consider having a separate register/unregister to support the usecase
-  // of switching voip accounts.
   // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
   // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
   public async invite(phoneNumber: string, options: any = {}) {
@@ -150,24 +165,70 @@ export class WebCallingClient extends EventEmitter {
     });
 
     this.sessions[session.id] = session;
-    // TODO: remove from _sessions when session is terminated. (bind handler?)
+
+    session.once('terminated', () => delete this.sessions[session.id]);
+
     return session;
+  }
+
+  private async reconnect(): Promise<boolean> {
+    this.isReconnecting = true;
+
+    try {
+      await pRetry(this.connect.bind(this), {
+        maxTimeout: 30000,
+        minTimeout: 500,
+        onFailedAttempt: error => {
+          console.log(
+            `Connection attempt ${error.attemptNumber} failed. There are ${
+              error.retriesLeft
+            } retries left.`
+          );
+        },
+        randomize: true,
+        retries: this.retries
+      });
+      return true;
+    } catch (e) {
+      console.log('Not attempting to reconnect anymore');
+      return false;
+    }
   }
 
   private configureUA() {
     this.ua = new UA(this.options);
 
-    this.transportConnectedPromise = new Promise(resolve => {
-      this.ua.on('transportCreated', () => {
+    this.transportConnectedPromise = new Promise((resolve, reject) => {
+      this.ua.once('transportCreated', () => {
         console.log('transport created');
-        this.ua.transport.on('connected', () => {
+        this.ua.transport.once('connected', () => {
           console.log('connected');
           resolve();
         });
 
-        // TODO: Implement reconnection strategies here
-        this.ua.transport.on('disconnected', () => {
+        this.ua.transport.once('disconnected', async e => {
           console.log('unexpected disconnect');
+
+          await this.disconnect();
+
+          if (this.isReconnecting) {
+            // Rejecting here to make sure that the reconnect promise in
+            // pRetry is catched and can be properly retried.
+            reject(e);
+
+            // Returning here to make sure that reconnect is not called again.
+            return;
+          }
+
+          const connected = await this.reconnect();
+
+          this.isReconnecting = false;
+
+          if (connected) {
+            resolve();
+          } else {
+            reject(e);
+          }
         });
       });
     });
@@ -185,6 +246,7 @@ export class WebCallingClient extends EventEmitter {
       this.sessions[session.id] = session;
 
       this.emit('invite', session);
+
       session.once('terminated', () => delete this.sessions[session.id]);
     });
   }
@@ -224,7 +286,7 @@ export class WebCallingClient extends EventEmitter {
         }
       },
       transportOptions: {
-        maxReconnectAttempts: 0,
+        maxReconnectionAttempts: 0,
         traceSip: true,
         wsServers: transport.wsServers
       },
