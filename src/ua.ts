@@ -3,6 +3,10 @@ import { RegisterContext, UA as UABase, UAStatus } from 'sip.js';
 export class UA extends UABase {
   private disconnectPromise: Promise<void>;
 
+  constructor(configuration: UABase.Options) {
+    super(configuration);
+  }
+
   public disconnect(): Promise<void> {
     this.stop();
     return this.disconnectPromise;

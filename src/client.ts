@@ -1,13 +1,21 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
-import { UA as UABase } from 'sip.js';
+import {
+  ClientContext,
+  InviteClientContext,
+  InviteServerContext,
+  RegisterContext,
+  UA as UABase,
+  UAStatus
+} from 'sip.js';
+
 import { WebCallingSession } from './session';
 import { UA } from './ua';
 
 // TODO: BLF
 // TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
 
-interface ISessions {
+export interface ISessions {
   [index: string]: WebCallingSession;
 }
 
@@ -41,8 +49,9 @@ interface IWrappedUAOptions extends UABase.Options {
 export class WebCallingClient extends EventEmitter {
   public ua: UA;
 
-  public readonly sessions: ISessions = {};
+  public sessions: ISessions = {};
 
+  private deferredUA: UA;
   private options: IWrappedUAOptions;
   private transportConnectedPromise?: Promise<any>;
   private unregisteredPromise?: Promise<any>;
@@ -51,11 +60,50 @@ export class WebCallingClient extends EventEmitter {
   private registered: boolean = false;
   private isReconnecting: boolean = false;
   private retries: number = 10;
+  private reviveActive: boolean = false;
 
   constructor(options: IWebCallingClientOptions) {
     super();
 
     this.configure(options);
+
+    window.addEventListener('offline', async () => {
+      // Object.values(this.sessions).forEach(session => {
+      //  session.recoveryMode = true;
+
+      //  // delete session.session;
+      //  // session.session = undefined;
+      // });
+      console.log('OFFLINE NOW');
+
+      // await this.disconnect({ skipUnregister: true, noPromise: true });
+      console.log('Also disconnected');
+    });
+
+    // window.addEventListener('online', () => {
+    //  if (this.reviveActive) {
+    //    return;
+    //  }
+
+    //  this.reviveActive = true;
+    //  setTimeout(async () => {
+    //    await this.ua.transport.disconnect();
+
+    //    setTimeout(async () => {
+    //      await this.ua.transport.connect();
+    //      Object.values(this.sessions).forEach(async session => {
+    //        console.log(session);
+    //        session.session.rebuildSessionDescriptionHandler();
+    //        session.reinvite();
+    //      });
+    //    }, 5000);
+
+    //    this.reviveActive = false;
+    //  }, 8000);
+    //  console.log('ONLINE NOW');
+    // });
+
+    console.log(this.sessions);
   }
 
   // In the case you want to switch to another account
@@ -108,8 +156,9 @@ export class WebCallingClient extends EventEmitter {
   }
 
   // Unregister (and subsequently disconnect) to server
-  public async disconnect(): Promise<void> {
+  public async disconnect({ skipUnregister = false, noPromise = false } = {}): Promise<void> {
     if (this.disconnectPromise) {
+      console.log('returning disconnectpromise');
       return this.disconnectPromise;
     }
 
@@ -119,7 +168,8 @@ export class WebCallingClient extends EventEmitter {
 
     delete this.registeredPromise;
 
-    if (this.registered) {
+    // Cannot unregister if connection is lost, so skip this in that case.
+    if (this.registered && !skipUnregister) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
           this.registered = false;
@@ -138,7 +188,11 @@ export class WebCallingClient extends EventEmitter {
 
     console.log('unregistered!');
 
-    await this.ua.disconnect();
+    if (noPromise) {
+      this.ua.stop();
+    } else {
+      await this.ua.disconnect();
+    }
 
     console.log('disconnected!');
 
@@ -165,10 +219,24 @@ export class WebCallingClient extends EventEmitter {
     });
 
     this.sessions[session.id] = session;
+    console.log(this.sessions);
 
-    session.once('terminated', () => delete this.sessions[session.id]);
-
+    session.once('terminated', this.onTerminated.bind(this));
     return session;
+  }
+
+  private onTerminated(session) {
+    // console.log(this.sessions);
+    // console.log(session);
+    // console.log(session.recoveryMode);
+    // // If a session is in recovery mode, we will not delete it, so that
+    // // it can be recovered later when a new websocket is created through
+    // // ua.start().
+    // if (session.recoveryMode) {
+    //   console.log('NOT DELETED!');
+    // } else {
+    // }
+    delete this.sessions[session.id];
   }
 
   private async reconnect(): Promise<boolean> {
@@ -195,7 +263,33 @@ export class WebCallingClient extends EventEmitter {
     }
   }
 
+  // get sessionsToBeRecovered() {
+  //  const sessionsToBeRecovered: {
+  //    [id: string]: InviteClientContext | InviteServerContext;
+  //  } = {};
+
+  //  Object.entries(this.sessions)
+  //    .filter(([sessionId, session]) => session.recoveryMode === true)
+  //    .map(([sessionId, session]) => {
+  //      sessionsToBeRecovered[sessionId] = session.session;
+  //    });
+
+  //  console.log(this.sessions);
+
+  //  return sessionsToBeRecovered;
+  // }
+
   private configureUA() {
+    // const sessionsToBeRecovered = Object.values(this.sessions)
+    //  .filter(session => session.recoveryMode === true)
+    //  .map(session => ({session.id: session.session}))
+    //  .reduce(
+    //    (accumulator, session) =>
+    //      ({ ...accumulator, ...session } as {
+    //        [id: string]: InviteClientContext | InviteServerContext;
+    //      })
+    //  );
+
     this.ua = new UA(this.options);
 
     this.transportConnectedPromise = new Promise((resolve, reject) => {
@@ -247,7 +341,7 @@ export class WebCallingClient extends EventEmitter {
 
       this.emit('invite', session);
 
-      session.once('terminated', () => delete this.sessions[session.id]);
+      session.once('terminated', this.onTerminated.bind(this));
     });
   }
 
@@ -287,7 +381,7 @@ export class WebCallingClient extends EventEmitter {
       },
       transportOptions: {
         maxReconnectionAttempts: 0,
-        traceSip: true,
+        traceSip: false,
         wsServers: transport.wsServers
       },
       uri: account.uri

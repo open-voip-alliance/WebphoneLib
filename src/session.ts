@@ -34,7 +34,8 @@ export class WebCallingSession extends EventEmitter {
   public readonly id: string;
   public saidBye: boolean;
   public holdState: boolean;
-  private session: InternalSession;
+  public recoveryMode = false;
+  public session: InternalSession;
   private constraints: any;
   private media: any;
   private acceptedPromise: Promise<boolean>;
@@ -72,7 +73,7 @@ export class WebCallingSession extends EventEmitter {
     this.terminatedPromise = new Promise(resolve => {
       this.session.once('terminated', () => {
         console.log('on.terminated');
-        this.emit('terminated', this.session);
+        this.emit('terminated', this);
         resolve();
       });
     });
@@ -163,6 +164,11 @@ export class WebCallingSession extends EventEmitter {
   public terminate(options = {}): Promise<void> {
     this.session.terminate(options);
     return this.terminatedPromise;
+  }
+
+  public reinvite(): void {
+    console.log('reinvite called!');
+    this.session.reinvite();
   }
 
   public hold(): Promise<boolean> {
