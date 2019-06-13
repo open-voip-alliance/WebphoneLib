@@ -50,7 +50,7 @@ let sample;
 document.querySelector('#play').addEventListener('click', async () => {
   const sinkId = getSelectedOption(outputSelect).value;
   if (!sample) {
-    sample = await AudioHelper.load('/demo/dtmf-3.mp3', {sinkId, loop: true});
+    sample = await AudioHelper.load('/demo/sounds/dtmf-3.mp3', {sinkId, loop: true});
     await sample.play();
   } else {
     await sample.setSinkId(sinkId);
