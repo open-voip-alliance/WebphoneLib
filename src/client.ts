@@ -38,11 +38,11 @@ interface IWrappedUAOptions extends UABase.Options {
 }
 
 export class WebCallingClient extends EventEmitter {
-  public options: IWrappedUAOptions;
   public ua: UA;
 
   public readonly sessions: ISessions = {};
 
+  private options: IWrappedUAOptions;
   private transportConnectedPromise?: Promise<any>;
   private unregisteredPromise?: Promise<any>;
   private registeredPromise?: Promise<any>;
@@ -51,43 +51,16 @@ export class WebCallingClient extends EventEmitter {
   constructor(options: IWebCallingClientOptions) {
     super();
 
-    const { account, transport, media } = options;
+    this.configure(options);
+  }
 
-    this.options = {
-      authorizationUser: account.user,
-      autostart: false,
-      autostop: false,
-      displayName: account.name,
-      log: {
-        builtinEnabled: true,
-        connector: undefined,
-        level: 'warn'
-      },
-      media,
-      noAnswerTimeout: 60,
-      password: account.password,
-      register: false,
-      registerOptions: {
-        expires: 3600
-      },
-      sessionDescriptionHandlerFactoryOptions: {
-        constraints: { audio: true, video: false },
-        peerConnectionOptions: {
-          rtcConfiguration: {
-            iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
-          }
-        }
-      },
-      transportOptions: {
-        maxReconnectAttempts: 0,
-        traceSip: true,
-        wsServers: transport.wsServers
-      },
-      uri: account.uri,
-      userAgentString: 'vialer-calling-lib'
-    };
+  // In the case you want to switch to another account
+  public async reconfigure(options: IWebCallingClientOptions) {
+    await this.disconnect();
 
-    console.log(this.options);
+    this.configure(options);
+
+    await this.connect();
   }
 
   // Connect (and subsequently register) to server
@@ -214,5 +187,48 @@ export class WebCallingClient extends EventEmitter {
       this.emit('invite', session);
       session.once('terminated', () => delete this.sessions[session.id]);
     });
+  }
+
+  private get defaultOptions() {
+    return {
+      autostart: false,
+      autostop: false,
+      log: {
+        builtinEnabled: true,
+        connector: undefined,
+        level: 'warn'
+      },
+      noAnswerTimeout: 60,
+      register: false,
+      registerOptions: {
+        expires: 3600
+      },
+      userAgentString: 'vialer-calling-lib'
+    };
+  }
+
+  private configure(options: IWebCallingClientOptions) {
+    const { account, transport, media } = options;
+
+    this.options = {
+      ...this.defaultOptions,
+      authorizationUser: account.user,
+      media,
+      password: account.password,
+      sessionDescriptionHandlerFactoryOptions: {
+        constraints: { audio: true, video: false },
+        peerConnectionOptions: {
+          rtcConfiguration: {
+            iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
+          }
+        }
+      },
+      transportOptions: {
+        maxReconnectAttempts: 0,
+        traceSip: true,
+        wsServers: transport.wsServers
+      },
+      uri: account.uri
+    };
   }
 }
