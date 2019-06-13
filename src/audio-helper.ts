@@ -11,8 +11,9 @@ interface IAudioHelper {
 }
 
 class AudioHelperSingleton extends EventEmitter implements IAudioHelper {
-  private timeoutId?: number;
   public readonly autoplayAllowed: Promise<void>;
+
+  private timeoutId?: number;
 
   constructor() {
     super();
@@ -32,7 +33,10 @@ class AudioHelperSingleton extends EventEmitter implements IAudioHelper {
     return soundSource;
   }
 
-  public async load(url: string, options: {sinkId?: string, volume?: number, loop?: boolean} = {}) {
+  public async load(
+    url: string,
+    options: { sinkId?: string; volume?: number; loop?: boolean } = {}
+  ) {
     const audio = new Audio(url);
     audio.volume = options.volume === undefined ? 1.0 : options.volume;
     audio.loop = options.loop;

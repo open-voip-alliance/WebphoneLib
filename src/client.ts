@@ -1,16 +1,16 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
-import { UA } from './ua';
+
 import { UA as UABase, Web } from 'sip.js';
 import { WebCallingSession } from './session';
 import { IWebCallingClientOptions } from './types';
+import { UA } from './ua';
 
 // TODO: BLF
 
 interface ISessions {
   [index: string]: WebCallingSession;
 }
-
 
 export class WebCallingClient extends EventEmitter {
   public readonly sessions: ISessions = {};
@@ -216,7 +216,6 @@ export class WebCallingClient extends EventEmitter {
 
       session.once('terminated', () => delete this.sessions[session.id]);
     });
-
   }
 
   private get defaultOptions() {
@@ -246,6 +245,9 @@ export class WebCallingClient extends EventEmitter {
       password: account.password,
       sessionDescriptionHandlerFactoryOptions: {
         constraints: { audio: true, video: false },
+        modifiers: [
+          Web.Modifiers.stripVideo,
+        ],
         peerConnectionOptions: {
           rtcConfiguration: {
             iceServers: transport.iceServers.map((s: string) => ({ urls: s }))

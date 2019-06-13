@@ -1,6 +1,7 @@
-import { UA, Web, SessionDescriptionHandlerModifier } from 'sip.js';
-import { isPrivateIP } from './utils';
+import { SessionDescriptionHandlerModifier, UA, Web } from 'sip.js';
+
 import { audioContext } from './audio-context';
+import { isPrivateIP } from './utils';
 
 
 export function stripPrivateIps(description: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {

@@ -1,8 +1,9 @@
 import { EventEmitter } from 'events';
-import * as Features from './feature-detection';
-import { eqSet } from './utils';
-import * as Time from './time';
+
 import { audioContext } from './audio-context';
+import * as Features from './feature-detection';
+import * as Time from './time';
+import { eqSet } from './utils';
 
 export interface IAudioDevice {
   /**
@@ -15,12 +16,14 @@ export interface IAudioDevice {
   kind: 'audioinput' | 'audiooutput';
 }
 
-interface MediaDevices {
+interface IMediaDevices {
   readonly devices: IAudioDevice[];
   readonly inputs: IAudioDevice[];
   readonly outputs: IAudioDevice[];
-  on(event: 'devicesChanged', listener: () => void): this;
-  on(event: 'permissionGranted' | 'permissionRevoked', listener: () => void): this;
+  on(
+    event: 'devicesChanged' | 'permissionGranted' | 'permissionRevoked',
+    listener: () => void
+  ): this;
 }
 
 const UPDATE_INTERVAL = 1 * Time.second;
@@ -29,7 +32,7 @@ const UPDATE_INTERVAL = 1 * Time.second;
  * Offers an abstraction over Media permissions and device enumeration for use
  * with WebRTC.
  */
-class MediaSingleton extends EventEmitter implements MediaDevices {
+class MediaSingleton extends EventEmitter implements IMediaDevices {
   private allDevices: IAudioDevice[] = [];
   private requestPermissionPromise: Promise<void>;
   private timer: number = undefined;
@@ -125,7 +128,7 @@ class MediaSingleton extends EventEmitter implements MediaDevices {
           googTypingNoiseDetection: false
         };
 
-    let constraints: MediaStreamConstraints = { audio: presets, video: false };
+    const constraints: MediaStreamConstraints = { audio: presets, video: false };
     if (id) {
       (constraints.audio as MediaTrackConstraints).deviceId = id;
     }

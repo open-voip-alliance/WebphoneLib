@@ -78,7 +78,7 @@ export class WebCallingSession extends EventEmitter {
     this.session.once('bye', () => (this.saidBye = true));
 
     // this.session.on('trackAdded', this.addTrack.bind(this));
-    //== start debugging
+    ////// start debugging
     this.session.on('directionChanged', () => {
       const direction = (this.session.sessionDescriptionHandler as any).direction;
       console.log('directionChanged:', direction);
@@ -89,7 +89,7 @@ export class WebCallingSession extends EventEmitter {
       (sdh as any).on('userMediaRequest', (constraints) => console.log('userMediaRequest: ', constraints));
       (sdh as any).on('userMedia', (streams) => console.log('userMedia acquired: ', streams));
     });
-    //== end debugging
+    ////// end debugging
   }
 
   get remoteIdentity(): IRemoteIdentity {
@@ -238,7 +238,7 @@ export class WebCallingSession extends EventEmitter {
       remoteStream = pc.getRemoteStreams()[0];
     }
 
-    //this.media.remoteAudio.srcObject = remoteStream;
+    // this.media.remoteAudio.srcObject = remoteStream;
     // this.media.remoteAudio.play().catch(() => {
     //   console.error('local play was rejected');
     // });
