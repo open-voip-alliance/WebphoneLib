@@ -80,10 +80,12 @@ export class WebCallingClient extends EventEmitter {
       console.log('Also disconnected');
     });
 
-    // window.addEventListener('online', () => {
-    //  if (this.reviveActive) {
-    //    return;
-    //  }
+    //  ws.close werkt niet altijd, bijv na switchen interface.
+    //  Wanneer dit zo is dan moet je na bepaalde tijd this.onClose() callen
+    //  zodat de promise resolved.
+    //
+    //  en rebuildSessionDescriptionHandler toevoegen op clientcontext &
+    //  servercontext.
 
     //  this.reviveActive = true;
     //  setTimeout(async () => {
@@ -102,6 +104,25 @@ export class WebCallingClient extends EventEmitter {
     //  }, 8000);
     //  console.log('ONLINE NOW');
     // });
+    //
+    //
+    // InviteClientContext.prototype.rebuildSessionDescriptionHandler = function() {
+    //  console.log('REBUILDING SESSIONDESCRIPOTIONHANDLER');
+    //  this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
+    //    this,
+    //    this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
+    //  );
+    // };
+    // setTimeout(() => {
+    //   console.log('ehhh');
+    //   console.log(_this.ws);
+    //   // If this is not undefined it didnt close! Terminate then.
+    //   if (_this.ws && _this.disconnectDeferredResolve) {
+    //     console.log('secretly resolving here bec it didnt close in time');
+    //     // 'resolving'
+    //     _this.onClose({ code: 'fake', reason: 'also fake' });
+    //   }
+    // }, 5000);
 
     console.log(this.sessions);
   }
