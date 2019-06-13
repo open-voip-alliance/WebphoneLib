@@ -6,6 +6,7 @@ import {
   ReferClientContext,
   ReferServerContext
 } from 'sip.js';
+import { IMedia, MediaInput, MediaOutput } from './types';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -35,20 +36,18 @@ export class WebCallingSession extends EventEmitter {
   public saidBye: boolean;
   public holdState: boolean;
   private session: InternalSession;
-  private constraints: any;
-  private media: any;
+  private media: IMedia;
+
   private acceptedPromise: Promise<boolean>;
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
 
-  constructor({ session, constraints, media }) {
+  constructor({ session }) {
     super();
     this.session = session;
     this.id = session.request.callId;
-    this.constraints = constraints;
-    this.media = media;
 
     this.acceptedPromise = new Promise(resolve => {
       const handlers = {
@@ -78,7 +77,19 @@ export class WebCallingSession extends EventEmitter {
     this.saidBye = false;
     this.session.once('bye', () => (this.saidBye = true));
 
-    this.session.on('trackAdded', this.addTrack.bind(this));
+    // this.session.on('trackAdded', this.addTrack.bind(this));
+    ////// start debugging
+    this.session.on('directionChanged', () => {
+      const direction = (this.session.sessionDescriptionHandler as any).direction;
+      console.log('directionChanged:', direction);
+    });
+
+    this.session.on('SessionDescriptionHandler-created', (sdh) => {
+      console.log('sdh created:', (sdh as any).direction);
+      (sdh as any).on('userMediaRequest', (constraints) => console.log('userMediaRequest: ', constraints));
+      (sdh as any).on('userMedia', (streams) => console.log('userMedia acquired: ', streams));
+    });
+    ////// end debugging
   }
 
   get remoteIdentity(): IRemoteIdentity {
@@ -227,7 +238,7 @@ export class WebCallingSession extends EventEmitter {
       remoteStream = pc.getRemoteStreams()[0];
     }
 
-    this.media.remoteAudio.srcObject = remoteStream;
+    // this.media.remoteAudio.srcObject = remoteStream;
     // this.media.remoteAudio.play().catch(() => {
     //   console.error('local play was rejected');
     // });
@@ -244,7 +255,7 @@ export class WebCallingSession extends EventEmitter {
       localStream = pc.getLocalStreams()[0];
     }
 
-    this.media.localAudio.srcObject = localStream;
+    // this.media.localAudio.srcObject = localStream;
     // this.media.localAudio.play().catch(() => {
     //   console.error('local play was rejected');
     // });
