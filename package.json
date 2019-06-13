@@ -19,7 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "p-retry": "^4.1.0",
-    "sip.js": "^0.14.3"
+    "sip.js": "^0.14.4"
   },
   "devDependencies": {
     "eslint": "^5.16.0",
