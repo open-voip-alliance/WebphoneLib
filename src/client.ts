@@ -3,7 +3,7 @@ import pRetry from 'p-retry';
 
 import { UA as UABase } from 'sip.js';
 import { WebCallingSession } from './session';
-import { UA } from './ua';
+import { UA, WrappedTransport } from './ua';
 
 // TODO: BLF
 // TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
@@ -52,6 +52,7 @@ export class WebCallingClient extends EventEmitter {
   private registered: boolean = false;
   private isReconnecting: boolean = false;
   private retries: number = 10;
+  private isRecovering: boolean = false;
 
   constructor(options: IWebCallingClientOptions) {
     super();
@@ -59,34 +60,34 @@ export class WebCallingClient extends EventEmitter {
     this.configure(options);
 
     window.addEventListener('offline', async () => {
-      // Object.values(this.sessions).forEach(session => {
-      //  session.recoveryMode = true;
-
-      //  // delete session.session;
-      //  // session.session = undefined;
-      // });
       console.log('OFFLINE NOW');
-
-      // await this.disconnect({ skipUnregister: true, noPromise: true });
-      console.log('Also disconnected');
     });
 
     window.addEventListener('online', async () => {
+      if (this.isRecovering) {
+        return;
+      }
+
+      this.isRecovering = true;
       console.log('ONLINE NOW');
 
-      setTimeout(async () => {
-        await this.ua.transport.disconnect();
+      await this.ua.transport.disconnect();
+      console.log('socket closed');
 
-        setTimeout(async () => {
-          await this.ua.transport.connect();
-          Object.values(this.sessions).forEach(async session => {
-            console.log(session);
-            session.session.rebuildSessionDescriptionHandler();
-            session.reinvite();
-          });
-        }, 5000);
-      }, 8000);
-      console.log('ONLINE NOW');
+      // TODO: gotta make sure that there is actually internet before here (by
+      // pinging something or something, or temporarily starting/stopping a
+      // socket to our sip server. Do this for a short amount of time before
+      // giving up or continueing)
+      await this.ua.transport.connect();
+      console.log('socket opened');
+
+      Object.values(this.sessions).forEach(async session => {
+        console.log(session);
+        session.session.rebuildSessionDescriptionHandler();
+        session.reinvite();
+      });
+
+      this.isRecovering = false;
     });
   }
 
@@ -318,6 +319,7 @@ export class WebCallingClient extends EventEmitter {
       // TODO don't hardcode these..
       const constraints = { audio: true, video: false };
       const media = this.options.media;
+
       const session = new WebCallingSession({
         constraints,
         media: this.options.media,
@@ -366,6 +368,7 @@ export class WebCallingClient extends EventEmitter {
           }
         }
       },
+      transportConstructor: WrappedTransport,
       transportOptions: {
         maxReconnectionAttempts: 0,
         traceSip: false,
