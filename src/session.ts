@@ -13,6 +13,11 @@ type InternalSession = InviteClientContext &
     };
   };
 
+interface IRemoteIdentity {
+  phoneNumber: string;
+  displayName: string;
+}
+
 // TODO: media handling
 // see: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L327
 // and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
@@ -20,6 +25,7 @@ type InternalSession = InviteClientContext &
 export class WebCallingSession extends EventEmitter {
   public readonly id: string;
   public saidBye: boolean;
+  public holdState: boolean;
   private session: InternalSession;
   private constraints: any;
   private media: any;
@@ -27,7 +33,7 @@ export class WebCallingSession extends EventEmitter {
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
-  private holdState: boolean;
+  private reinvitePromise: Promise<boolean>;
 
   constructor({ session, constraints, media }) {
     super();
@@ -37,8 +43,19 @@ export class WebCallingSession extends EventEmitter {
     this.media = media;
 
     this.acceptedPromise = new Promise(resolve => {
-      this.session.once('accepted', () => resolve(true));
-      this.session.once('rejected', () => resolve(false));
+      const handlers = {
+        onAccepted: () => {
+          this.session.removeListener('rejected', handlers.onRejected);
+          resolve(true);
+        },
+        onRejected: () => {
+          this.session.removeListener('accepted', handlers.onAccepted);
+          resolve(false);
+        }
+      };
+
+      this.session.once('accepted', handlers.onAccepted);
+      this.session.once('rejected', handlers.onRejected);
     });
 
     this.terminatedPromise = new Promise(resolve => {
@@ -56,7 +73,7 @@ export class WebCallingSession extends EventEmitter {
     this.session.on('trackAdded', this.addTrack.bind(this));
   }
 
-  get remoteIdentity() {
+  get remoteIdentity(): IRemoteIdentity {
     const request = this.session.request;
     let identity;
     ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
@@ -77,7 +94,7 @@ export class WebCallingSession extends EventEmitter {
     return { phoneNumber, displayName };
   }
 
-  public accept(options: any = {}) {
+  public accept(options: any = {}): Promise<void> {
     if (this.rejectPromise) {
       throw new Error('invalid operation: session is rejected');
     }
@@ -87,18 +104,18 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.acceptPromise = new Promise((resolve, reject) => {
-      const onAnswered = () => {
-        resolve();
-        this.session.removeListener('failed', onFail);
+      const handlers = {
+        onAnswered: () => {
+          this.session.removeListener('failed', handlers.onFail);
+          resolve();
+        },
+        onFail: e => {
+          this.session.removeListener('accepted', handlers.onAnswered);
+          reject(e);
+        }
       };
-
-      const onFail = e => {
-        reject(e);
-        this.session.removeListener('accepted', onAnswered);
-      };
-
-      this.session.once('accepted', onAnswered);
-      this.session.once('failed', onFail);
+      this.session.once('accepted', handlers.onAnswered);
+      this.session.once('failed', handlers.onFail);
 
       this.session.accept(options);
     });
@@ -106,7 +123,7 @@ export class WebCallingSession extends EventEmitter {
     return this.acceptPromise;
   }
 
-  public reject(options: any = {}) {
+  public reject(options: any = {}): Promise<void> {
     if (this.acceptPromise) {
       throw new Error('invalid operation: session is accepted');
     }
@@ -124,25 +141,33 @@ export class WebCallingSession extends EventEmitter {
     return this.rejectPromise;
   }
 
-  public accepted() {
+  public accepted(): Promise<boolean> {
     return this.acceptedPromise;
   }
 
-  public terminated() {
+  public terminated(): Promise<void> {
     return this.terminatedPromise;
   }
 
-  public terminate(options = {}) {
+  public terminate(options = {}): Promise<void> {
     this.session.terminate(options);
     return this.terminatedPromise;
   }
 
-  public hold() {
+  public hold(): Promise<boolean> {
     return this.setHoldState(true);
   }
 
-  public unhold() {
+  public unhold(): Promise<boolean> {
     return this.setHoldState(false);
+  }
+
+  /**
+   * Function this.session.bye triggers terminated, so nothing else has to be
+   * done here.
+   */
+  public bye() {
+    this.session.bye();
   }
 
   public dtmf(key) {
@@ -168,9 +193,9 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.media.remoteAudio.srcObject = remoteStream;
-    this.media.remoteAudio.play().catch(() => {
-      console.error('local play was rejected');
-    });
+    // this.media.remoteAudio.play().catch(() => {
+    //   console.error('local play was rejected');
+    // });
 
     let localStream = new MediaStream();
     if (pc.getSenders) {
@@ -185,18 +210,51 @@ export class WebCallingSession extends EventEmitter {
     }
 
     this.media.localAudio.srcObject = localStream;
-    this.media.localAudio.play().catch(() => {
-      console.error('local play was rejected');
+    // this.media.localAudio.play().catch(() => {
+    //   console.error('local play was rejected');
+    // });
+  }
+
+  private getReinvitePromise(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const handlers = {
+        onReinviteAccepted: e => {
+          this.session.removeListener('reinviteFailed', handlers.onReinviteFailed);
+          // Calling resolve after removeListener, otherwise, when it fails,
+          // the resolved promise can not be rejected with an error trace
+          // anymore.
+          resolve(true);
+        },
+        onReinviteFailed: e => {
+          this.session.removeListener('reinviteAccepted', handlers.onReinviteAccepted);
+          // Calling reject after removeListener, otherwise, when it fails,
+          // reject returns the wrong trace.
+          reject(e);
+        }
+      };
+
+      this.session.once('reinviteAccepted', handlers.onReinviteAccepted);
+      this.session.once('reinviteFailed', handlers.onReinviteFailed);
     });
   }
 
-  private async setHoldState(flag) {
+  private setHoldState(flag) {
+    if (this.holdState === flag) {
+      return this.reinvitePromise;
+    }
+
+    this.reinvitePromise = this.getReinvitePromise();
+
     if (flag) {
-      await this.session.hold();
+      console.log('hold!');
+      this.session.hold();
     } else {
-      await this.session.unhold();
+      console.log('unhold!');
+      this.session.unhold();
     }
 
     this.holdState = flag;
+
+    return this.reinvitePromise;
   }
 }
