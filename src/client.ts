@@ -91,50 +91,6 @@ export class WebCallingClient extends EventEmitter {
     });
   }
 
-  //  ws.close werkt niet altijd, bijv na switchen interface.
-  //  Wanneer dit zo is dan moet je na bepaalde tijd this.onClose() callen
-  //  zodat de promise resolved.
-  //
-  //  en rebuildSessionDescriptionHandler toevoegen op clientcontext &
-  //  servercontext.
-
-  //  this.reviveActive = true;
-  //  setTimeout(async () => {
-  //    await this.ua.transport.disconnect();
-
-  //    setTimeout(async () => {
-  //      await this.ua.transport.connect();
-  //      Object.values(this.sessions).forEach(async session => {
-  //        console.log(session);
-  //        session.session.rebuildSessionDescriptionHandler();
-  //        session.reinvite();
-  //      });
-  //    }, 5000);
-
-  //    this.reviveActive = false;
-  //  }, 8000);
-  //  console.log('ONLINE NOW');
-  // });
-  //
-  //
-  // InviteClientContext.prototype.rebuildSessionDescriptionHandler = function() {
-  //  console.log('REBUILDING SESSIONDESCRIPOTIONHANDLER');
-  //  this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
-  //    this,
-  //    this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
-  //  );
-  // };
-  // setTimeout(() => {
-  //   console.log('ehhh');
-  //   console.log(_this.ws);
-  //   // If this is not undefined it didnt close! Terminate then.
-  //   if (_this.ws && _this.disconnectDeferredResolve) {
-  //     console.log('secretly resolving here bec it didnt close in time');
-  //     // 'resolving'
-  //     _this.onClose({ code: 'fake', reason: 'also fake' });
-  //   }
-  // }, 5000);
-
   // In the case you want to switch to another account
   public async reconfigure(options: IWebCallingClientOptions) {
     await this.disconnect();
