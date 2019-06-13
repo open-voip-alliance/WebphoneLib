@@ -1,5 +1,11 @@
 import { EventEmitter } from 'events';
-import { Grammar, InviteClientContext, InviteServerContext } from 'sip.js';
+import {
+  Grammar,
+  InviteClientContext,
+  InviteServerContext,
+  ReferClientContext,
+  ReferServerContext
+} from 'sip.js';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -17,6 +23,8 @@ interface IRemoteIdentity {
   phoneNumber: string;
   displayName: string;
 }
+
+type ReferContext = ReferClientContext | ReferServerContext;
 
 // TODO: media handling
 // see: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L327
@@ -160,6 +168,33 @@ export class WebCallingSession extends EventEmitter {
 
   public unhold(): Promise<boolean> {
     return this.setHoldState(false);
+  }
+
+  // In the case of a BLIND transfer, a string can be passed along with a
+  // number.
+  // In the case of an ATTENDED transfer, a NEW call(/session) should be
+  // made. This NEW session (a.k.a. InviteClientContext/InviteServerContext
+  // depending on whether it is outbound or inbound) should then be passed
+  // to this function.
+  public async transfer(target: WebCallingSession | string): Promise<boolean> {
+    const referRequestedPromise: Promise<ReferContext> = new Promise((resolve, rejected) =>
+      this.session.once('referRequested', context => {
+        console.log('refer is requested');
+        resolve(context);
+      })
+    );
+
+    // as string because we only implemented blind transfer for now
+    this.session.refer(target as string);
+
+    const referContext = await referRequestedPromise;
+
+    return new Promise((resolve, rejected) => {
+      referContext.once('referAccepted', () => {
+        console.log('refer is accepted!');
+        resolve(true);
+      });
+    });
   }
 
   /**
