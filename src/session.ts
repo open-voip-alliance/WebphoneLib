@@ -7,12 +7,14 @@ import {
   ReferServerContext
 } from 'sip.js';
 
+import { WrappedInviteClientContext } from './ua';
+
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
   getLocalStreams: () => MediaStream[];
 }
 
-type InternalSession = InviteClientContext &
+type InternalSession = WrappedInviteClientContext &
   InviteServerContext & {
     sessionDescriptionHandler: {
       peerConnection: IRTCPeerConnectionLegacy;
@@ -43,9 +45,6 @@ export class WebCallingSession extends EventEmitter {
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
-  private referRequestedPromise: Promise<ReferContext>;
-  private referRequestPromise: Promise<boolean>;
-  private referContext: ReferClientContext | ReferServerContext;
 
   constructor({ session, constraints, media }) {
     super();
@@ -185,28 +184,25 @@ export class WebCallingSession extends EventEmitter {
   // made. This NEW session (a.k.a. InviteClientContext/InviteServerContext
   // depending on whether it is outbound or inbound) should then be passed
   // to this function.
-  public async transfer(
-    target: InviteClientContext | InviteServerContext | string
-  ): Promise<boolean> {
-    this.referRequestedPromise = new Promise((resolve, rejected) =>
-      this.session.once('referRequested', referContext => {
+  public async transfer(target: WebCallingSession | string): Promise<boolean> {
+    const referRequestedPromise: Promise<ReferContext> = new Promise((resolve, rejected) =>
+      this.session.once('referRequested', context => {
         console.log('refer is requested');
-        resolve(referContext);
+        resolve(context);
       })
     );
 
-    this.session.refer(target);
+    // as string because we only implemented blind transfer for now
+    this.session.refer(target as string);
 
-    this.referContext = await this.referRequestedPromise;
+    const referContext = await referRequestedPromise;
 
-    this.referRequestPromise = new Promise((resolve, rejected) => {
-      this.referContext.once('referAccepted', () => {
+    return new Promise((resolve, rejected) => {
+      referContext.once('referAccepted', () => {
         console.log('refer is accepted!');
         resolve(true);
       });
     });
-
-    return this.referRequestPromise;
   }
 
   /**

@@ -1,14 +1,7 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
-import {
-  ClientContext,
-  InviteClientContext,
-  InviteServerContext,
-  RegisterContext,
-  UA as UABase,
-  UAStatus
-} from 'sip.js';
 
+import { UA as UABase } from 'sip.js';
 import { WebCallingSession } from './session';
 import { UA } from './ua';
 
@@ -51,7 +44,6 @@ export class WebCallingClient extends EventEmitter {
 
   public sessions: ISessions = {};
 
-  private deferredUA: UA;
   private options: IWrappedUAOptions;
   private transportConnectedPromise?: Promise<any>;
   private unregisteredPromise?: Promise<any>;
@@ -60,7 +52,6 @@ export class WebCallingClient extends EventEmitter {
   private registered: boolean = false;
   private isReconnecting: boolean = false;
   private retries: number = 10;
-  private reviveActive: boolean = false;
 
   constructor(options: IWebCallingClientOptions) {
     super();
@@ -80,52 +71,68 @@ export class WebCallingClient extends EventEmitter {
       console.log('Also disconnected');
     });
 
-    //  ws.close werkt niet altijd, bijv na switchen interface.
-    //  Wanneer dit zo is dan moet je na bepaalde tijd this.onClose() callen
-    //  zodat de promise resolved.
-    //
-    //  en rebuildSessionDescriptionHandler toevoegen op clientcontext &
-    //  servercontext.
+    window.addEventListener('online', async () => {
+      console.log('ONLINE NOW');
 
-    //  this.reviveActive = true;
-    //  setTimeout(async () => {
-    //    await this.ua.transport.disconnect();
+      setTimeout(async () => {
+        await this.ua.transport.disconnect();
 
-    //    setTimeout(async () => {
-    //      await this.ua.transport.connect();
-    //      Object.values(this.sessions).forEach(async session => {
-    //        console.log(session);
-    //        session.session.rebuildSessionDescriptionHandler();
-    //        session.reinvite();
-    //      });
-    //    }, 5000);
-
-    //    this.reviveActive = false;
-    //  }, 8000);
-    //  console.log('ONLINE NOW');
-    // });
-    //
-    //
-    // InviteClientContext.prototype.rebuildSessionDescriptionHandler = function() {
-    //  console.log('REBUILDING SESSIONDESCRIPOTIONHANDLER');
-    //  this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
-    //    this,
-    //    this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
-    //  );
-    // };
-    // setTimeout(() => {
-    //   console.log('ehhh');
-    //   console.log(_this.ws);
-    //   // If this is not undefined it didnt close! Terminate then.
-    //   if (_this.ws && _this.disconnectDeferredResolve) {
-    //     console.log('secretly resolving here bec it didnt close in time');
-    //     // 'resolving'
-    //     _this.onClose({ code: 'fake', reason: 'also fake' });
-    //   }
-    // }, 5000);
-
-    console.log(this.sessions);
+        setTimeout(async () => {
+          await this.ua.transport.connect();
+          Object.values(this.sessions).forEach(async session => {
+            console.log(session);
+            session.session.rebuildSessionDescriptionHandler();
+            session.reinvite();
+          });
+        }, 5000);
+      }, 8000);
+      console.log('ONLINE NOW');
+    });
   }
+
+  //  ws.close werkt niet altijd, bijv na switchen interface.
+  //  Wanneer dit zo is dan moet je na bepaalde tijd this.onClose() callen
+  //  zodat de promise resolved.
+  //
+  //  en rebuildSessionDescriptionHandler toevoegen op clientcontext &
+  //  servercontext.
+
+  //  this.reviveActive = true;
+  //  setTimeout(async () => {
+  //    await this.ua.transport.disconnect();
+
+  //    setTimeout(async () => {
+  //      await this.ua.transport.connect();
+  //      Object.values(this.sessions).forEach(async session => {
+  //        console.log(session);
+  //        session.session.rebuildSessionDescriptionHandler();
+  //        session.reinvite();
+  //      });
+  //    }, 5000);
+
+  //    this.reviveActive = false;
+  //  }, 8000);
+  //  console.log('ONLINE NOW');
+  // });
+  //
+  //
+  // InviteClientContext.prototype.rebuildSessionDescriptionHandler = function() {
+  //  console.log('REBUILDING SESSIONDESCRIPOTIONHANDLER');
+  //  this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
+  //    this,
+  //    this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
+  //  );
+  // };
+  // setTimeout(() => {
+  //   console.log('ehhh');
+  //   console.log(_this.ws);
+  //   // If this is not undefined it didnt close! Terminate then.
+  //   if (_this.ws && _this.disconnectDeferredResolve) {
+  //     console.log('secretly resolving here bec it didnt close in time');
+  //     // 'resolving'
+  //     _this.onClose({ code: 'fake', reason: 'also fake' });
+  //   }
+  // }, 5000);
 
   // In the case you want to switch to another account
   public async reconfigure(options: IWebCallingClientOptions) {
@@ -189,8 +196,7 @@ export class WebCallingClient extends EventEmitter {
 
     delete this.registeredPromise;
 
-    // Cannot unregister if connection is lost, so skip this in that case.
-    if (this.registered && !skipUnregister) {
+    if (this.registered) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
           this.registered = false;
@@ -240,24 +246,10 @@ export class WebCallingClient extends EventEmitter {
     });
 
     this.sessions[session.id] = session;
-    console.log(this.sessions);
 
-    session.once('terminated', this.onTerminated.bind(this));
+    session.once('terminated', () => delete this.sessions[session.id]);
+
     return session;
-  }
-
-  private onTerminated(session) {
-    // console.log(this.sessions);
-    // console.log(session);
-    // console.log(session.recoveryMode);
-    // // If a session is in recovery mode, we will not delete it, so that
-    // // it can be recovered later when a new websocket is created through
-    // // ua.start().
-    // if (session.recoveryMode) {
-    //   console.log('NOT DELETED!');
-    // } else {
-    // }
-    delete this.sessions[session.id];
   }
 
   private async reconnect(): Promise<boolean> {
@@ -284,33 +276,7 @@ export class WebCallingClient extends EventEmitter {
     }
   }
 
-  // get sessionsToBeRecovered() {
-  //  const sessionsToBeRecovered: {
-  //    [id: string]: InviteClientContext | InviteServerContext;
-  //  } = {};
-
-  //  Object.entries(this.sessions)
-  //    .filter(([sessionId, session]) => session.recoveryMode === true)
-  //    .map(([sessionId, session]) => {
-  //      sessionsToBeRecovered[sessionId] = session.session;
-  //    });
-
-  //  console.log(this.sessions);
-
-  //  return sessionsToBeRecovered;
-  // }
-
   private configureUA() {
-    // const sessionsToBeRecovered = Object.values(this.sessions)
-    //  .filter(session => session.recoveryMode === true)
-    //  .map(session => ({session.id: session.session}))
-    //  .reduce(
-    //    (accumulator, session) =>
-    //      ({ ...accumulator, ...session } as {
-    //        [id: string]: InviteClientContext | InviteServerContext;
-    //      })
-    //  );
-
     this.ua = new UA(this.options);
 
     this.transportConnectedPromise = new Promise((resolve, reject) => {
@@ -362,7 +328,7 @@ export class WebCallingClient extends EventEmitter {
 
       this.emit('invite', session);
 
-      session.once('terminated', this.onTerminated.bind(this));
+      session.once('terminated', () => delete this.sessions[session.id]);
     });
   }
 

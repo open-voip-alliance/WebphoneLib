@@ -1,5 +1,23 @@
-import { RegisterContext, UA as UABase, UAStatus } from 'sip.js';
+import {
+  InviteClientContext,
+  RegisterContext,
+  SessionDescriptionHandlerModifiers,
+  UA as UABase,
+  UAStatus,
+  URI
+} from 'sip.js';
 
+export class WrappedInviteClientContext extends InviteClientContext {
+  public rebuildSessionDescriptionHandler() {
+    console.log('session descrioption handler is rebuild!!');
+    this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
+      this,
+      this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
+    );
+  }
+}
+
+// tslint:disable-next-line: max-classes-per-file
 export class UA extends UABase {
   private disconnectPromise: Promise<void>;
 
@@ -12,6 +30,36 @@ export class UA extends UABase {
     return this.disconnectPromise;
   }
 
+  /**
+   * Make an outgoing call.
+   *
+   * @param {String} target
+   * @param {Object} views
+   * @param {Object} [options.media] gets passed to SIP.sessionDescriptionHandler.getDescription as mediaHint
+   *
+   * @throws {TypeError}
+   *
+   */
+  public invite(
+    target: string | URI,
+    options?: InviteClientContext.Options,
+    modifiers?: SessionDescriptionHandlerModifiers
+  ): WrappedInviteClientContext {
+    const context: WrappedInviteClientContext = new WrappedInviteClientContext(
+      this,
+      target,
+      options,
+      modifiers
+    );
+    // Delay sending actual invite until the next 'tick' if we are already
+    // connected, so that API consumers can register to events fired by the
+    // the session.
+    this.transport.afterConnected(() => {
+      context.invite();
+      this.emit('inviteSent', context);
+    });
+    return context;
+  }
   /**
    * Gracefully close.
    */
