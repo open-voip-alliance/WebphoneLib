@@ -1,51 +1,23 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
-
-import { UA as UABase } from 'sip.js';
+import { UA as UABase, Web } from 'sip.js';
 import { WebCallingSession } from './session';
+import { IWebCallingClientOptions } from './types';
 import { UA, WrappedTransport } from './ua';
 
 // TODO: BLF
-// TODO: media devices (discovery, selection, and checking of the getUserMedia permission?)
 
 export interface ISessions {
   [index: string]: WebCallingSession;
 }
 
-interface IAccount {
-  user: string;
-  password: string;
-  uri: string;
-  name: string;
-}
-
-interface ITransport {
-  wsServers: string;
-  iceServers: string[];
-}
-
-interface IMedia {
-  remoteAudio: HTMLElement;
-  localAudio: HTMLElement;
-}
-
-interface IWebCallingClientOptions {
-  account: IAccount;
-  transport: ITransport;
-  media: IMedia;
-}
-
-interface IWrappedUAOptions extends UABase.Options {
-  media: IMedia;
-}
-
 export class WebCallingClient extends EventEmitter {
-  public ua: UA;
-
   public readonly sessions: ISessions = {};
 
-  private options: IWrappedUAOptions;
+  private ua: UA;
+  private uaOptions: UABase.Options;
+
   private transportConnectedPromise?: Promise<any>;
   private unregisteredPromise?: Promise<any>;
   private registeredPromise?: Promise<any>;
@@ -101,7 +73,9 @@ export class WebCallingClient extends EventEmitter {
 
   public isOnline(): Promise<any> {
     const hasConfiguredWsServer =
-      this.options && this.options.transportOptions && this.options.transportOptions.wsServers;
+      this.uaOptions &&
+      this.uaOptions.transportOptions &&
+      this.uaOptions.transportOptions.wsServers;
 
     if (!hasConfiguredWsServer) {
       return Promise.resolve(false);
@@ -237,7 +211,7 @@ export class WebCallingClient extends EventEmitter {
 
   // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
   // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
-  public async invite(phoneNumber: string, options: any = {}) {
+  public async invite(phoneNumber: string) {
     if (!this.registeredPromise) {
       throw new Error('Register first!');
     }
@@ -245,9 +219,7 @@ export class WebCallingClient extends EventEmitter {
     await this.registeredPromise;
 
     const session = new WebCallingSession({
-      constraints: { audio: true },
-      media: this.options.media,
-      session: this.ua.invite(phoneNumber, options)
+      session: this.ua.invite(phoneNumber)
     });
 
     this.sessions[session.id] = session;
@@ -282,7 +254,7 @@ export class WebCallingClient extends EventEmitter {
   }
 
   private configureUA() {
-    this.ua = new UA(this.options);
+    this.ua = new UA(this.uaOptions);
 
     this.transportConnectedPromise = new Promise((resolve, reject) => {
       this.ua.once('transportCreated', () => {
@@ -320,13 +292,7 @@ export class WebCallingClient extends EventEmitter {
     });
 
     this.ua.on('invite', uaSession => {
-      // TODO don't hardcode these..
-      const constraints = { audio: true, video: false };
-      const media = this.options.media;
-
       const session = new WebCallingSession({
-        constraints,
-        media: this.options.media,
         session: uaSession
       });
 
@@ -357,15 +323,15 @@ export class WebCallingClient extends EventEmitter {
   }
 
   private configure(options: IWebCallingClientOptions) {
-    const { account, transport, media } = options;
+    const { account, transport } = options;
 
-    this.options = {
+    this.uaOptions = {
       ...this.defaultOptions,
       authorizationUser: account.user,
-      media,
       password: account.password,
       sessionDescriptionHandlerFactoryOptions: {
         constraints: { audio: true, video: false },
+        modifiers: [Web.Modifiers.stripVideo],
         peerConnectionOptions: {
           rtcConfiguration: {
             iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
@@ -384,9 +350,9 @@ export class WebCallingClient extends EventEmitter {
 
   private isOnlinePromise() {
     return new Promise((resolve, reject) => {
-      console.log(this.options.transportOptions.wsServers);
+      console.log(this.uaOptions.transportOptions.wsServers);
 
-      const checkSocket = new WebSocket(this.options.transportOptions.wsServers, 'sip');
+      const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
       checkSocket.onopen = () => {
         console.log('yay it works');
         checkSocket.close();

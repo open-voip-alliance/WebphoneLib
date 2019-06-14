@@ -1,6 +1,6 @@
-import { WebCallingClient, Media } from '../dist/vialer-web-calling.prod.mjs';
+import { WebCallingClient, Media, AudioHelper } from '../dist/vialer-web-calling.prod.mjs';
 import * as CREDS from './creds.js';
-import { sleep } from './time.js';
+// import { sleep } from './time.js';
 
 const caller = document.querySelector('#caller');
 const ringerBtn = document.querySelector('#ring');
@@ -27,9 +27,13 @@ const transport = {
   iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
 };
 
-const media = { remoteAudio, localAudio };
+(async () => {
+  await AudioHelper.autoplayAllowed;
+  const a = await AudioHelper.load('/demo/sounds/dtmf-3.mp3');
+  a.play();
+})();
 
-const client = new WebCallingClient({ account, transport, media });
+const client = new WebCallingClient({ account, transport });
 client.on('invite', incomingCall);
 outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
 reconfigureBtn.addEventListener('click', () =>
@@ -44,7 +48,10 @@ Media.on('devicesChanged', () => console.log('Devices changed: ', Media.devices)
 
 Media.requestPermission();
 
+AudioHelper.autoplayAllowed.then(() => console.log('Autoplay allowed!!'));
+
 window.Media = Media;
+window.AudioHelper = AudioHelper;
 
 async function outgoingCall(number) {
   const session = await client.invite(`sip:${number}@voipgrid.nl`);
