@@ -43,7 +43,7 @@ interface IWrappedUAOptions extends UABase.Options {
 export class WebCallingClient extends EventEmitter {
   public ua: UA;
 
-  public sessions: ISessions = {};
+  public readonly sessions: ISessions = {};
 
   private options: IWrappedUAOptions;
   private transportConnectedPromise?: Promise<any>;
@@ -139,7 +139,7 @@ export class WebCallingClient extends EventEmitter {
         'We could not recover the session(s) within 1 minute. ' +
           'After this time the SIP server has killed the connections.'
       );
-      Promise.resolve(false);
+      return Promise.resolve(false);
     });
   }
 
