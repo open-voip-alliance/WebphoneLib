@@ -45,7 +45,7 @@ export class WrappedTransport extends Web.Transport {
    * disconnectPromise to be resolved after a timeout.
    */
   protected disconnectPromise(options: any = {}): Promise<any> {
-    return pTimeout(super.disconnectPromise(), 5000, () => {
+    return pTimeout(super.disconnectPromise(), 1000, () => {
       console.log('calling on close by myself!');
       (this as any).onClose({ code: 'fake', reason: 'Artificial timeout' });
     }).then(() => ({ overrideEvent: true }));

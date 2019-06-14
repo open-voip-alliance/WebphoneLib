@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
+import pTimeout from 'p-timeout';
 
 import { UA as UABase } from 'sip.js';
 import { WebCallingSession } from './session';
@@ -71,23 +72,74 @@ export class WebCallingClient extends EventEmitter {
       this.isRecovering = true;
       console.log('ONLINE NOW');
 
-      await this.ua.transport.disconnect();
-      console.log('socket closed');
+      const isOnline = await this.isOnline();
+      if (isOnline && this.registered) {
+        console.log('is really online!');
 
-      // TODO: gotta make sure that there is actually internet before here (by
-      // pinging something or something, or temporarily starting/stopping a
-      // socket to our sip server. Do this for a short amount of time before
-      // giving up or continueing)
-      await this.ua.transport.connect();
-      console.log('socket opened');
+        await this.ua.transport.disconnect();
+        console.log('socket closed');
 
-      Object.values(this.sessions).forEach(async session => {
-        console.log(session);
-        session.session.rebuildSessionDescriptionHandler();
-        session.reinvite();
-      });
+        await this.ua.transport.connect();
+        console.log('socket opened');
 
+        Object.values(this.sessions).forEach(async session => {
+          console.log(session);
+          session.session.rebuildSessionDescriptionHandler();
+          session.reinvite();
+        });
+      } else {
+        // There is no internet, so skipping unregistering, doesn't make sense
+        // without a connection.
+        await this.disconnect({ unregister: false });
+
+        this.registered = false;
+      }
       this.isRecovering = false;
+      // }, 1000);
+    });
+  }
+
+  public isOnline(): Promise<any> {
+    const hasConfiguredWsServer =
+      this.options && this.options.transportOptions && this.options.transportOptions.wsServers;
+
+    if (!hasConfiguredWsServer) {
+      return Promise.resolve(false);
+    }
+
+    const tryOpeningSocketWithTimeout = () => {
+      // It could happen that this function timed out. Because this is a
+      // async function that
+      if (!this.isRecovering) {
+        throw new pRetry.AbortError("It's no use. Stop trying to recover");
+      }
+
+      return pTimeout(this.isOnlinePromise(), 500, () => {
+        throw new Error('Cannot open socket. Probably DNS failure.');
+      });
+    };
+
+    const retryOptions = {
+      forever: true,
+      maxTimeout: 100,
+      minTimeout: 100,
+      onFailedAttempt: error => {
+        console.log(
+          `Connection attempt ${error.attemptNumber} failed. There are ${
+            error.retriesLeft
+          } retries left.`
+        );
+      }
+    };
+
+    const retryForever = pRetry(tryOpeningSocketWithTimeout, retryOptions);
+
+    return pTimeout(retryForever, 55000, () => {
+      console.log(
+        'We could not recover the session(s) within 1 minute. ' +
+          'After this time the SIP server has killed the connections.'
+      );
+      Promise.resolve(false);
     });
   }
 
@@ -141,7 +193,7 @@ export class WebCallingClient extends EventEmitter {
   }
 
   // Unregister (and subsequently disconnect) to server
-  public async disconnect({ skipUnregister = false, noPromise = false } = {}): Promise<void> {
+  public async disconnect({ unregister = true } = {}): Promise<void> {
     if (this.disconnectPromise) {
       console.log('returning disconnectpromise');
       return this.disconnectPromise;
@@ -153,7 +205,7 @@ export class WebCallingClient extends EventEmitter {
 
     delete this.registeredPromise;
 
-    if (this.registered) {
+    if (this.registered && unregister) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
           this.registered = false;
@@ -172,11 +224,7 @@ export class WebCallingClient extends EventEmitter {
 
     console.log('unregistered!');
 
-    if (noPromise) {
-      this.ua.stop();
-    } else {
-      await this.ua.disconnect();
-    }
+    await this.ua.disconnect();
 
     console.log('disconnected!');
 
@@ -332,5 +380,24 @@ export class WebCallingClient extends EventEmitter {
       },
       uri: account.uri
     };
+  }
+
+  private isOnlinePromise() {
+    return new Promise((resolve, reject) => {
+      console.log(this.options.transportOptions.wsServers);
+
+      const checkSocket = new WebSocket(this.options.transportOptions.wsServers, 'sip');
+      checkSocket.onopen = () => {
+        console.log('yay it works');
+        checkSocket.close();
+        resolve(true);
+      };
+
+      checkSocket.onerror = e => {
+        console.log(e);
+        console.log('it broke...');
+        throw new Error('it broke woops');
+      };
+    });
   }
 }
