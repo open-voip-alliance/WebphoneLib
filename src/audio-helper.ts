@@ -23,14 +23,19 @@ class AudioHelperSingleton extends EventEmitter implements IAudioHelper {
     this.timeoutId = window.setTimeout(() => this.update(), 0);
   }
 
-  public async fetchIntoBuffer(url: string): Promise<AudioBufferSourceNode> {
+  public async fetchStream(url: string): Promise<() => Promise<AudioBufferSourceNode>> {
     const response = await fetch(url);
     const data = await response.arrayBuffer();
     const buffer = await audioContext.decodeAudioData(data);
-    const soundSource = audioContext.createBufferSource();
-    soundSource.buffer = buffer;
-    soundSource.start(0, 0);
-    return soundSource;
+    return () => {
+      const soundSource = audioContext.createBufferSource();
+      soundSource.buffer = buffer;
+      soundSource.start(0, 0);
+      return soundSource;
+      //const destination = audioContext.createMediaStreamDestination();
+      //soundSource.connect(destination);
+      //return destination.stream;
+    };
   }
 
   public async load(

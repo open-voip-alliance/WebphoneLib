@@ -14,6 +14,10 @@ const byeBtn = document.querySelector('#bye');
 const holdBtn = document.querySelector('#hold');
 const unholdBtn = document.querySelector('#unhold');
 const blindTransferBtn = document.querySelector('#blindtransfer');
+const inVol = document.querySelector('#inVol');
+const outVol = document.querySelector('#outVol');
+const inMute = document.querySelector('#inMute');
+const outMute = document.querySelector('#outMute');
 
 const account = {
   user: CREDS.authorizationUser,
@@ -27,31 +31,140 @@ const transport = {
   iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
 };
 
-(async () => {
-  await AudioHelper.autoplayAllowed;
-  const a = await AudioHelper.load('/demo/sounds/dtmf-3.mp3');
-  a.play();
-})();
+const media = {
+  input: {
+    id: undefined,
+    audioProcessing: true,
+    volume: 1.0,
+    muted: false
+  },
+  output: {
+    id: undefined,
+    volume: 1.0,
+    muted: false
+  }
+};
 
-const client = new WebCallingClient({ account, transport });
+const client = new WebCallingClient({ account, transport, media });
 client.on('invite', incomingCall);
-outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
+outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
 reconfigureBtn.addEventListener('click', () =>
   client.reconfigure({ account, transport }).catch(console.error)
 );
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 
+const inputSelect = document.querySelector('#input');
+const outputSelect = document.querySelector('#output');
+
+function getSelectedOption(select) {
+  try {
+    return select.options[select.selectedIndex];
+  } catch (e) {
+    return undefined;
+  }
+}
+
+function makeOptions(select, devices) {
+  let selected = getSelectedOption(select);
+
+  // Remove all options.
+  select.options.length = 0;
+
+  // Build a list of new options.
+  devices
+    .map(({ id, name }) => {
+      const option = document.createElement('option');
+      option.value = id;
+      option.text = name;
+      return option;
+    })
+    .forEach(opt => {
+      if (selected && opt.value === selected.value) {
+        opt.selected = true;
+        selected = undefined;
+      }
+      select.add(opt);
+    });
+
+  if (selected) {
+    console.error('Selected device went away:', selected.text, ' (', selected.value, ')');
+  }
+}
+
 Media.on('permissionGranted', () => console.log('Permission granted'));
 Media.on('permissionRevoked', () => console.log('Permission revoked'));
-Media.on('devicesChanged', () => console.log('Devices changed: ', Media.devices));
+Media.on('devicesChanged', () => {
+  console.log('Devices changed: ', Media.devices);
+  makeOptions(inputSelect, Media.inputs);
+  makeOptions(outputSelect, Media.outputs);
+});
+
+inputSelect.addEventListener('change', function() {
+  const selected = getSelectedOption(inputSelect);
+  if (selected) {
+    if (activeSession) {
+      activeSession.media.input.id = selected.value;
+    } else {
+      client.defaultMedia.input.id = selected.value;
+    }
+  }
+});
+
+outputSelect.addEventListener('change', function() {
+  const selected = getSelectedOption(outputSelect);
+  if (selected) {
+    if (activeSession) {
+      activeSession.media.output.id = selected.value;
+    } else {
+      client.defaultMedia.output.id = selected.value;
+    }
+  }
+});
 
 Media.requestPermission();
 
 AudioHelper.autoplayAllowed.then(() => console.log('Autoplay allowed!!'));
 
 window.Media = Media;
+
 window.AudioHelper = AudioHelper;
+
+let activeSession = null;
+
+inVol.addEventListener('input', function(e) {
+  const vol = this.value / 10;
+  if (activeSession) {
+    activeSession.media.input.volume = vol;
+  } else {
+    client.defaultMedia.input.volume = vol;
+  }
+});
+
+inMute.addEventListener('change', function(e) {
+  if (activeSession) {
+    activeSession.media.input.muted = this.checked;
+  } else {
+    client.defaultMedia.input.volume = this.checked;
+  }
+});
+
+outVol.addEventListener('input', function(e) {
+  const vol = this.value / 10;
+  if (activeSession) {
+    activeSession.media.output.volume = vol;
+  } else {
+    client.defaultMedia.output.volume = vol;
+  }
+});
+
+outMute.addEventListener('change', function(e) {
+  if (activeSession) {
+    activeSession.media.output.muted = this.checked;
+  } else {
+    client.defaultMedia.output.volume = this.checked;
+  }
+});
 
 async function outgoingCall(number) {
   const session = await client.invite(`sip:${number}@voipgrid.nl`);
@@ -59,6 +172,8 @@ async function outgoingCall(number) {
   if (!session) {
     return;
   }
+
+  activeSession = session;
 
   console.log('created outgoing call', session.id, 'to', number);
 
@@ -89,10 +204,12 @@ async function outgoingCall(number) {
   unholdBtn.removeEventListener('click', unhold);
   blindTransferBtn.removeEventListener('click', blindTransfer);
   blindTransferBtn.hidden = true;
+  activeSession = undefined;
 }
 
 async function incomingCall(session) {
   console.log('invited', session.id);
+  activeSession = session;
 
   const bye = () => session.bye();
   const hold = async () => {
@@ -155,5 +272,6 @@ async function incomingCall(session) {
     ringerBtn.hidden = true;
     caller.hidden = true;
     blindTransferBtn.hidden = true;
+    activeSession = undefined;
   }
 }

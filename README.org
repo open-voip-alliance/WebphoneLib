@@ -153,35 +153,44 @@ constructor?
 1. Set a primary input & output device:
 
 #+begin_src js
-const client = new WebCallingClient({
-  media: {
-    input: 'default',
-    output: 'default',
-  }
-})
+  const client = new WebCallingClient({
+    media: {
+      input: {
+        id: undefined, // default input device
+        audioProcessing: true,
+        volume: 1.0,
+        muted: false
+      },
+      output: {
+        id: undefined, // default output device
+        volume: 1.0,
+        muted: false
+      }
+    }
+  })
 #+end_src
 
 2. Change the primary I/O devices:
 
 #+begin_src js
-client.setInput(null); // first available
-client.setInput('123098210938120398'); // deviceId in MediaDevices.inputs
-client.setOutput(async () => {
-  return new MediaStream(..);
-});
+  client.defaultMedia.output.id = '230988012091820398213';
 #+end_src
 
 3. Change the media of a session:
 
-Sessions always start on the default media (=client.media=) but it's media can
-be changed at any time.
-
 #+begin_src js
-const session = client.invite('123');
-await session.accepted();
-await session.setInput(getUserMedia({audio: true}));
+  const session = await client.invite('123');
+  session.media.input.volume = 50;
+  session.media.input.audioProcessing = false;
+  session.media.input.muted = true;
+  session.media.output.muted = false;
+  session.media.setInput({
+    id: '120398120398123',
+    audioProcessing: true,
+    volume: 0.5,
+    muted: true
+  });
 #+end_src
-
 
 * Tickets
 

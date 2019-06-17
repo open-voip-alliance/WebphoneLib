@@ -7,37 +7,21 @@ import {
   ReferServerContext
 } from 'sip.js';
 
-import { WrappedInviteClientContext } from './ua';
+import { audioContext } from './audio-context';
+import { InternalSession, SessionMedia } from './session-media';
+import { IMedia, IRemoteIdentity } from './types';
+import { closeStream } from './utils';
 
-import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
-
-interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
-  getRemoteStreams: () => MediaStream[];
-  getLocalStreams: () => MediaStream[];
-}
-
-type InternalSession = WrappedInviteClientContext &
-  WrappedInviteServerContext & {
-    sessionDescriptionHandler: {
-      peerConnection: IRTCPeerConnectionLegacy;
-    };
-  };
-
-interface IRemoteIdentity {
-  phoneNumber: string;
-  displayName: string;
-}
 
 type ReferContext = ReferClientContext | ReferServerContext;
 
-// TODO: media handling
-// see: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L327
-// and: https://github.com/onsip/SIP.js/blob/e40892a63adb3622c154cb4f9343d693846288b8/src/Web/Simple.ts#L294
-// and: https://github.com/ringcentral/ringcentral-web-phone/blob/49a07377ac319217e0a95affb57d2d0b274ca01a/src/session.ts#L656
+
 export class WebCallingSession extends EventEmitter {
   public readonly id: string;
   public saidBye: boolean;
   public holdState: boolean;
+  public readonly media: SessionMedia;
+
   private session: InternalSession;
 
   private acceptedPromise: Promise<boolean>;
@@ -46,10 +30,11 @@ export class WebCallingSession extends EventEmitter {
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
 
-  constructor({ session }) {
+  constructor({ media, session }) {
     super();
     this.session = session;
     this.id = session.request.callId;
+    this.media = new SessionMedia(session, media);
 
     this.acceptedPromise = new Promise(resolve => {
       const handlers = {
@@ -78,22 +63,6 @@ export class WebCallingSession extends EventEmitter {
     this.holdState = false;
     this.saidBye = false;
     this.session.once('bye', () => (this.saidBye = true));
-
-    // this.session.on('trackAdded', this.addTrack.bind(this));
-    ////// start debugging
-    this.session.on('directionChanged', () => {
-      const direction = (this.session.sessionDescriptionHandler as any).direction;
-      console.log('directionChanged:', direction);
-    });
-
-    this.session.on('SessionDescriptionHandler-created', sdh => {
-      console.log('sdh created:', (sdh as any).direction);
-      (sdh as any).on('userMediaRequest', constraints =>
-        console.log('userMediaRequest: ', constraints)
-      );
-      (sdh as any).on('userMedia', streams => console.log('userMedia acquired: ', streams));
-    });
-    ////// end debugging
   }
 
   get remoteIdentity(): IRemoteIdentity {
@@ -237,35 +206,6 @@ export class WebCallingSession extends EventEmitter {
   }
 
   // public transfer() {}
-
-  public addTrack() {
-    const pc = this.session.sessionDescriptionHandler.peerConnection;
-    console.log('addTrack', arguments);
-
-    let remoteStream = new MediaStream();
-    if (pc.getReceivers) {
-      pc.getReceivers().forEach(receiver => {
-        const rtrack = receiver.track;
-        if (rtrack) {
-          remoteStream.addTrack(rtrack);
-        }
-      });
-    } else {
-      remoteStream = pc.getRemoteStreams()[0];
-    }
-
-    let localStream = new MediaStream();
-    if (pc.getSenders) {
-      pc.getSenders().forEach(sender => {
-        const strack = sender.track;
-        if (strack && strack.kind === 'audio') {
-          localStream.addTrack(strack);
-        }
-      });
-    } else {
-      localStream = pc.getLocalStreams()[0];
-    }
-  }
 
   private getReinvitePromise(): Promise<boolean> {
     return new Promise((resolve, reject) => {

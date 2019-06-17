@@ -5,8 +5,9 @@ import { UA as UABase, Web } from 'sip.js';
 import { ClientStatus } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { WebCallingSession } from './session';
-import { IWebCallingClientOptions } from './types';
+import { IWebCallingClientOptions, IMedia } from './types';
 import { UA } from './ua';
+
 
 export interface ISessions {
   [index: string]: WebCallingSession;
@@ -25,13 +26,21 @@ export interface IWebCallingClient {
   on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
 }
 
+
 export class WebCallingClient extends EventEmitter implements IWebCallingClient {
   public readonly sessions: ISessions = {};
+
+  public defaultMedia: IMedia;
+
+  private ua: UA;
+  private uaOptions: UABase.Options;
 
   private transport?: ReconnectableTransport;
 
   constructor(options: IWebCallingClientOptions) {
     super();
+
+    this.defaultMedia = options.media;
 
     this.configureTransport(options);
   }
@@ -40,6 +49,7 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
   public async reconfigure(options: IWebCallingClientOptions) {
     await this.disconnect();
 
+    this.defaultMedia = options.media;
     this.transport.configure(options);
 
     await this.connect();
@@ -86,7 +96,10 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
 
     console.log(uaSession);
 
-    const session = new WebCallingSession({ session: uaSession });
+    const session = new WebCallingSession({
+      media: this.defaultMedia,
+      session: this.transport.invite(phoneNumber)
+    });
 
     this.sessions[session.id] = session;
 
@@ -131,6 +144,7 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
 
     this.transport.on('invite', uaSession => {
       const session = new WebCallingSession({
+        media: this.defaultMedia,
         session: uaSession
       });
 
