@@ -6,7 +6,6 @@ import {
   ReferClientContext,
   ReferServerContext
 } from 'sip.js';
-import { IMedia, MediaInput, MediaOutput } from './types';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -36,7 +35,6 @@ export class WebCallingSession extends EventEmitter {
   public saidBye: boolean;
   public holdState: boolean;
   private session: InternalSession;
-  private media: IMedia;
 
   private acceptedPromise: Promise<boolean>;
   private acceptPromise: Promise<void>;
