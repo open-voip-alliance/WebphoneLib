@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
+import { ClientStatus } from './enums';
 import { IWebCallingClientOptions } from './types';
 import { UA, WrappedTransport } from './ua';
 
@@ -27,12 +28,15 @@ export class ReconnectableTransport extends EventEmitter {
   public transportConnectedPromise?: Promise<any>;
   public registeredPromise?: Promise<any>;
   public registered: boolean = false;
+  public status: ClientStatus = ClientStatus.DISCONNECTED;
   private unregisteredPromise?: Promise<any>;
   private ua: UA;
   private retries: number = 10;
   private isReconnecting: boolean = false;
   private isRecovering: boolean = false;
   private uaOptions: UABase.Options;
+  private dyingCounter: number = 60000;
+  private dyingIntervalID: number;
 
   constructor(options: IWebCallingClientOptions) {
     super();
@@ -71,6 +75,7 @@ export class ReconnectableTransport extends EventEmitter {
 
   // Connect (and subsequently register) to server
   public async connect() {
+    this.updateStatus(ClientStatus.CONNECTING);
     if (!this.ua) {
       console.log('configuring ua');
       this.configureUA();
@@ -109,6 +114,8 @@ export class ReconnectableTransport extends EventEmitter {
       throw new Error('not connected');
     }
 
+    this.updateStatus(ClientStatus.DISCONNECTING);
+
     delete this.registeredPromise;
 
     if (this.registered && unregister) {
@@ -132,6 +139,8 @@ export class ReconnectableTransport extends EventEmitter {
 
     await this.ua.disconnect();
 
+    this.updateStatus(ClientStatus.DISCONNECTED);
+
     console.log('disconnected!');
 
     this.ua.transport.removeAllListeners();
@@ -145,20 +154,24 @@ export class ReconnectableTransport extends EventEmitter {
     return this.ua.invite(phoneNumber);
   }
 
-  public isOnline(): Promise<any> {
+  public isRegistered() {
+    return this.registeredPromise;
+  }
+
+  public isOnline({ timeLeft }): Promise<any> {
     const hasConfiguredWsServer =
       this.uaOptions &&
       this.uaOptions.transportOptions &&
       this.uaOptions.transportOptions.wsServers;
 
-    if (!hasConfiguredWsServer) {
+    if (!hasConfiguredWsServer || this.dyingCounter === 0) {
       return Promise.resolve(false);
     }
 
     const tryOpeningSocketWithTimeout = () => {
       // It could happen that this function timed out. Because this is a
       // async function that
-      if (!this.isRecovering) {
+      if (this.status === ClientStatus.DISCONNECTED) {
         throw new pRetry.AbortError("It's no use. Stop trying to recover");
       }
 
@@ -182,7 +195,7 @@ export class ReconnectableTransport extends EventEmitter {
 
     const retryForever = pRetry(tryOpeningSocketWithTimeout, retryOptions);
 
-    return pTimeout(retryForever, 55000, () => {
+    return pTimeout(retryForever, timeLeft, () => {
       console.log(
         'We could not recover the session(s) within 1 minute. ' +
           'After this time the SIP server has killed the connections.'
@@ -194,6 +207,15 @@ export class ReconnectableTransport extends EventEmitter {
   public close() {
     window.removeEventListener('online', this.onWindowOnline.bind(this));
     window.removeEventListener('offline', this.onWindowOffline.bind(this));
+  }
+
+  private updateStatus(status: ClientStatus) {
+    if (this.status === status) {
+      return;
+    }
+
+    this.status = status;
+    this.emit('statusUpdate', status);
   }
 
   private async reconnect(): Promise<boolean> {
@@ -273,6 +295,8 @@ export class ReconnectableTransport extends EventEmitter {
           if (connected) {
             resolve();
           } else {
+            this.updateStatus(ClientStatus.DISCONNECTED);
+
             reject(e);
           }
         });
@@ -284,23 +308,34 @@ export class ReconnectableTransport extends EventEmitter {
     return new Promise((resolve, reject) => {
       console.log(this.ua);
       this.ua.once('registered', () => {
-        this.registered = true;
+        this.registered = true; // TODO: remove this?
+
+        this.updateStatus(ClientStatus.CONNECTED);
         resolve(true);
       });
-      this.ua.once('registrationFailed', e => reject(e));
+      this.ua.once('registrationFailed', async e => {
+        await this.disconnect({ unregister: false });
+
+        this.updateStatus(ClientStatus.DISCONNECTED);
+        reject(e);
+      });
     });
   }
 
   private async onWindowOnline() {
-    if (this.isRecovering || !this.registered) {
+    if (
+      [ClientStatus.RECOVERING, ClientStatus.DISCONNECTED].includes(this.status) ||
+      !this.registered
+    ) {
       return;
     }
-
-    this.isRecovering = true;
     console.log('ONLINE NOW');
 
-    const isOnline = await this.isOnline();
-    if (isOnline && this.registered) {
+    this.updateStatus(ClientStatus.RECOVERING);
+
+    clearInterval(this.dyingIntervalID);
+    const isOnline = await this.isOnline({ timeLeft: this.dyingCounter });
+    if (isOnline) {
       console.log('is really online!');
 
       await this.ua.transport.disconnect();
@@ -309,6 +344,7 @@ export class ReconnectableTransport extends EventEmitter {
       await this.ua.transport.connect();
       console.log('socket opened');
 
+      this.updateStatus(ClientStatus.CONNECTED);
       this.emit('reviveSessions');
 
       this.registeredPromise = this.createRegisteredPromise();
@@ -321,11 +357,26 @@ export class ReconnectableTransport extends EventEmitter {
       // There is no internet, so skipping unregistering, doesn't make sense
       // without a connection.
       await this.disconnect({ unregister: false });
+
+      this.updateStatus(ClientStatus.DISCONNECTED);
     }
-    this.isRecovering = false;
   }
 
   private onWindowOffline() {
     console.log('OFFLINE NOW');
+    this.updateStatus(ClientStatus.DYING);
+
+    const subtractValue = 500;
+    const subtractTillDead = () => {
+      this.dyingCounter -= subtractValue;
+
+      if (this.dyingCounter === 0) {
+        clearInterval(this.dyingIntervalID);
+        this.dyingIntervalID = undefined;
+        this.updateStatus(ClientStatus.DISCONNECTED);
+      }
+    };
+
+    this.dyingIntervalID = window.setInterval(subtractTillDead, 500);
   }
 }

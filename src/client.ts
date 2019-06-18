@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
+import { ClientStatus } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { WebCallingSession } from './session';
 import { IWebCallingClientOptions } from './types';
@@ -43,16 +44,14 @@ export class WebCallingClient extends EventEmitter {
   }
 
   // Unregister (and subsequently disconnect) to server
-  public async disconnect({ unregister = true } = {}): Promise<void> {
-    await this.transport.disconnect({ unregister });
-
-    this.transport.close();
+  public async disconnect(): Promise<void> {
+    await this.transport.disconnect();
   }
 
   // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
   // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
   public async invite(phoneNumber: string) {
-    if (!this.transport || !this.transport.registeredPromise) {
+    if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
 
@@ -67,6 +66,18 @@ export class WebCallingClient extends EventEmitter {
     session.once('terminated', () => delete this.sessions[session.id]);
 
     return session;
+  }
+
+  /**
+   * Call this before you want to delete an instance of this class.
+   */
+  public async close() {
+    await this.disconnect();
+
+    this.transport.close();
+    this.transport.removeAllListeners();
+
+    delete this.transport;
   }
 
   private configureTransport(options) {
@@ -85,10 +96,13 @@ export class WebCallingClient extends EventEmitter {
       });
 
       this.sessions[session.id] = session;
-
       this.emit('invite', session);
-
       session.once('terminated', () => delete this.sessions[session.id]);
+    });
+
+    this.transport.on('statusUpdate', status => {
+      console.log(`Status change to: ${ClientStatus[status]}`);
+      this.emit('statusUpdate', status);
     });
   }
 }
