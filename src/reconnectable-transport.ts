@@ -31,7 +31,7 @@ export class ReconnectableTransport extends EventEmitter {
   public status: ClientStatus = ClientStatus.DISCONNECTED;
   private unregisteredPromise?: Promise<any>;
   private ua: UA;
-  private retries: number = 10;
+  private retries: number = 3;
   private isReconnecting: boolean = false;
   private isRecovering: boolean = false;
   private uaOptions: UABase.Options;
@@ -75,6 +75,11 @@ export class ReconnectableTransport extends EventEmitter {
 
   // Connect (and subsequently register) to server
   public async connect() {
+    if (this.status === ClientStatus.CONNECTED) {
+      console.log('pssh. already registered.');
+      return this.registeredPromise;
+    }
+
     this.updateStatus(ClientStatus.CONNECTING);
     if (!this.ua) {
       console.log('configuring ua');
@@ -108,20 +113,24 @@ export class ReconnectableTransport extends EventEmitter {
     return this.registeredPromise;
   }
 
-  // Unregister (and subsequently disconnect) to server
-  public async disconnect({ unregister = true } = {}): Promise<void> {
+  // Unregister (and subsequently disconnect) to server. When isOnline is
+  // false, status updates are not triggered, because in that case,
+  // the status updates are managed by our reconnection routines.
+  public async disconnect({ isOnline = false } = {}): Promise<void> {
     if (!this.ua) {
-      throw new Error('not connected');
+      console.log('pssh. already disconnected.');
+      return;
     }
 
-    this.updateStatus(ClientStatus.DISCONNECTING);
+    if (isOnline) {
+      this.updateStatus(ClientStatus.DISCONNECTING);
+    }
 
     delete this.registeredPromise;
 
-    if (this.registered && unregister) {
+    if (isOnline) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
-          this.registered = false;
           resolve(true);
         })
       );
@@ -139,7 +148,9 @@ export class ReconnectableTransport extends EventEmitter {
 
     await this.ua.disconnect();
 
-    this.updateStatus(ClientStatus.DISCONNECTED);
+    if (isOnline) {
+      this.updateStatus(ClientStatus.DISCONNECTED);
+    }
 
     console.log('disconnected!');
 
@@ -222,7 +233,7 @@ export class ReconnectableTransport extends EventEmitter {
     this.isReconnecting = true;
 
     try {
-      await pRetry(this.connect.bind(this), {
+      await pRetry(this.connect.bind(this, { reconnect: true }), {
         maxTimeout: 30000,
         minTimeout: 500,
         onFailedAttempt: error => {
@@ -277,7 +288,7 @@ export class ReconnectableTransport extends EventEmitter {
         this.ua.transport.once('disconnected', async e => {
           console.log('unexpected disconnect');
 
-          await this.disconnect();
+          await this.disconnect({ isOnline: false });
 
           if (this.isReconnecting) {
             // Rejecting here to make sure that the reconnect promise in
@@ -306,15 +317,12 @@ export class ReconnectableTransport extends EventEmitter {
 
   private createRegisteredPromise() {
     return new Promise((resolve, reject) => {
-      console.log(this.ua);
       this.ua.once('registered', () => {
-        this.registered = true; // TODO: remove this?
-
         this.updateStatus(ClientStatus.CONNECTED);
         resolve(true);
       });
       this.ua.once('registrationFailed', async e => {
-        await this.disconnect({ unregister: false });
+        await this.disconnect({ isOnline: false });
 
         this.updateStatus(ClientStatus.DISCONNECTED);
         reject(e);
@@ -323,10 +331,7 @@ export class ReconnectableTransport extends EventEmitter {
   }
 
   private async onWindowOnline() {
-    if (
-      [ClientStatus.RECOVERING, ClientStatus.DISCONNECTED].includes(this.status) ||
-      !this.registered
-    ) {
+    if ([ClientStatus.RECOVERING, ClientStatus.DISCONNECTED].includes(this.status)) {
       return;
     }
     console.log('ONLINE NOW');
@@ -356,7 +361,7 @@ export class ReconnectableTransport extends EventEmitter {
     } else {
       // There is no internet, so skipping unregistering, doesn't make sense
       // without a connection.
-      await this.disconnect({ unregister: false });
+      await this.disconnect({ isOnline: false });
 
       this.updateStatus(ClientStatus.DISCONNECTED);
     }

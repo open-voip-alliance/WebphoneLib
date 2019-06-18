@@ -36,10 +36,6 @@ export class WebCallingClient extends EventEmitter {
 
   // Connect (and subsequently register) to server
   public async connect() {
-    if (this.transport.registered) {
-      throw new Error('already connected');
-    }
-
     await this.transport.connect();
   }
 
