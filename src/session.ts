@@ -8,7 +8,7 @@ import {
 } from 'sip.js';
 import { IMedia, MediaInput, MediaOutput } from './types';
 
-import { WrappedInviteClientContext } from './ua';
+import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -16,7 +16,7 @@ interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
 }
 
 type InternalSession = WrappedInviteClientContext &
-  InviteServerContext & {
+  WrappedInviteServerContext & {
     sessionDescriptionHandler: {
       peerConnection: IRTCPeerConnectionLegacy;
     };
