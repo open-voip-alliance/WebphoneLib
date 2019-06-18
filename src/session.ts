@@ -37,7 +37,7 @@ export class WebCallingSession extends EventEmitter {
   public readonly id: string;
   public saidBye: boolean;
   public holdState: boolean;
-  public session: InternalSession;
+  private session: InternalSession;
   private media: IMedia;
   private acceptedPromise: Promise<boolean>;
   private acceptPromise: Promise<void>;
@@ -85,10 +85,12 @@ export class WebCallingSession extends EventEmitter {
       console.log('directionChanged:', direction);
     });
 
-    this.session.on('SessionDescriptionHandler-created', (sdh) => {
+    this.session.on('SessionDescriptionHandler-created', sdh => {
       console.log('sdh created:', (sdh as any).direction);
-      (sdh as any).on('userMediaRequest', (constraints) => console.log('userMediaRequest: ', constraints));
-      (sdh as any).on('userMedia', (streams) => console.log('userMedia acquired: ', streams));
+      (sdh as any).on('userMediaRequest', constraints =>
+        console.log('userMediaRequest: ', constraints)
+      );
+      (sdh as any).on('userMedia', streams => console.log('userMedia acquired: ', streams));
     });
     ////// end debugging
   }
@@ -212,6 +214,13 @@ export class WebCallingSession extends EventEmitter {
         resolve(true);
       });
     });
+  }
+
+  /**
+   * Reconfigure the WebRTC peerconnection.
+   */
+  public rebuildSessionDescriptionHandler() {
+    this.session.rebuildSessionDescriptionHandler();
   }
 
   /**

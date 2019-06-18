@@ -14,6 +14,9 @@ import {
 } from 'sip.js';
 
 export class WrappedInviteClientContext extends InviteClientContext {
+  /**
+   * Reconfigure the WebRTC peerconnection.
+   */
   public rebuildSessionDescriptionHandler() {
     console.log('session descrioption handler is rebuild!!');
     this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
@@ -25,6 +28,9 @@ export class WrappedInviteClientContext extends InviteClientContext {
 
 // tslint:disable-next-line: max-classes-per-file
 export class WrappedInviteServerContext extends InviteServerContext {
+  /**
+   * Reconfigure the WebRTC peerconnection.
+   */
   public rebuildSessionDescriptionHandler() {
     console.log('session descrioption handler is rebuild!!');
     this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
@@ -166,6 +172,10 @@ export class UA extends UABase {
     return this;
   }
 
+  /*
+   * Below is taken from the UABase constructor, modified a little to enable
+   * returning a extended InviteServerContext possible.
+   */
   private configureUADelegate() {
     // The Replaces header contains information used to match an existing
     // SIP dialog (call-id, to-tag, and from-tag).  Upon receiving an INVITE

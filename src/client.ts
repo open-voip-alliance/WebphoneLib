@@ -13,6 +13,23 @@ export interface ISessions {
 }
 
 export class WebCallingClient extends EventEmitter {
+  private get defaultOptions() {
+    return {
+      autostart: false,
+      autostop: false,
+      log: {
+        builtinEnabled: true,
+        connector: undefined,
+        level: 'warn'
+      },
+      noAnswerTimeout: 60,
+      register: false,
+      registerOptions: {
+        expires: 3600
+      },
+      userAgentString: 'vialer-calling-lib'
+    };
+  }
   public readonly sessions: ISessions = {};
 
   private ua: UA;
@@ -32,43 +49,8 @@ export class WebCallingClient extends EventEmitter {
 
     this.configure(options);
 
-    window.addEventListener('offline', async () => {
-      console.log('OFFLINE NOW');
-    });
-
-    window.addEventListener('online', async () => {
-      if (this.isRecovering) {
-        return;
-      }
-
-      this.isRecovering = true;
-      console.log('ONLINE NOW');
-
-      const isOnline = await this.isOnline();
-      if (isOnline && this.registered) {
-        console.log('is really online!');
-
-        await this.ua.transport.disconnect();
-        console.log('socket closed');
-
-        await this.ua.transport.connect();
-        console.log('socket opened');
-
-        Object.values(this.sessions).forEach(async session => {
-          console.log(session);
-          session.session.rebuildSessionDescriptionHandler();
-          session.reinvite();
-        });
-      } else {
-        // There is no internet, so skipping unregistering, doesn't make sense
-        // without a connection.
-        await this.disconnect({ unregister: false });
-
-        this.registered = false;
-      }
-      this.isRecovering = false;
-      // }, 1000);
-    });
+    window.addEventListener('offline', this.onWindowOffline);
+    window.addEventListener('online', this.onWindowOnline);
   }
 
   public isOnline(): Promise<any> {
@@ -229,6 +211,11 @@ export class WebCallingClient extends EventEmitter {
     return session;
   }
 
+  public close() {
+    window.removeEventListener('online', this.onWindowOnline);
+    window.removeEventListener('offline', this.onWindowOffline);
+  }
+
   private async reconnect(): Promise<boolean> {
     this.isReconnecting = true;
 
@@ -304,24 +291,6 @@ export class WebCallingClient extends EventEmitter {
     });
   }
 
-  private get defaultOptions() {
-    return {
-      autostart: false,
-      autostop: false,
-      log: {
-        builtinEnabled: true,
-        connector: undefined,
-        level: 'warn'
-      },
-      noAnswerTimeout: 60,
-      register: false,
-      registerOptions: {
-        expires: 3600
-      },
-      userAgentString: 'vialer-calling-lib'
-    };
-  }
-
   private configure(options: IWebCallingClientOptions) {
     const { account, transport } = options;
 
@@ -365,5 +334,42 @@ export class WebCallingClient extends EventEmitter {
         throw new Error('it broke woops');
       };
     });
+  }
+
+  private async onWindowOnline() {
+    if (this.isRecovering) {
+      return;
+    }
+
+    this.isRecovering = true;
+    console.log('ONLINE NOW');
+
+    const isOnline = await this.isOnline();
+    if (isOnline && this.registered) {
+      console.log('is really online!');
+
+      await this.ua.transport.disconnect();
+      console.log('socket closed');
+
+      await this.ua.transport.connect();
+      console.log('socket opened');
+
+      Object.values(this.sessions).forEach(session => {
+        console.log(session);
+        session.rebuildSessionDescriptionHandler();
+        session.reinvite();
+      });
+    } else {
+      // There is no internet, so skipping unregistering, doesn't make sense
+      // without a connection.
+      await this.disconnect({ unregister: false });
+
+      this.registered = false;
+    }
+    this.isRecovering = false;
+  }
+
+  private onWindowOffline() {
+    console.log('OFFLINE NOW');
   }
 }
