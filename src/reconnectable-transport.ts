@@ -44,7 +44,7 @@ export class ReconnectableTransport extends EventEmitter {
     this.configure(options);
 
     window.addEventListener('offline', this.onWindowOffline.bind(this));
-    window.addEventListener('online', this.onWindowOnline.bind(this));
+    window.addEventListener('online', this.tryReconnecting.bind(this));
   }
 
   public configure(options: IWebCallingClientOptions) {
@@ -113,22 +113,26 @@ export class ReconnectableTransport extends EventEmitter {
     return this.registeredPromise;
   }
 
-  // Unregister (and subsequently disconnect) to server. When isOnline is
-  // false, status updates are not triggered, because in that case,
-  // the status updates are managed by our reconnection routines.
-  public async disconnect({ isOnline = false } = {}): Promise<void> {
+  // Unregister (and subsequently disconnect) to server. When hasSocket is
+  // false, a call to this function is usually handled by onDisconnected,
+  // which then also manages status updates.
+  public async disconnect({ hasSocket = true, hasRegistered = true } = {}): Promise<void> {
     if (!this.ua) {
       console.log('pssh. already disconnected.');
       return;
     }
 
-    if (isOnline) {
+    if (hasSocket) {
       this.updateStatus(ClientStatus.DISCONNECTING);
     }
 
     delete this.registeredPromise;
 
-    if (isOnline) {
+    // Unregistering is not possible when the socket connection is closed/interrupted
+    // - by the server during a call
+    // - by a network node during a call
+    // - by the client during a call (browser accidentally killing ws)
+    if (hasSocket && hasRegistered) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
           resolve(true);
@@ -142,13 +146,13 @@ export class ReconnectableTransport extends EventEmitter {
       // and received an ACK before other functions are called
       // (i.e. ua.disconnect)
       await this.unregisteredPromise;
-    }
 
-    console.log('unregistered!');
+      console.log('unregistered!');
+    }
 
     await this.ua.disconnect();
 
-    if (isOnline) {
+    if (hasSocket) {
       this.updateStatus(ClientStatus.DISCONNECTED);
     }
 
@@ -162,7 +166,44 @@ export class ReconnectableTransport extends EventEmitter {
   }
 
   public invite(phoneNumber: string) {
-    return this.ua.invite(phoneNumber);
+    return pTimeout(
+      new Promise((resolve, reject) => {
+        if (this.status !== ClientStatus.CONNECTED) {
+          reject();
+        }
+
+        const session = this.ua.invite(phoneNumber);
+
+        const handlers = {
+          onFailed: () => {
+            console.log('something went wrong here.. A ');
+            session.removeListener(
+              'SessionDescriptionHandler-created',
+              handlers.onSessionDescriptionHandlerCreated
+            );
+            reject();
+          },
+          onSessionDescriptionHandlerCreated: () => {
+            session.removeListener('failed', handlers.onFailed);
+            console.log('ja lijkt goed gegaan te zijn hoor');
+            resolve(session);
+          }
+        };
+
+        session.once('failed', handlers.onFailed);
+        session.once(
+          'SessionDescriptionHandler-created',
+          handlers.onSessionDescriptionHandlerCreated
+        );
+
+        session.invite();
+      }),
+      500,
+      () => {
+        console.log('timeout is reached');
+        return Promise.reject();
+      }
+    );
   }
 
   public isRegistered() {
@@ -216,7 +257,7 @@ export class ReconnectableTransport extends EventEmitter {
   }
 
   public close() {
-    window.removeEventListener('online', this.onWindowOnline.bind(this));
+    window.removeEventListener('online', this.tryReconnecting.bind(this));
     window.removeEventListener('offline', this.onWindowOffline.bind(this));
   }
 
@@ -229,29 +270,30 @@ export class ReconnectableTransport extends EventEmitter {
     this.emit('statusUpdate', status);
   }
 
-  private async reconnect(): Promise<boolean> {
-    this.isReconnecting = true;
+  // The following could also be time-based instead of count-based
+  // private async tryReconnecting(): Promise<boolean> {
+  //  this.isReconnecting = true;
 
-    try {
-      await pRetry(this.connect.bind(this, { reconnect: true }), {
-        maxTimeout: 30000,
-        minTimeout: 500,
-        onFailedAttempt: error => {
-          console.log(
-            `Connection attempt ${error.attemptNumber} failed. There are ${
-              error.retriesLeft
-            } retries left.`
-          );
-        },
-        randomize: true,
-        retries: this.retries
-      });
-      return true;
-    } catch (e) {
-      console.log('Not attempting to reconnect anymore');
-      return false;
-    }
-  }
+  //  try {
+  //    await pRetry(this.connect.bind(this), {
+  //      maxTimeout: 30000,
+  //      minTimeout: 500,
+  //      onFailedAttempt: error => {
+  //        console.log(
+  //          `Connection attempt ${error.attemptNumber} failed. There are ${
+  //            error.retriesLeft
+  //          } retries left.`
+  //        );
+  //      },
+  //      randomize: true,
+  //      retries: this.retries
+  //    });
+  //    return true;
+  //  } catch (e) {
+  //    console.log('Not attempting to tryReconnecting anymore');
+  //    return false;
+  //  }
+  // }
 
   private isOnlinePromise() {
     return new Promise((resolve, reject) => {
@@ -273,11 +315,10 @@ export class ReconnectableTransport extends EventEmitter {
   }
 
   private configureUA() {
-    console.log(this.uaOptions);
     this.ua = new UA(this.uaOptions);
     this.ua.on('invite', uaSession => this.emit('invite', uaSession));
 
-    this.transportConnectedPromise = new Promise((resolve, reject) => {
+    this.transportConnectedPromise = new Promise(resolve => {
       this.ua.once('transportCreated', () => {
         console.log('transport created');
         this.ua.transport.once('connected', () => {
@@ -285,44 +326,56 @@ export class ReconnectableTransport extends EventEmitter {
           resolve();
         });
 
-        this.ua.transport.once('disconnected', async e => {
-          console.log('unexpected disconnect');
+        // move to onDisconnected
+        this.ua.transport.once('disconnected', this.tryReconnecting);
 
-          await this.disconnect({ isOnline: false });
+        // async e => {
+        //  console.log('unexpected disconnect, trying to recover');
+        //  // testing a bit
+        //  this.tryReconnecting();
+        //  // this.updateStatus(ClientStatus.RECOVERING);
 
-          if (this.isReconnecting) {
-            // Rejecting here to make sure that the reconnect promise in
-            // pRetry is catched and can be properly retried.
-            reject(e);
+        //  // await this.disconnect({ hasSocket: false });
 
-            // Returning here to make sure that reconnect is not called again.
-            return;
-          }
+        //  // console.log('disconnected really');
 
-          const connected = await this.reconnect();
+        //  // if (this.isReconnecting) {
+        //  //  // Rejecting here to make sure that the tryReconnecting promise in
+        //  //  // pRetry is catched and can be properly retried.
+        //  //  reject(e);
 
-          this.isReconnecting = false;
+        //  //  // Returning here to make sure that tryReconnecting is not called again.
+        //  //  return;
+        //  // }
 
-          if (connected) {
-            resolve();
-          } else {
-            this.updateStatus(ClientStatus.DISCONNECTED);
+        //  // const connected = await this.tryReconnecting();
 
-            reject(e);
-          }
-        });
+        //  // this.isReconnecting = false;
+
+        //  // if (connected) {
+        //  //  resolve();
+        //  // } else {
+        //  //  this.updateStatus(ClientStatus.DISCONNECTED);
+
+        //  //  reject(e);
+        //  // }
+        // });
       });
     });
   }
 
   private createRegisteredPromise() {
     return new Promise((resolve, reject) => {
+      // once registered, registrationFailed listener can be removed
       this.ua.once('registered', () => {
         this.updateStatus(ClientStatus.CONNECTED);
         resolve(true);
       });
+
+      // TODO: find a way to simulate this
+      // once registrationFailed, register listener can be removed
       this.ua.once('registrationFailed', async e => {
-        await this.disconnect({ isOnline: false });
+        await this.disconnect({ hasRegistered: false });
 
         this.updateStatus(ClientStatus.DISCONNECTED);
         reject(e);
@@ -330,7 +383,7 @@ export class ReconnectableTransport extends EventEmitter {
     });
   }
 
-  private async onWindowOnline() {
+  private async tryReconnecting() {
     if ([ClientStatus.RECOVERING, ClientStatus.DISCONNECTED].includes(this.status)) {
       return;
     }
@@ -358,10 +411,12 @@ export class ReconnectableTransport extends EventEmitter {
 
       await this.registeredPromise;
       console.log('reregistered!!');
+
+      this.dyingCounter = 60000;
     } else {
       // There is no internet, so skipping unregistering, doesn't make sense
       // without a connection.
-      await this.disconnect({ isOnline: false });
+      await this.disconnect({ hasSocket: false });
 
       this.updateStatus(ClientStatus.DISCONNECTED);
     }
@@ -370,6 +425,7 @@ export class ReconnectableTransport extends EventEmitter {
   private onWindowOffline() {
     console.log('OFFLINE NOW');
     this.updateStatus(ClientStatus.DYING);
+    this.registeredPromise = undefined;
 
     const subtractValue = 500;
     const subtractTillDead = () => {

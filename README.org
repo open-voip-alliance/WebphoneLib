@@ -40,6 +40,7 @@
 - Websocket connection to the SIP proxy.
   - Connecting/disconnecting
   - Handling failures
+  - Disconnected (local) socket during call
 
 - Setting up the WebRTC channels (SIP.js) does this.
 - Requesting the audio/video devices to be used (SIP.js)

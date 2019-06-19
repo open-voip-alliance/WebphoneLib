@@ -53,13 +53,32 @@ export class WebCallingClient extends EventEmitter {
 
     await this.transport.registeredPromise;
 
-    const session = new WebCallingSession({
-      session: this.transport.invite(phoneNumber)
-    });
+    let uaSession;
+    try {
+      // Retrying this once if it fails. While the socket seems healthy, it
+      // might in fact not be. In that case the act of sending data over the
+      // socket (the act of inviting) will cause us to detect that the
+      // socket is broken somehow. In that case onDisconnected will trigger
+      uaSession = await pRetry(async () => this.transport.invite(phoneNumber), {
+        maxTimeout: 500,
+        minTimeout: 500,
+        retries: 1
+      });
+    } catch (e) {
+      console.log('', e);
+      return;
+    }
+
+    console.log(uaSession);
+
+    const session = new WebCallingSession({ session: uaSession });
 
     this.sessions[session.id] = session;
 
-    session.once('terminated', () => delete this.sessions[session.id]);
+    session.once('terminated', () => {
+      console.log('terminated....');
+      delete this.sessions[session.id];
+    });
 
     return session;
   }
