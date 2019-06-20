@@ -351,20 +351,25 @@ export class ReconnectableTransport extends EventEmitter {
 
   private createRegisteredPromise() {
     return new Promise((resolve, reject) => {
-      // once registered, registrationFailed listener can be removed
-      this.ua.once('registered', () => {
-        this.updateStatus(ClientStatus.CONNECTED);
-        resolve(true);
-      });
+      const handlers = {
+        onRegistered: () => {
+          this.ua.removeListener('registrationFailed', handlers.onRegistrationFailed);
+          this.updateStatus(ClientStatus.CONNECTED);
+          resolve(true);
+        },
+        onRegistrationFailed: async e => {
+          this.ua.removeListener('registered', handlers.onRegistered);
 
+          await this.disconnect({ hasRegistered: false });
+
+          this.updateStatus(ClientStatus.DISCONNECTED);
+          reject(e);
+        }
+      };
+
+      this.ua.once('registered', handlers.onRegistered);
       // TODO: find a way to simulate this
-      // once registrationFailed, register listener can be removed
-      this.ua.once('registrationFailed', async e => {
-        await this.disconnect({ hasRegistered: false });
-
-        this.updateStatus(ClientStatus.DISCONNECTED);
-        reject(e);
-      });
+      this.ua.once('registrationFailed', handlers.onRegistrationFailed);
     });
   }
 
