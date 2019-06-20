@@ -309,13 +309,13 @@ export class ReconnectableTransport extends EventEmitter {
       await this.ua.transport.connect();
       console.log('socket opened');
 
-      this.emit('reviveSessions');
-
       this.registeredPromise = this.createRegisteredPromise();
 
       this.ua.register();
 
       await this.registeredPromise;
+
+      this.emit('reviveSessions');
       console.log('reregistered!!');
     } else {
       // There is no internet, so skipping unregistering, doesn't make sense
