@@ -31,7 +31,6 @@ export class ReconnectableTransport extends EventEmitter {
   public status: ClientStatus = ClientStatus.DISCONNECTED;
   private unregisteredPromise?: Promise<any>;
   private ua: UA;
-  private retries: number = 3;
   private isReconnecting: boolean = false;
   private isRecovering: boolean = false;
   private uaOptions: UABase.Options;
@@ -103,11 +102,7 @@ export class ReconnectableTransport extends EventEmitter {
 
     this.ua.start();
 
-    try {
-      await this.transportConnectedPromise;
-    } catch (e) {
-      throw new Error(`Tried to connect ${this.retries + 1} times, didn't work. Sorry.`);
-    }
+    await this.transportConnectedPromise;
 
     this.ua.register();
 
@@ -335,6 +330,8 @@ export class ReconnectableTransport extends EventEmitter {
     this.ua = new UA(this.uaOptions);
     this.ua.on('invite', uaSession => this.emit('invite', uaSession));
 
+    // TODO: Add a timeout here, to reject if there is no internet or no
+    // socket could be created
     this.transportConnectedPromise = new Promise(resolve => {
       this.ua.once('transportCreated', () => {
         console.log('transport created');
@@ -343,7 +340,6 @@ export class ReconnectableTransport extends EventEmitter {
           resolve();
         });
 
-        // move to onDisconnected
         this.ua.transport.once('disconnected', this.tryReconnecting);
       });
     });
