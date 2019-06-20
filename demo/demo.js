@@ -55,6 +55,11 @@ window.AudioHelper = AudioHelper;
 
 async function outgoingCall(number) {
   const session = await client.invite(`sip:${number}@voipgrid.nl`);
+
+  if (!session) {
+    return;
+  }
+
   console.log('created outgoing call', session.id, 'to', number);
 
   const bye = () => session.bye();

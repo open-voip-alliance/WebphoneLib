@@ -166,44 +166,31 @@ export class ReconnectableTransport extends EventEmitter {
   }
 
   public invite(phoneNumber: string) {
-    return pTimeout(
-      new Promise((resolve, reject) => {
-        if (this.status !== ClientStatus.CONNECTED) {
-          reject();
-        }
-
-        const session = this.ua.invite(phoneNumber);
-
-        const handlers = {
-          onFailed: () => {
-            console.log('something went wrong here.. A ');
-            session.removeListener(
-              'SessionDescriptionHandler-created',
-              handlers.onSessionDescriptionHandlerCreated
-            );
-            reject();
-          },
-          onSessionDescriptionHandlerCreated: () => {
-            session.removeListener('failed', handlers.onFailed);
-            console.log('ja lijkt goed gegaan te zijn hoor');
-            resolve(session);
-          }
-        };
-
-        session.once('failed', handlers.onFailed);
-        session.once(
-          'SessionDescriptionHandler-created',
-          handlers.onSessionDescriptionHandlerCreated
-        );
-
-        session.invite();
-      }),
-      500,
-      () => {
-        console.log('timeout is reached');
-        return Promise.reject();
+    return new Promise((resolve, reject) => {
+      const session = this.ua.invite(phoneNumber);
+      if (this.status !== ClientStatus.CONNECTED) {
+        reject(new Error('Cannot send an invite. Not connected.'));
       }
-    );
+
+      const handlers = {
+        onFailed: () => {
+          console.log('something went wrong here.. A ');
+          session.removeListener('progress', handlers.onProgress);
+
+          reject(new Error('Could not send an invite. Socket could be broken.'));
+        },
+        onProgress: () => {
+          console.log('lib emitted progress');
+          session.removeListener('failed', handlers.onFailed);
+          resolve(session);
+        }
+      };
+
+      session.once('failed', handlers.onFailed);
+      session.once('progress', handlers.onProgress);
+
+      session.invite();
+    });
   }
 
   public isRegistered() {
@@ -256,138 +243,18 @@ export class ReconnectableTransport extends EventEmitter {
     });
   }
 
-  public close() {
-    window.removeEventListener('online', this.tryReconnecting.bind(this));
-    window.removeEventListener('offline', this.onWindowOffline.bind(this));
-  }
-
-  private updateStatus(status: ClientStatus) {
-    if (this.status === status) {
+  public async tryReconnecting({ timeLeft }) {
+    if (!this.ua) {
       return;
     }
 
-    this.status = status;
-    this.emit('statusUpdate', status);
-  }
-
-  // The following could also be time-based instead of count-based
-  // private async tryReconnecting(): Promise<boolean> {
-  //  this.isReconnecting = true;
-
-  //  try {
-  //    await pRetry(this.connect.bind(this), {
-  //      maxTimeout: 30000,
-  //      minTimeout: 500,
-  //      onFailedAttempt: error => {
-  //        console.log(
-  //          `Connection attempt ${error.attemptNumber} failed. There are ${
-  //            error.retriesLeft
-  //          } retries left.`
-  //        );
-  //      },
-  //      randomize: true,
-  //      retries: this.retries
-  //    });
-  //    return true;
-  //  } catch (e) {
-  //    console.log('Not attempting to tryReconnecting anymore');
-  //    return false;
-  //  }
-  // }
-
-  private isOnlinePromise() {
-    return new Promise((resolve, reject) => {
-      console.log(this.uaOptions.transportOptions.wsServers);
-
-      const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
-      checkSocket.onopen = () => {
-        console.log('yay it works');
-        checkSocket.close();
-        resolve(true);
-      };
-
-      checkSocket.onerror = e => {
-        console.log(e);
-        console.log('it broke...');
-        throw new Error('it broke woops');
-      };
-    });
-  }
-
-  private configureUA() {
-    this.ua = new UA(this.uaOptions);
-    this.ua.on('invite', uaSession => this.emit('invite', uaSession));
-
-    this.transportConnectedPromise = new Promise(resolve => {
-      this.ua.once('transportCreated', () => {
-        console.log('transport created');
-        this.ua.transport.once('connected', () => {
-          console.log('connected');
-          resolve();
-        });
-
-        // move to onDisconnected
-        this.ua.transport.once('disconnected', this.tryReconnecting);
-
-        // async e => {
-        //  console.log('unexpected disconnect, trying to recover');
-        //  // testing a bit
-        //  this.tryReconnecting();
-        //  // this.updateStatus(ClientStatus.RECOVERING);
-
-        //  // await this.disconnect({ hasSocket: false });
-
-        //  // console.log('disconnected really');
-
-        //  // if (this.isReconnecting) {
-        //  //  // Rejecting here to make sure that the tryReconnecting promise in
-        //  //  // pRetry is catched and can be properly retried.
-        //  //  reject(e);
-
-        //  //  // Returning here to make sure that tryReconnecting is not called again.
-        //  //  return;
-        //  // }
-
-        //  // const connected = await this.tryReconnecting();
-
-        //  // this.isReconnecting = false;
-
-        //  // if (connected) {
-        //  //  resolve();
-        //  // } else {
-        //  //  this.updateStatus(ClientStatus.DISCONNECTED);
-
-        //  //  reject(e);
-        //  // }
-        // });
-      });
-    });
-  }
-
-  private createRegisteredPromise() {
-    return new Promise((resolve, reject) => {
-      // once registered, registrationFailed listener can be removed
-      this.ua.once('registered', () => {
-        this.updateStatus(ClientStatus.CONNECTED);
-        resolve(true);
-      });
-
-      // TODO: find a way to simulate this
-      // once registrationFailed, register listener can be removed
-      this.ua.once('registrationFailed', async e => {
-        await this.disconnect({ hasRegistered: false });
-
-        this.updateStatus(ClientStatus.DISCONNECTED);
-        reject(e);
-      });
-    });
-  }
-
-  private async tryReconnecting() {
     if ([ClientStatus.RECOVERING, ClientStatus.DISCONNECTED].includes(this.status)) {
       return;
     }
-    console.log('ONLINE NOW');
+
+    if (timeLeft) {
+      this.dyingCounter = timeLeft;
+    }
 
     this.updateStatus(ClientStatus.RECOVERING);
 
@@ -420,6 +287,83 @@ export class ReconnectableTransport extends EventEmitter {
 
       this.updateStatus(ClientStatus.DISCONNECTED);
     }
+  }
+
+  public close() {
+    window.removeEventListener('online', this.tryReconnecting.bind(this));
+    window.removeEventListener('offline', this.onWindowOffline.bind(this));
+  }
+
+  private updateStatus(status: ClientStatus) {
+    if (this.status === status) {
+      return;
+    }
+
+    this.status = status;
+    this.emit('statusUpdate', status);
+  }
+
+  private isOnlinePromise() {
+    return new Promise((resolve, reject) => {
+      console.log(this.uaOptions.transportOptions.wsServers);
+
+      const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
+
+      const handlers = {
+        onError: e => {
+          console.log(e);
+          console.log('it broke...');
+          checkSocket.removeEventListener('open', handlers.onOpen);
+          throw new Error('it broke woops');
+        },
+        onOpen: () => {
+          console.log('yay it works');
+          checkSocket.close();
+          checkSocket.removeEventListener('error', handlers.onError);
+          resolve(true);
+        }
+      };
+
+      checkSocket.addEventListener('open', handlers.onOpen);
+      checkSocket.addEventListener('error', handlers.onError);
+    });
+  }
+
+  private configureUA() {
+    this.ua = new UA(this.uaOptions);
+    this.ua.on('invite', uaSession => this.emit('invite', uaSession));
+
+    this.transportConnectedPromise = new Promise(resolve => {
+      this.ua.once('transportCreated', () => {
+        console.log('transport created');
+        this.ua.transport.once('connected', () => {
+          console.log('connected');
+          resolve();
+        });
+
+        // move to onDisconnected
+        this.ua.transport.once('disconnected', this.tryReconnecting);
+      });
+    });
+  }
+
+  private createRegisteredPromise() {
+    return new Promise((resolve, reject) => {
+      // once registered, registrationFailed listener can be removed
+      this.ua.once('registered', () => {
+        this.updateStatus(ClientStatus.CONNECTED);
+        resolve(true);
+      });
+
+      // TODO: find a way to simulate this
+      // once registrationFailed, register listener can be removed
+      this.ua.once('registrationFailed', async e => {
+        await this.disconnect({ hasRegistered: false });
+
+        this.updateStatus(ClientStatus.DISCONNECTED);
+        reject(e);
+      });
+    });
   }
 
   private onWindowOffline() {

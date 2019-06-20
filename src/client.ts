@@ -59,13 +59,20 @@ export class WebCallingClient extends EventEmitter {
       // might in fact not be. In that case the act of sending data over the
       // socket (the act of inviting) will cause us to detect that the
       // socket is broken somehow. In that case onDisconnected will trigger
-      uaSession = await pRetry(async () => this.transport.invite(phoneNumber), {
-        maxTimeout: 500,
-        minTimeout: 500,
-        retries: 1
+      uaSession = await this.transport.invite(phoneNumber).catch(async e => {
+        console.log('something went wrong here. trying to recover.');
+
+        await this.transport.tryReconnecting({ timeLeft: 2000 });
+
+        if (this.transport.status !== ClientStatus.CONNECTED) {
+          throw new Error('Not sending out invite. It appears we are not connected. =(');
+        }
+
+        console.log('it appears we are back!');
+        return await this.transport.invite(phoneNumber);
       });
     } catch (e) {
-      console.log('', e);
+      console.error('', e);
       return;
     }
 
