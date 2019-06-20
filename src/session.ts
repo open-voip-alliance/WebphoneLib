@@ -7,12 +7,14 @@ import {
   ReferServerContext
 } from 'sip.js';
 
+import { WrappedInviteClientContext } from './ua';
+
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
   getLocalStreams: () => MediaStream[];
 }
 
-type InternalSession = InviteClientContext &
+type InternalSession = WrappedInviteClientContext &
   InviteServerContext & {
     sessionDescriptionHandler: {
       peerConnection: IRTCPeerConnectionLegacy;
@@ -66,7 +68,7 @@ export class WebCallingSession extends EventEmitter {
     this.terminatedPromise = new Promise(resolve => {
       this.session.once('terminated', () => {
         console.log('on.terminated');
-        this.emit('terminated', this.session);
+        this.emit('terminated', this);
         resolve();
       });
     });
@@ -82,10 +84,12 @@ export class WebCallingSession extends EventEmitter {
       console.log('directionChanged:', direction);
     });
 
-    this.session.on('SessionDescriptionHandler-created', (sdh) => {
+    this.session.on('SessionDescriptionHandler-created', sdh => {
       console.log('sdh created:', (sdh as any).direction);
-      (sdh as any).on('userMediaRequest', (constraints) => console.log('userMediaRequest: ', constraints));
-      (sdh as any).on('userMedia', (streams) => console.log('userMedia acquired: ', streams));
+      (sdh as any).on('userMediaRequest', constraints =>
+        console.log('userMediaRequest: ', constraints)
+      );
+      (sdh as any).on('userMedia', streams => console.log('userMedia acquired: ', streams));
     });
     ////// end debugging
   }
@@ -171,6 +175,11 @@ export class WebCallingSession extends EventEmitter {
     return this.terminatedPromise;
   }
 
+  public reinvite(): void {
+    console.log('reinvite called!');
+    this.session.reinvite();
+  }
+
   public hold(): Promise<boolean> {
     return this.setHoldState(true);
   }
@@ -204,6 +213,13 @@ export class WebCallingSession extends EventEmitter {
         resolve(true);
       });
     });
+  }
+
+  /**
+   * Reconfigure the WebRTC peerconnection.
+   */
+  public rebuildSessionDescriptionHandler() {
+    this.session.rebuildSessionDescriptionHandler();
   }
 
   /**
