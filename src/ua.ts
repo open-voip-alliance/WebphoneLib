@@ -88,7 +88,9 @@ export class UA extends UABase {
     options?: InviteClientContext.Options,
     modifiers?: SessionDescriptionHandlerModifiers
   ): WrappedInviteClientContext {
+    // begin change
     return new WrappedInviteClientContext(this, target, options, modifiers);
+    // end change
   }
   /**
    * Gracefully close.
@@ -219,7 +221,11 @@ export class UA extends UABase {
           context.onTransportError();
         }
       };
+
+      // begin change
       const context = new WrappedInviteServerContext(this, incomingInviteRequest);
+      // end change
+
       // Ported - handling of out of dialog INVITE with Replaces.
       handleInviteWithReplacesHeader(context, incomingInviteRequest.message);
       // Ported - make the first call to progress automatically.

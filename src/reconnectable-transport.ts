@@ -81,6 +81,7 @@ export class ReconnectableTransport extends EventEmitter {
     }
 
     this.updateStatus(ClientStatus.CONNECTING);
+
     if (!this.ua) {
       console.log('configuring ua');
       this.configureUA();
@@ -135,6 +136,7 @@ export class ReconnectableTransport extends EventEmitter {
     if (hasSocket && hasRegistered) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
+          this.registered = false;
           resolve(true);
         })
       );

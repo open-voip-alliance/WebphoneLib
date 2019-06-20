@@ -8,13 +8,24 @@ import { WebCallingSession } from './session';
 import { IWebCallingClientOptions } from './types';
 import { UA } from './ua';
 
-// TODO: BLF
-
 export interface ISessions {
   [index: string]: WebCallingSession;
 }
 
-export class WebCallingClient extends EventEmitter {
+export interface IWebCallingClient {
+  reconfigure(options: IWebCallingClientOptions): Promise<void>;
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+
+  invite(contact: string): Promise<WebCallingSession>;
+  subscribe(contact: string): Promise<void>;
+  unsubscribe(contact: string): Promise<void>;
+
+  on(event: 'invite', listener: (session: WebCallingSession) => void): this;
+  on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
+}
+
+export class WebCallingClient extends EventEmitter implements IWebCallingClient {
   public readonly sessions: ISessions = {};
 
   private transport?: ReconnectableTransport;
@@ -44,15 +55,12 @@ export class WebCallingClient extends EventEmitter {
     await this.transport.disconnect();
   }
 
-  // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
-  // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
   public async invite(phoneNumber: string) {
     if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
 
     await this.transport.registeredPromise;
-
     let uaSession;
     try {
       // Retrying this once if it fails. While the socket seems healthy, it
@@ -102,8 +110,17 @@ export class WebCallingClient extends EventEmitter {
     delete this.transport;
   }
 
+  public async subscribe(contact: string): Promise<void> {
+    return Promise.reject('not implemented');
+  }
+
+  public async unsubscribe(contact: string): Promise<void> {
+    return Promise.reject('not implemented');
+  }
+
   private configureTransport(options) {
     this.transport = new ReconnectableTransport(options);
+
     this.transport.on('reviveSessions', () => {
       Object.values(this.sessions).forEach(session => {
         console.log(session);

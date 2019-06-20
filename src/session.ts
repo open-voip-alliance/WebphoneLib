@@ -6,7 +6,8 @@ import {
   ReferClientContext,
   ReferServerContext
 } from 'sip.js';
-import { IMedia, MediaInput, MediaOutput } from './types';
+
+import { WrappedInviteClientContext } from './ua';
 
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
@@ -38,7 +39,7 @@ export class WebCallingSession extends EventEmitter {
   public saidBye: boolean;
   public holdState: boolean;
   private session: InternalSession;
-  private media: IMedia;
+
   private acceptedPromise: Promise<boolean>;
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
@@ -253,11 +254,6 @@ export class WebCallingSession extends EventEmitter {
       remoteStream = pc.getRemoteStreams()[0];
     }
 
-    // this.media.remoteAudio.srcObject = remoteStream;
-    // this.media.remoteAudio.play().catch(() => {
-    //   console.error('local play was rejected');
-    // });
-
     let localStream = new MediaStream();
     if (pc.getSenders) {
       pc.getSenders().forEach(sender => {
@@ -269,11 +265,6 @@ export class WebCallingSession extends EventEmitter {
     } else {
       localStream = pc.getLocalStreams()[0];
     }
-
-    // this.media.localAudio.srcObject = localStream;
-    // this.media.localAudio.play().catch(() => {
-    //   console.error('local play was rejected');
-    // });
   }
 
   private getReinvitePromise(): Promise<boolean> {
