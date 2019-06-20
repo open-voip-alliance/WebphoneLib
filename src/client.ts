@@ -6,13 +6,27 @@ import { WebCallingSession } from './session';
 import { IWebCallingClientOptions } from './types';
 import { UA } from './ua';
 
-// TODO: BLF
 
 interface ISessions {
   [index: string]: WebCallingSession;
 }
 
-export class WebCallingClient extends EventEmitter {
+
+export interface IWebCallingClient {
+  reconfigure(options: IWebCallingClientOptions): Promise<void>;
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+
+  invite(contact: string): Promise<WebCallingSession>;
+  subscribe(contact: string): Promise<void>;
+  unsubscribe(contact: string): Promise<void>;
+
+  on(event: 'invite', listener: (session: WebCallingSession) => void): this;
+  on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
+}
+
+
+export class WebCallingClient extends EventEmitter implements IWebCallingClient {
   public readonly sessions: ISessions = {};
 
   private ua: UA;
@@ -123,8 +137,6 @@ export class WebCallingClient extends EventEmitter {
     delete this.unregisteredPromise;
   }
 
-  // - It probably is not needed to unsubscribe/subscribe to every contact again (VERIFY THIS!).
-  // - Is it neccessary that all active sessions are terminated? (VERIFY THIS)
   public async invite(phoneNumber: string) {
     if (!this.registeredPromise) {
       throw new Error('Register first!');
@@ -141,6 +153,14 @@ export class WebCallingClient extends EventEmitter {
     session.once('terminated', () => delete this.sessions[session.id]);
 
     return session;
+  }
+
+  public async subscribe(contact: string): Promise<void> {
+    return Promise.reject("not implemented");
+  }
+
+  public async unsubscribe(contact: string): Promise<void> {
+    return Promise.reject("not implemented");
   }
 
   private async reconnect(): Promise<boolean> {
