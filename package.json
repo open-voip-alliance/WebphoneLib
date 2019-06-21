@@ -1,6 +1,6 @@
 {
-  "name": "vialer-web-calling",
-  "version": "0.0.1",
+  "name": "@vialer/vialer-web-calling",
+  "version": "0.1.0",
   "description": "Vialer Web Calling",
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "type": "git",
     "url": "git@gitlab.wearespindle.com:vialer/vialer-web-calling.git"
   },
-  "author": "",
+  "author": "vialer",
   "license": "ISC",
   "dependencies": {
     "p-retry": "^4.1.0",

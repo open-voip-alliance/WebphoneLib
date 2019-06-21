@@ -87,13 +87,15 @@ export class SessionMedia implements IMedia {
 
     this.inputStream = newInputStream;
     const sourceNode = audioContext.createMediaStreamSource(newInputStream);
-    const gainNode = audioContext.createGain();
+    const gainNode: GainNode = audioContext.createGain();
     gainNode.gain.value = newInput.volume;
     sourceNode.connect(gainNode);
 
     // If muted; don't connect the node to the local stream.
     if (!newInput.muted) {
-      gainNode.connect(this.session.__streams.localStream);
+      // TODO: typescript complains about localStream not being a `AudioNode` or
+      // `AudioParam`, which is correct. It does work however..
+      (gainNode as any).connect(this.session.__streams.localStream);
     }
     this.inputNode = gainNode;
     this.media.input = newInput;
@@ -153,7 +155,9 @@ export class SessionMedia implements IMedia {
       if (newMuted) {
         this.inputNode.disconnect();
       } else {
-        this.inputNode.connect(this.session.__streams.localStream);
+        // TODO: typescript complains about localStream not being a `AudioNode` or
+        // `AudioParam`, which is correct. It does work however..
+        (this.inputNode as any).connect(this.session.__streams.localStream);
       }
     }
 
