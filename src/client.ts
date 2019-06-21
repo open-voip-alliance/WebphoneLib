@@ -15,11 +15,15 @@ export interface ISessions {
   [index: string]: Session;
 }
 
+export interface IClient {
+  reconfigure(options: IClientOptions): Promise<void>;
+}
+
 export interface ISubscriptions {
   [index: string]: Subscription;
 }
 
-export interface IClient {
+export interface IWebCallingClient {
   reconfigure(options: IClientOptions): Promise<void>;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
