@@ -88,20 +88,9 @@ export class UA extends UABase {
     options?: InviteClientContext.Options,
     modifiers?: SessionDescriptionHandlerModifiers
   ): WrappedInviteClientContext {
-    const context: WrappedInviteClientContext = new WrappedInviteClientContext(
-      this,
-      target,
-      options,
-      modifiers
-    );
-    // Delay sending actual invite until the next 'tick' if we are already
-    // connected, so that API consumers can register to events fired by the
-    // the session.
-    this.transport.afterConnected(() => {
-      context.invite();
-      this.emit('inviteSent', context);
-    });
-    return context;
+    // begin change
+    return new WrappedInviteClientContext(this, target, options, modifiers);
+    // end change
   }
   /**
    * Gracefully close.

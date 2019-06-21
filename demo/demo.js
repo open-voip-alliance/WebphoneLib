@@ -37,7 +37,7 @@ const client = new WebCallingClient({ account, transport });
 client.on('invite', incomingCall);
 outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
 reconfigureBtn.addEventListener('click', () =>
-  client.reconfigure({ account, transport, media }).catch(console.error)
+  client.reconfigure({ account, transport }).catch(console.error)
 );
 registerBtn.addEventListener('click', () => client.connect().catch(console.error));
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
@@ -55,6 +55,11 @@ window.AudioHelper = AudioHelper;
 
 async function outgoingCall(number) {
   const session = await client.invite(`sip:${number}@voipgrid.nl`);
+
+  if (!session) {
+    return;
+  }
+
   console.log('created outgoing call', session.id, 'to', number);
 
   const bye = () => session.bye();

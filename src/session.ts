@@ -9,13 +9,15 @@ import {
 
 import { WrappedInviteClientContext } from './ua';
 
+import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
+
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
   getLocalStreams: () => MediaStream[];
 }
 
 type InternalSession = WrappedInviteClientContext &
-  InviteServerContext & {
+  WrappedInviteServerContext & {
     sessionDescriptionHandler: {
       peerConnection: IRTCPeerConnectionLegacy;
     };
@@ -252,11 +254,6 @@ export class WebCallingSession extends EventEmitter {
       remoteStream = pc.getRemoteStreams()[0];
     }
 
-    // this.media.remoteAudio.srcObject = remoteStream;
-    // this.media.remoteAudio.play().catch(() => {
-    //   console.error('local play was rejected');
-    // });
-
     let localStream = new MediaStream();
     if (pc.getSenders) {
       pc.getSenders().forEach(sender => {
@@ -268,11 +265,6 @@ export class WebCallingSession extends EventEmitter {
     } else {
       localStream = pc.getLocalStreams()[0];
     }
-
-    // this.media.localAudio.srcObject = localStream;
-    // this.media.localAudio.play().catch(() => {
-    //   console.error('local play was rejected');
-    // });
   }
 
   private getReinvitePromise(): Promise<boolean> {

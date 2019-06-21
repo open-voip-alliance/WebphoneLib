@@ -1,6 +1,8 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
+import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
+import { ClientStatus } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { WebCallingSession } from './session';
 import { IWebCallingClientOptions } from './types';
@@ -45,36 +47,67 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
 
   // Connect (and subsequently register) to server
   public async connect() {
-    if (this.transport.registered) {
-      throw new Error('already connected');
-    }
-
     await this.transport.connect();
   }
 
   // Unregister (and subsequently disconnect) to server
-  public async disconnect({ unregister = true } = {}): Promise<void> {
-    await this.transport.disconnect({ unregister });
-
-    this.transport.close();
+  public async disconnect(): Promise<void> {
+    await this.transport.disconnect();
   }
 
   public async invite(phoneNumber: string) {
-    if (!this.transport || !this.transport.registeredPromise) {
+    if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
 
     await this.transport.registeredPromise;
+    let uaSession;
+    try {
+      // Retrying this once if it fails. While the socket seems healthy, it
+      // might in fact not be. In that case the act of sending data over the
+      // socket (the act of inviting) will cause us to detect that the
+      // socket is broken somehow. In that case onDisconnected will trigger
+      uaSession = await this.transport.invite(phoneNumber).catch(async e => {
+        console.log('something went wrong here. trying to recover.');
 
-    const session = new WebCallingSession({
-      session: this.transport.invite(phoneNumber)
-    });
+        await this.transport.tryReconnecting({ timeLeft: 2000 });
+
+        if (this.transport.status !== ClientStatus.CONNECTED) {
+          throw new Error('Not sending out invite. It appears we are not connected. =(');
+        }
+
+        console.log('it appears we are back!');
+        return await this.transport.invite(phoneNumber);
+      });
+    } catch (e) {
+      console.error('', e);
+      return;
+    }
+
+    console.log(uaSession);
+
+    const session = new WebCallingSession({ session: uaSession });
 
     this.sessions[session.id] = session;
 
-    session.once('terminated', () => delete this.sessions[session.id]);
+    session.once('terminated', () => {
+      console.log('terminated....');
+      delete this.sessions[session.id];
+    });
 
     return session;
+  }
+
+  /**
+   * Call this before you want to delete an instance of this class.
+   */
+  public async close() {
+    await this.disconnect();
+
+    this.transport.close();
+    this.transport.removeAllListeners();
+
+    delete this.transport;
   }
 
   public async subscribe(contact: string): Promise<void> {
@@ -102,10 +135,13 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
       });
 
       this.sessions[session.id] = session;
-
       this.emit('invite', session);
-
       session.once('terminated', () => delete this.sessions[session.id]);
+    });
+
+    this.transport.on('statusUpdate', status => {
+      console.log(`Status change to: ${ClientStatus[status]}`);
+      this.emit('statusUpdate', status);
     });
   }
 }
