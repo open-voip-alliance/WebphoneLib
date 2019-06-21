@@ -6,10 +6,10 @@ import { Subscription, UA as UABase, Web } from 'sip.js';
 import { ClientStatus } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { Session } from './session';
+import { statusFromDialog } from './subscription';
 import { second } from './time';
 import { IClientOptions, IMedia } from './types';
 import { UA } from './ua';
-import { statusFromDialog } from './utils';
 
 export interface ISessions {
   [index: string]: Session;
@@ -131,13 +131,8 @@ export class Client extends EventEmitter implements IWebCallingClient {
   public subscribe(uri: string) {
     return new Promise((resolve, reject) => {
       if (this.subscriptions[uri]) {
-        this.removeSubscription({ uri });
-        this.subscribe(uri)
-          .then(() => {
-            console.log(`Resubscribed to ${uri}`);
-            resolve();
-          })
-          .catch(reject);
+        console.log('Already subscribed!');
+
         resolve();
         return;
       }
@@ -183,6 +178,18 @@ export class Client extends EventEmitter implements IWebCallingClient {
     });
   }
 
+  public resubscribe(uri: string) {
+    return new Promise((resolve, reject) => {
+      this.removeSubscription({ uri });
+      this.subscribe(uri)
+        .then(() => {
+          console.log(`Resubscribed to ${uri}`);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
   public unsubscribe(uri: string) {
     if (!this.subscriptions[uri]) {
       return;
@@ -206,7 +213,7 @@ export class Client extends EventEmitter implements IWebCallingClient {
         // the next re-subscribe will also be rate-limited. To avoid spamming
         // the server with a bunch of asynchronous requests, we handle them
         // one by one.
-        await this.subscribe(uri);
+        await this.resubscribe(uri);
       });
     });
 
