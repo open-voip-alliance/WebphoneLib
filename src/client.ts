@@ -50,7 +50,10 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
   public async reconfigure(options: IWebCallingClientOptions) {
     await this.disconnect();
 
-    this.defaultMedia = options.media;
+    if (options.media) {
+      this.defaultMedia = options.media;
+    }
+
     this.transport.configure(options);
 
     await this.connect();

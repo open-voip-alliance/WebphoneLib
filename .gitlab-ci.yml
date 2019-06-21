@@ -26,4 +26,3 @@ build:
   #   - master
   script:
     - npm run build
-
