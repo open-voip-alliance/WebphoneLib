@@ -72,7 +72,7 @@ registerBtn.addEventListener('click', () =>
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 resubscribeBtn.addEventListener(
   'click',
-  async () => await client.subscribe(contact).catch(console.error)
+  async () => await client.resubscribe(contact).catch(console.error)
 );
 
 const inputSelect = document.querySelector('#input');
