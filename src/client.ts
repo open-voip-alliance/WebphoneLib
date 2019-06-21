@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
-import pTimeout from 'p-timeout';
 import { Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus } from './enums';

@@ -2,8 +2,10 @@ import pTimeout from 'p-timeout';
 import {
   C as SIPConstants,
   Core,
+  Exceptions,
   InviteClientContext,
   InviteServerContext,
+  ReferClientContext,
   RegisterContext,
   SessionDescriptionHandlerModifiers,
   SessionStatus,
@@ -25,6 +27,28 @@ export class WrappedInviteClientContext extends InviteClientContext {
       this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
     );
   }
+
+  public refer(target: string | WrappedInviteClientContext, options: any = {}): ReferClientContext {
+    console.log('DEZE REFER A');
+    // Check Session Status
+    if (this.status !== SessionStatus.STATUS_CONFIRMED) {
+      throw new Exceptions.InvalidStateError(this.status);
+    }
+
+    // secretly accessing private variable
+    (this as any).referContext = new ReferClientContext(
+      this.ua,
+      (this as unknown) as InviteClientContext | InviteServerContext,
+      target,
+      options
+    );
+    // change start
+    this.emit('referRequested', { referContext: (this as any).referContext, options });
+    // change end
+
+    // secretly accessing private variable
+    return (this as any).referContext;
+  }
 }
 
 // tslint:disable-next-line: max-classes-per-file
@@ -38,6 +62,29 @@ export class WrappedInviteServerContext extends InviteServerContext {
       this,
       this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
     );
+  }
+
+  public refer(target: string | WrappedInviteServerContext, options: any = {}): ReferClientContext {
+    console.log('DEZE REFER B');
+    console.log(target, options);
+    // Check Session Status
+    if (this.status !== SessionStatus.STATUS_CONFIRMED) {
+      throw new Exceptions.InvalidStateError(this.status);
+    }
+
+    // secretly accessing private variable
+    (this as any).referContext = new ReferClientContext(
+      this.ua,
+      (this as unknown) as InviteClientContext | InviteServerContext,
+      target,
+      options
+    );
+    // change start
+    this.emit('referRequested', { referContext: (this as any).referContext, options });
+    // change end
+
+    // secretly accessing private variable
+    return (this as any).referContext;
   }
 }
 

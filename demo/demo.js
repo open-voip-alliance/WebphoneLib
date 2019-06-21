@@ -13,6 +13,7 @@ const byeBtn = document.querySelector('#bye');
 const holdBtn = document.querySelector('#hold');
 const unholdBtn = document.querySelector('#unhold');
 const blindTransferBtn = document.querySelector('#blindtransfer');
+const attendedTransferBtn = document.querySelector('#attendedtransfer');
 const inVol = document.querySelector('#inVol');
 const outVol = document.querySelector('#outVol');
 const inMute = document.querySelector('#inMute');
@@ -47,8 +48,7 @@ const media = {
 };
 
 const client = new Client({ account, transport, media });
-client.on('invite', incomingCall);
-outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
+outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
 
 const contact = 'sip:497920038@voipgrid.nl';
 
@@ -195,13 +195,35 @@ function printStats(stats) {
   console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
 }
 
+async function attendedTransfer(session) {
+  // Holding the first session
+  session.hold();
+
+  const toSession = await client.invite('sip:318@voipgrid.nl');
+
+  if (await toSession.accepted()) {
+    console.log('Second session got accepted');
+
+    // Giving 10 seconds to talk between session & toSession
+    setTimeout(async () => {
+      toSession.attendedTransfer(session);
+    }, 10000);
+
+    await toSession.terminated();
+    console.log('Second session got terminated');
+  } else {
+    console.log('Second session was rejected');
+  }
+}
+
 async function runSession(session) {
   activeSession = session;
 
   const bye = () => session.bye();
   const hold = async () => await session.hold();
   const unhold = async () => await session.unhold();
-  const blindTransfer = async () => await session.transfer('sip:318@voipgrid.nl');
+  const blindTransfer = async () => await session.blindTransfer('sip:318@voipgrid.nl');
+  const attTransfer = async () => await attendedTransfer(session);
 
   session.on('statsUpdated', stats => {
     printStats(stats);
@@ -214,13 +236,16 @@ async function runSession(session) {
     holdBtn.addEventListener('click', hold);
     unholdBtn.addEventListener('click', unhold);
     blindTransferBtn.addEventListener('click', blindTransfer);
+    attendedTransferBtn.addEventListener('click', attTransfer);
 
     await session.terminated();
+    console.log('session is terminated now');
   } finally {
     byeBtn.removeEventListener('click', bye);
     holdBtn.removeEventListener('click', hold);
     unholdBtn.removeEventListener('click', unhold);
     blindTransferBtn.removeEventListener('click', blindTransfer);
+    attendedTransferBtn.removeEventListener('click', attTransfer);
     inCall.hidden = true;
     activeSession = undefined;
 
@@ -253,6 +278,7 @@ async function incomingCall(session) {
   const { number, displayName } = session.remoteIdentity;
   caller.innerHTML = `${displayName} (${number})`;
   caller.hidden = false;
+  ringerBtn.hidden = true;
 
   ringerBtn.addEventListener(
     'click',
@@ -287,6 +313,9 @@ async function incomingCall(session) {
     console.error('session failed', session.id, e);
   } finally {
     console.log('closing session...', session.id);
+
+    ringerBtn.hidden = true;
+    caller.hidden = true;
 
     if (terminateTimer) {
       clearTimeout(terminateTimer);
