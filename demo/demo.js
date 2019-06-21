@@ -244,7 +244,7 @@ async function incomingCall(session) {
       unholdBtn.addEventListener('click', unhold);
       blindTransferBtn.addEventListener('click', blindTransfer);
 
-      // Terminate the session after 10 seconds
+      // Terminate the session after 60 seconds
       setTimeout(() => {
         console.log('terminating the session');
         session.terminate();

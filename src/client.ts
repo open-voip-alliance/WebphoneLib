@@ -65,21 +65,53 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
     await this.transport.disconnect();
   }
 
-  public async invite(phoneNumber: string) {
+
+  private async tryInvite(phoneNumber: string): Promise<WebCallingSession> {
+    return new Promise((resolve, reject) => {
+      // Transport invite just creates a ClientContext, it doesn't send the
+      // actual invite. We need to bind the event handlers below before we can
+      // send out the actual invite. Otherwise we might miss the events.
+      const uaSession = this.transport.invite(phoneNumber);
+      const session = new WebCallingSession({
+        media: this.defaultMedia,
+        session: uaSession
+      });
+
+      const handlers = {
+        onFailed: () => {
+          console.log('something went wrong here...');
+          uaSession.removeListener('progress', handlers.onProgress);
+          reject(new Error('Could not send an invite. Socket could be broken.'));
+        },
+        onProgress: () => {
+          console.log('lib emitted progress');
+          uaSession.removeListener('failed', handlers.onFailed);
+          resolve(session);
+        }
+      };
+
+      uaSession.once('failed', handlers.onFailed);
+      uaSession.once('progress', handlers.onProgress);
+
+      uaSession.invite();
+    });
+  }
+
+  public async invite(phoneNumber: string): Promise<WebCallingSession> {
     if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
 
     await this.transport.registeredPromise;
-    let uaSession;
+
+    let session;
     try {
       // Retrying this once if it fails. While the socket seems healthy, it
       // might in fact not be. In that case the act of sending data over the
       // socket (the act of inviting) will cause us to detect that the
       // socket is broken somehow. In that case onDisconnected will trigger
-      uaSession = await this.transport.invite(phoneNumber).catch(async e => {
+      session = await this.tryInvite(phoneNumber).catch(async e => {
         console.log('something went wrong here. trying to recover.');
-
         await this.transport.tryReconnecting({ timeLeft: 2000 });
 
         if (this.transport.status !== ClientStatus.CONNECTED) {
@@ -87,19 +119,12 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
         }
 
         console.log('it appears we are back!');
-        return await this.transport.invite(phoneNumber);
+        return await this.tryInvite(phoneNumber);
       });
     } catch (e) {
       console.error('', e);
       return;
     }
-
-    console.log(uaSession);
-
-    const session = new WebCallingSession({
-      media: this.defaultMedia,
-      session: this.transport.invite(phoneNumber)
-    });
 
     this.sessions[session.id] = session;
 

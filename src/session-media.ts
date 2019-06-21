@@ -23,7 +23,6 @@ export type InternalSession = WrappedInviteClientContext &
     __media: SessionMedia;
   };
 
-// TODO: nice to have: auto detect clipping (optionally offer to auto lower volume?)
 export class SessionMedia implements IMedia {
   public readonly input: IMediaInput;
   public readonly output: IMediaOutput;

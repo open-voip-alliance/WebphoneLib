@@ -166,31 +166,11 @@ export class ReconnectableTransport extends EventEmitter {
   }
 
   public invite(phoneNumber: string) {
-    return new Promise((resolve, reject) => {
-      const session = this.ua.invite(phoneNumber);
-      if (this.status !== ClientStatus.CONNECTED) {
-        reject(new Error('Cannot send an invite. Not connected.'));
-      }
+    if (this.status !== ClientStatus.CONNECTED) {
+      throw new Error('Cannot send an invite. Not connected.');
+    }
 
-      const handlers = {
-        onFailed: () => {
-          console.log('something went wrong here.. A ');
-          session.removeListener('progress', handlers.onProgress);
-
-          reject(new Error('Could not send an invite. Socket could be broken.'));
-        },
-        onProgress: () => {
-          console.log('lib emitted progress');
-          session.removeListener('failed', handlers.onFailed);
-          resolve(session);
-        }
-      };
-
-      session.once('failed', handlers.onFailed);
-      session.once('progress', handlers.onProgress);
-
-      session.invite();
-    });
+    return this.ua.invite(phoneNumber);
   }
 
   public isRegistered() {
