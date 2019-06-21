@@ -2,10 +2,11 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
+
 import { ClientStatus } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { WebCallingSession } from './session';
-import { IWebCallingClientOptions, IMedia } from './types';
+import { IMedia, IWebCallingClientOptions } from './types';
 import { UA } from './ua';
 
 
@@ -63,38 +64,6 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
   // Unregister (and subsequently disconnect) to server
   public async disconnect(): Promise<void> {
     await this.transport.disconnect();
-  }
-
-
-  private async tryInvite(phoneNumber: string): Promise<WebCallingSession> {
-    return new Promise((resolve, reject) => {
-      // Transport invite just creates a ClientContext, it doesn't send the
-      // actual invite. We need to bind the event handlers below before we can
-      // send out the actual invite. Otherwise we might miss the events.
-      const uaSession = this.transport.invite(phoneNumber);
-      const session = new WebCallingSession({
-        media: this.defaultMedia,
-        session: uaSession
-      });
-
-      const handlers = {
-        onFailed: () => {
-          console.log('something went wrong here...');
-          uaSession.removeListener('progress', handlers.onProgress);
-          reject(new Error('Could not send an invite. Socket could be broken.'));
-        },
-        onProgress: () => {
-          console.log('lib emitted progress');
-          uaSession.removeListener('failed', handlers.onFailed);
-          resolve(session);
-        }
-      };
-
-      uaSession.once('failed', handlers.onFailed);
-      uaSession.once('progress', handlers.onProgress);
-
-      uaSession.invite();
-    });
   }
 
   public async invite(phoneNumber: string): Promise<WebCallingSession> {
@@ -181,6 +150,37 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
     this.transport.on('statusUpdate', status => {
       console.log(`Status change to: ${ClientStatus[status]}`);
       this.emit('statusUpdate', status);
+    });
+  }
+
+  private async tryInvite(phoneNumber: string): Promise<WebCallingSession> {
+    return new Promise((resolve, reject) => {
+      // Transport invite just creates a ClientContext, it doesn't send the
+      // actual invite. We need to bind the event handlers below before we can
+      // send out the actual invite. Otherwise we might miss the events.
+      const uaSession = this.transport.invite(phoneNumber);
+      const session = new WebCallingSession({
+        media: this.defaultMedia,
+        session: uaSession
+      });
+
+      const handlers = {
+        onFailed: () => {
+          console.log('something went wrong here...');
+          uaSession.removeListener('progress', handlers.onProgress);
+          reject(new Error('Could not send an invite. Socket could be broken.'));
+        },
+        onProgress: () => {
+          console.log('lib emitted progress');
+          uaSession.removeListener('failed', handlers.onFailed);
+          resolve(session);
+        }
+      };
+
+      uaSession.once('failed', handlers.onFailed);
+      uaSession.once('progress', handlers.onProgress);
+
+      uaSession.invite();
     });
   }
 }

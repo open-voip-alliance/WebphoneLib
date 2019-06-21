@@ -32,9 +32,9 @@ class AudioHelperSingleton extends EventEmitter implements IAudioHelper {
       soundSource.buffer = buffer;
       soundSource.start(0, 0);
       return soundSource;
-      //const destination = audioContext.createMediaStreamDestination();
-      //soundSource.connect(destination);
-      //return destination.stream;
+      // const destination = audioContext.createMediaStreamDestination();
+      // soundSource.connect(destination);
+      // return destination.stream;
     };
   }
 

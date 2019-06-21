@@ -2,10 +2,11 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
+
 import { ClientStatus } from './enums';
+import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { IWebCallingClientOptions } from './types';
 import { UA, WrappedTransport } from './ua';
-import { sessionDescriptionHandlerFactory } from './session-description-handler';
 
 
 export class ReconnectableTransport extends EventEmitter {
@@ -55,7 +56,7 @@ export class ReconnectableTransport extends EventEmitter {
       ...this.defaultOptions,
       authorizationUser: account.user,
       password: account.password,
-      sessionDescriptionHandlerFactory: sessionDescriptionHandlerFactory,
+      sessionDescriptionHandlerFactory,
       sessionDescriptionHandlerFactoryOptions: {
         constraints: { audio: true, video: false },
         modifiers: [Web.Modifiers.stripVideo],
