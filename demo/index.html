@@ -4,18 +4,34 @@
     <title>SipLib test</title>
   </head>
   <body>
-    <audio id="local" autoplay="true"></audio>
-    <audio id="remote" autoplay="true"></audio>
     <h3 id="caller" hidden></h3>
-    <input id="ring" type="button" value="Ring ring ring..." hidden />
-    <input id="bye" type="button" value="Bye now..." hidden />
-    <input id="out" type="button" value="Call out" />
-    <input id="reconfigure" type="button" value="Reconfigure" />
-    <input id="register" type="button" value="Register" />
-    <input id="unregister" type="button" value="Unregister" />
-    <input id="hold" type="button" value="Hold" />
-    <input id="unhold" type="button" value="Unhold" />
-    <input id="blindtransfer" type="button" value="Blind transfer" hidden/>
+    <div>
+      <input id="ring" type="button" value="Ring ring ring..." hidden />
+      <input id="bye" type="button" value="Bye now..." hidden />
+      <input id="out" type="button" value="Call out" />
+      <input id="reconfigure" type="button" value="Reconfigure" />
+      <input id="register" type="button" value="Register" />
+      <input id="unregister" type="button" value="Unregister" />
+      <input id="hold" type="button" value="Hold" />
+      <input id="unhold" type="button" value="Unhold" />
+      <input id="blindtransfer" type="button" value="Blind transfer" hidden/>
+    </div>
+    <div>
+      Input volume:
+      <input id="inVol" type="range" min="0" max="10" value="10" />
+      <input id="inMute" type="checkbox" />
+    </div>
+    <div>
+      Output volume:
+      <input id="outVol" type="range" min="0" max="10" value="10" />
+      <input id="outMute" type="checkbox" />
+    </div>
+    <h4>Devices</h4>
+    <div>
+      <div>Input: <select id="input"></select></div>
+      <div>Output: <select id="output"></select></div>
+      <button id="play">Test output</button>
+    </div>
     <script type="module" src="./demo.js"></script>
   </body>
 </html>

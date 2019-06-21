@@ -11,3 +11,7 @@ export function isPrivateIP(ip) {
     (parts[0] === '192' && parts[1] === '168')
   );
 }
+
+export function closeStream(stream: MediaStream): void {
+  stream.getTracks().forEach(track => track.stop());
+}

@@ -18,16 +18,36 @@ export function stripPrivateIps(description: RTCSessionDescriptionInit): Promise
 export function sessionDescriptionHandlerFactory(session, options) {
   const sdh = Web.SessionDescriptionHandler.defaultFactory(session, options);
 
-  (sdh as any).WebRTC.getUserMedia = async constraints => {
-    console.log('getUserMedia....');
-    const inputStream = await options.media.input();
-    console.log('inputStream = ', inputStream);
-    const destination = audioContext.createMediaStreamDestination();
-    inputStream.connect(destination);
-    return destination.stream;
+  session.__streams = {
+    localStream: audioContext.createMediaStreamDestination(),
+    remoteStream: new MediaStream(),
   };
 
+  (sdh as any).WebRTC.getUserMedia = async () => {
+    await session.__media.setInput();
+    return session.__streams.localStream.stream;
+  };
+
+  (sdh as any).on('addTrack', async (track, stream) => {
+    const pc = session.sessionDescriptionHandler.peerConnection;
+    console.log('addTrack', arguments);
+
+    let remoteStream = new MediaStream();
+    if (pc.getReceivers) {
+      pc.getReceivers().forEach(receiver => {
+        const rtrack = receiver.track;
+        if (rtrack) {
+          remoteStream.addTrack(rtrack);
+        }
+      });
+    } else {
+      remoteStream = pc.getRemoteStreams()[0];
+    }
+
+    session.__streams.remoteStream = remoteStream;
+    session.__media.setOutput();
+  });
+
   console.log('returning patched SDH for session', session);
-  console.log(options.media);
   return sdh;
 }

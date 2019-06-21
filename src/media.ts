@@ -3,7 +3,8 @@ import { EventEmitter } from 'events';
 import { audioContext } from './audio-context';
 import * as Features from './feature-detection';
 import * as Time from './time';
-import { eqSet } from './utils';
+import { IMediaInput, IMediaOutput } from './types';
+import { closeStream, eqSet  } from './utils';
 
 export interface IAudioDevice {
   /**
@@ -27,6 +28,7 @@ interface IMediaDevices {
 }
 
 const UPDATE_INTERVAL = 1 * Time.second;
+
 
 /**
  * Offers an abstraction over Media permissions and device enumeration for use
@@ -99,7 +101,7 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
         }
 
         // Close the stream and delete the promise.
-        this.closeStream(stream);
+        closeStream(stream);
         resolve();
       } catch (err) {
         reject(err);
@@ -109,37 +111,6 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
     });
 
     return this.requestPermissionPromise;
-  }
-
-  public async openDevice(
-    id?: string,
-    audioProcessing = true
-  ): Promise<MediaStreamAudioSourceNode> {
-    const presets = audioProcessing
-      ? {}
-      : {
-          echoCancellation: false,
-          googAudioMirroring: false,
-          googAutoGainControl: false,
-          googAutoGainControl2: false,
-          googEchoCancellation: false,
-          googHighpassFilter: false,
-          googNoiseSuppression: false,
-          googTypingNoiseDetection: false
-        };
-
-    const constraints: MediaStreamConstraints = { audio: presets, video: false };
-    if (id) {
-      (constraints.audio as MediaTrackConstraints).deviceId = id;
-    }
-
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    return audioContext.createMediaStreamSource(stream);
-  }
-
-  // move to Audio Helper?
-  public closeStream(stream: MediaStream) {
-    stream.getTracks().forEach(track => track.stop());
   }
 
   private async enumerateDevices(): Promise<MediaDeviceInfo[]> {

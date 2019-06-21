@@ -1,5 +1,4 @@
 import { Media, AudioHelper } from '../dist/vialer-web-calling.prod.mjs';
-import { sleep } from './time.js';
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
@@ -47,15 +46,20 @@ Media.on('devicesChanged', () => {
 });
 
 let sample;
+(async () => {
+  sample = await AudioHelper.fetchStream('/demo/sounds/dtmf-9.mp3');
+})();
+
+let curSink = undefined, output;
 document.querySelector('#play').addEventListener('click', async () => {
   const sinkId = getSelectedOption(outputSelect).value;
-  if (!sample) {
-    sample = await AudioHelper.load('/demo/sounds/dtmf-3.mp3', {sinkId, loop: true});
-    await sample.play();
-  } else {
-    await sample.setSinkId(sinkId);
-    console.log('changed sink');
+  if (!output || curSink !== sinkId) {
+    output = await Media.openOutput(sinkId);
   }
+
+  const stream = await sample();
+  await output(stream);
+  console.log('playing!');
   // await sleep(1000);
   // sample.pause();
 });
