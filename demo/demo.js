@@ -48,7 +48,7 @@ const media = {
 };
 
 const client = new Client({ account, transport, media });
-outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
+outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
 
 const contact = 'sip:497920038@voipgrid.nl';
 

@@ -3,11 +3,12 @@ import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
 
-import { ClientStatus } from './enums';
+import { ClientStatus, ReconnectionMode, ReconnectionStrategy } from './enums';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
-import { IClientOptions } from './types';
+import { hour, minute } from './time';
+import { IClientOptions, IRetry } from './types';
 import { UA, WrappedInviteClientContext, WrappedInviteServerContext, WrappedTransport } from './ua';
-import { jitter } from './utils';
+import { increaseTimeout, jitter } from './utils';
 
 // TODO: Implement rest of the types
 interface IReconnectableTransport {
@@ -17,7 +18,7 @@ interface IReconnectableTransport {
   // invite(phoneNumber: string): Promise<WrappedInviteClientContext | WrappedInviteServerContext>;
 }
 
-const SIP_PRESENCE_EXPIRE = 3600;
+const SIP_PRESENCE_EXPIRE = hour;
 
 export class ReconnectableTransport extends EventEmitter implements IReconnectableTransport {
   private get defaultOptions() {
@@ -42,13 +43,16 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   public registeredPromise?: Promise<any>;
   public registered: boolean = false;
   public status: ClientStatus = ClientStatus.DISCONNECTED;
+  private priority: boolean = false;
   private unregisteredPromise?: Promise<any>;
   private ua: UA;
   private isReconnecting: boolean = false;
   private isRecovering: boolean = false;
   private uaOptions: UABase.Options;
-  private dyingCounter: number = 60000;
+  private dyingCounter: number = 5000;
   private dyingIntervalID: number;
+  private reconnectionStrategy: ReconnectionStrategy = ReconnectionStrategy.KEEP_TRYING;
+  private retry: IRetry = { interval: 5000, limit: 10000, timeout: 250 }; // temp on 10000
 
   constructor(options: IClientOptions) {
     super();
@@ -56,7 +60,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.configure(options);
 
     window.addEventListener('offline', this.onWindowOffline.bind(this));
-    window.addEventListener('online', this.tryReconnecting.bind(this));
+    window.addEventListener('online', this.tryUntilConnected.bind(this));
   }
 
   public configure(options: IClientOptions) {
@@ -88,6 +92,14 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
   // Connect (and subsequently register) to server
   public async connect() {
+    if (this.status === ClientStatus.RECOVERING) {
+      return Promise.reject(
+        new Error(
+          'Can not connect while trying to recover. (this is to avoid spamming the sip server)'
+        )
+      );
+    }
+
     if (this.status === ClientStatus.CONNECTED) {
       console.log('pssh. already registered.');
       return this.registeredPromise;
@@ -126,7 +138,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   }
 
   // Unregister (and subsequently disconnect) to server. When hasSocket is
-  // false, a call to this function is usually handled by onDisconnected,
+  // false, a call to this function is usually handled by getConnection,
   // which then also manages status updates.
   public async disconnect({ hasSocket = true, hasRegistered = true } = {}): Promise<void> {
     if (!this.ua) {
@@ -187,8 +199,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   }
 
   public subscribe(contact: string) {
-    // Introducing a jitter here, to avoid mass-re-subscriptions which spam
-    // the server.
+    // Introducing a jitter here, to avoid thundering herds.
     return this.ua.subscribe(contact, 'dialog', {
       expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
     });
@@ -198,69 +209,23 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     return this.registeredPromise;
   }
 
-  public isOnline({ timeLeft }): Promise<any> {
-    const hasConfiguredWsServer =
-      this.uaOptions &&
-      this.uaOptions.transportOptions &&
-      this.uaOptions.transportOptions.wsServers;
-
-    if (!hasConfiguredWsServer || this.dyingCounter === 0) {
-      return Promise.resolve(false);
-    }
-
-    const tryOpeningSocketWithTimeout = () => {
-      // It could happen that this function timed out. Because this is a
-      // async function that
-      if (this.status === ClientStatus.DISCONNECTED) {
-        throw new pRetry.AbortError("It's no use. Stop trying to recover");
-      }
-
-      return pTimeout(this.isOnlinePromise(), 500, () => {
-        throw new Error('Cannot open socket. Probably DNS failure.');
-      });
-    };
-
-    const retryOptions = {
-      forever: true,
-      maxTimeout: 100,
-      minTimeout: 100,
-      onFailedAttempt: error => {
-        console.log(
-          `Connection attempt ${error.attemptNumber} failed. There are ${
-            error.retriesLeft
-          } retries left.`
-        );
-      }
-    };
-
-    const retryForever = pRetry(tryOpeningSocketWithTimeout, retryOptions);
-
-    return pTimeout(retryForever, timeLeft, () => {
-      console.log(
-        'We could not recover the session(s) within 1 minute. ' +
-          'After this time the SIP server has killed the connections.'
-      );
-      return Promise.resolve(false);
-    });
-  }
-
-  public async tryReconnecting({ timeLeft }) {
+  public async getConnection(
+    { mode }: { mode: ReconnectionMode } = { mode: ReconnectionMode.ONCE }
+  ) {
     if (!this.ua) {
-      return;
+      return false;
     }
 
-    if ([ClientStatus.RECOVERING, ClientStatus.DISCONNECTED].includes(this.status)) {
-      return;
+    if (ClientStatus.DISCONNECTED === this.status) {
+      return false;
     }
 
-    if (timeLeft) {
-      this.dyingCounter = timeLeft;
-    }
+    console.log(`Mode is: ${ReconnectionMode[mode]}`);
 
     this.updateStatus(ClientStatus.RECOVERING);
 
     clearInterval(this.dyingIntervalID);
-    const isOnline = await this.isOnline({ timeLeft: this.dyingCounter });
+    const isOnline = await this.isOnline({ mode });
     if (isOnline) {
       console.log('is really online!');
 
@@ -270,8 +235,13 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       await this.ua.transport.connect();
       console.log('socket opened');
 
-      this.updateStatus(ClientStatus.CONNECTED);
-      this.emit('revive');
+      // Before the dyingCounter reached 0, there is a decent chance our
+      // sessions are still alive and kicking. Let's try to revive them.
+      if (this.dyingCounter !== 0) {
+        this.emit('reviveSessions');
+      }
+
+      this.emit('reviveSubscriptions');
 
       this.registeredPromise = this.createRegisteredPromise();
 
@@ -280,18 +250,20 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       await this.registeredPromise;
       console.log('reregistered!!');
 
-      this.dyingCounter = 60000;
-    } else {
-      // There is no internet, so skipping unregistering, doesn't make sense
-      // without a connection.
-      await this.disconnect({ hasSocket: false });
-
-      this.updateStatus(ClientStatus.DISCONNECTED);
+      this.updateStatus(ClientStatus.CONNECTED);
     }
+
+    console.log(`Returning isOnline: ${isOnline}`);
+    return isOnline;
+  }
+
+  public updatePriority(flag) {
+    this.priority = flag;
+    console.log(`priority is: ${flag}`);
   }
 
   public close() {
-    window.removeEventListener('online', this.tryReconnecting.bind(this));
+    window.removeEventListener('online', this.tryUntilConnected.bind(this));
     window.removeEventListener('offline', this.onWindowOffline.bind(this));
   }
 
@@ -304,7 +276,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.emit('statusUpdate', status);
   }
 
-  private isOnlinePromise() {
+  private isOnlinePromise({ mode }: { mode: ReconnectionMode }) {
     return new Promise((resolve, reject) => {
       console.log(this.uaOptions.transportOptions.wsServers);
 
@@ -315,7 +287,12 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           console.log(e);
           console.log('it broke...');
           checkSocket.removeEventListener('open', handlers.onOpen);
-          throw new Error('it broke woops');
+          if (mode === ReconnectionMode.BURST) {
+            throw new Error('it broke woops');
+            return;
+          }
+
+          resolve(false);
         },
         onOpen: () => {
           console.log('yay it works');
@@ -342,9 +319,120 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           resolve();
         });
 
-        this.ua.transport.once('disconnected', this.tryReconnecting);
+        this.ua.transport.once('disconnected', () => {
+          console.log('Disconnected emitted');
+          this.tryUntilConnected();
+        });
       });
     });
+  }
+
+  private isOnline({ mode }: { mode: ReconnectionMode }): Promise<any> {
+    const hasConfiguredWsServer =
+      this.uaOptions &&
+      this.uaOptions.transportOptions &&
+      this.uaOptions.transportOptions.wsServers;
+
+    if (!hasConfiguredWsServer) {
+      return Promise.resolve(false);
+    }
+
+    const tryOpeningSocketWithTimeout = () =>
+      pTimeout(this.isOnlinePromise({ mode }), 500, () => {
+        // In the case that mode is BURST, throw an error which can be
+        // catched by pRetry.
+        if (mode === ReconnectionMode.BURST) {
+          console.log('of toch hier');
+          throw new Error('Cannot open socket. Probably DNS failure.');
+          return;
+        }
+
+        return Promise.resolve(false);
+      });
+
+    console.log('hierrr');
+    console.log(mode);
+    console.log(ReconnectionMode[mode]);
+
+    // In the case that mode is ONCE, a new socket is created once, also with
+    // a timeout of 500 ms.
+    if (mode === ReconnectionMode.ONCE) {
+      console.log('Trying to reconnect once!');
+      return tryOpeningSocketWithTimeout();
+    }
+
+    // In the case that mode is KEEP_TRYING, a new socket is created roughly every
+    // 500 ms to be able to quickly revive our connection once that succeeds.
+    const retryOptions = {
+      forever: true,
+      maxTimeout: 100,
+      minTimeout: 100,
+      onFailedAttempt: error => {
+        console.log(
+          `Connection attempt ${error.attemptNumber} failed. There are ${
+            error.retriesLeft
+          } retries left.`
+        );
+      }
+    };
+
+    const retryForever = pRetry(() => {
+      // It could happen that this function timed out. Because this is a
+      // async function we check the client status to stop this loop.
+      if (this.status === ClientStatus.DISCONNECTED) {
+        throw new pRetry.AbortError("It's no use. Stop trying to recover");
+      }
+
+      return tryOpeningSocketWithTimeout();
+    }, retryOptions);
+
+    return pTimeout(retryForever, this.dyingCounter, () => {
+      console.log(
+        'We could not recover the session(s) within 1 minute. ' +
+          'After this time the SIP server has terminated the session(s).'
+      );
+      return Promise.resolve(false);
+    });
+  }
+
+  /**
+   * This function is generally called after a window 'online' event or
+   * after a ua.transport 'disconnected' event.
+   *
+   * In the scenario where the SIP server goes offline, or a socket stops
+   * working, ua.transport emits a 'disconnected' event. When this happens
+   * for a multitude of clients, all of those clients would be
+   * reconnecting at the same time.
+   *
+   * To avoid this, we divide those clients in two groups:
+   *  - Clients that are in a call (priority === true)
+   *  - Clients that are not in a call (priority === false)
+   *
+   *  Clients that are in a call can recover as soon as possible, where
+   *  clients that are not in a call have to wait between 1~3 minutes
+   *  before reconnecting to the server.
+   */
+  private async tryUntilConnected({ skipCheck }: { skipCheck: boolean } = { skipCheck: false }) {
+    // To avoid triggering multiple times, return if status is recovering.
+    if (ClientStatus.RECOVERING === this.status && !skipCheck) {
+      return;
+    }
+
+    if (this.priority) {
+      const connected = await this.getConnection({ mode: ReconnectionMode.BURST });
+
+      this.onAfterGetConnection({ connected });
+      return;
+    }
+
+    setTimeout(async () => {
+      const connected = await this.getConnection({ mode: ReconnectionMode.ONCE });
+
+      this.onAfterGetConnection({ connected });
+    }, this.retry.timeout);
+
+    this.retry = increaseTimeout(this.retry);
+    console.log('Delaying reconnecting to avoid thundering herd.');
   }
 
   private createRegisteredPromise() {
@@ -376,6 +464,10 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.updateStatus(ClientStatus.DYING);
     this.registeredPromise = undefined;
 
+    if (this.dyingIntervalID) {
+      return;
+    }
+
     const subtractValue = 500;
     const subtractTillDead = () => {
       this.dyingCounter -= subtractValue;
@@ -383,10 +475,33 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       if (this.dyingCounter === 0) {
         clearInterval(this.dyingIntervalID);
         this.dyingIntervalID = undefined;
-        this.updateStatus(ClientStatus.DISCONNECTED);
+        // As the counter reached 0, there are no calls left over. Thus the
+        // reconnection strategy does not have to prioritize this client
+        // anymore.
+        console.log('Priority set to false');
+        this.priority = false;
       }
     };
 
     this.dyingIntervalID = window.setInterval(subtractTillDead, 500);
+  }
+
+  private async onAfterGetConnection({ connected }) {
+    if (connected) {
+      this.dyingCounter = 60000;
+      console.log('it appears we are connected!');
+      return;
+    }
+
+    if (this.reconnectionStrategy === ReconnectionStrategy.DISCONNECT_AFTER_60_SECONDS) {
+      // There is either no internet, or no sip available server, so skipping
+      // unregistering, as unregistering doesn't make sense in those cases.
+      await this.disconnect({ hasSocket: false });
+
+      this.updateStatus(ClientStatus.DISCONNECTED);
+      return;
+    }
+
+    this.tryUntilConnected({ skipCheck: true });
   }
 }

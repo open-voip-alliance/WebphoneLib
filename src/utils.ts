@@ -29,3 +29,20 @@ export function jitter(interval, percentage) {
   const max = Math.floor(interval * (percentage / 100));
   return Math.floor(Math.random() * (max - min)) + min;
 }
+
+/**
+ * This doubles the retry interval in each run and adds jitter.
+ * @param {object} retry - The reference retry object.
+ * @returns {object} The updated retry object.
+ */
+export function increaseTimeout(retry) {
+  // Make sure that interval doesn't go past the limit.
+  if (retry.interval * 2 < retry.limit) {
+    retry.interval = retry.interval * 2;
+  } else {
+    retry.interval = retry.limit;
+  }
+
+  retry.timeout = retry.interval + jitter(retry.interval, 30);
+  return retry;
+}

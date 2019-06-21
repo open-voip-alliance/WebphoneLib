@@ -1,3 +1,5 @@
+import { ReconnectionMode, ReconnectionStrategy } from './enums';
+
 export interface IAccount {
   user: string;
   password: string;
@@ -14,8 +16,8 @@ export interface IClientOptions {
   account: IAccount;
   transport: ITransport;
   media: IMedia;
+  // reconnectionStrategy: ReconnectionStrategy; should we add this?
 }
-
 
 export interface IMediaDevice {
   // undefined means let the browser pick the default.
@@ -30,17 +32,20 @@ export interface IMediaInput extends IMediaDevice {
 }
 
 // tslint:disable-next-line
-export interface IMediaOutput extends IMediaDevice {
-}
-
+export interface IMediaOutput extends IMediaDevice {}
 
 export interface IMedia {
   input: IMediaInput;
   output: IMediaOutput;
 }
 
-
 export interface IRemoteIdentity {
   phoneNumber: string;
   displayName: string;
+}
+
+export interface IRetry {
+  interval: number;
+  limit: number;
+  timeout: number;
 }
