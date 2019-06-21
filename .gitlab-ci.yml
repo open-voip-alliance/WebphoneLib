@@ -26,3 +26,5 @@ publish:
   #   - master
   script:
     - npm run build
+    - npm config set "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
+    - npm publish --verbose
