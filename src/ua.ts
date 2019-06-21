@@ -7,6 +7,7 @@ import {
   RegisterContext,
   SessionDescriptionHandlerModifiers,
   SessionStatus,
+  Subscription,
   UA as UABase,
   UAStatus,
   URI,
@@ -92,6 +93,13 @@ export class UA extends UABase {
     return new WrappedInviteClientContext(this, target, options, modifiers);
     // end change
   }
+
+  public subscribe(target: string | URI, event: string, options: any): Subscription {
+    // begin change
+    return new Subscription(this, target, event, options);
+    // end change
+  }
+
   /**
    * Gracefully close.
    */

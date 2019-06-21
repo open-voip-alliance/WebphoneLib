@@ -18,6 +18,7 @@ const outVol = document.querySelector('#outVol');
 const inMute = document.querySelector('#inMute');
 const outMute = document.querySelector('#outMute');
 const mos = document.querySelector('#mos');
+const resubscribeBtn = document.querySelector('#resubscribe');
 
 const account = {
   user: CREDS.authorizationUser,
@@ -48,11 +49,31 @@ const media = {
 const client = new Client({ account, transport, media });
 client.on('invite', incomingCall);
 outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
+
+const contact = 'sip:497920038@voipgrid.nl';
+
+client.on('invite', incomingCall);
+client.on('notify', (notifiedContact, notification) => {
+  console.log(`${notifiedContact}: ${notification}`);
+});
+
 reconfigureBtn.addEventListener('click', () =>
   client.reconfigure({ account, transport }).catch(console.error)
 );
-registerBtn.addEventListener('click', () => client.connect().catch(console.error));
+registerBtn.addEventListener('click', () =>
+  client
+    .connect()
+    .then(async () => {
+      await client.subscribe(contact);
+      console.log('subscribed!');
+    })
+    .catch(console.error)
+);
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
+resubscribeBtn.addEventListener(
+  'click',
+  async () => await client.subscribe(contact).catch(console.error)
+);
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
@@ -166,7 +187,6 @@ outMute.addEventListener('change', function(e) {
   }
 });
 
-
 function printStats(stats) {
   const last = (stats.mos.last || 0).toFixed(2);
   const low = (stats.mos.lowest || 0).toFixed(2);
@@ -174,7 +194,6 @@ function printStats(stats) {
   const avg = (stats.mos.average || 0).toFixed(2);
   console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
 }
-
 
 async function runSession(session) {
   activeSession = session;
@@ -184,7 +203,7 @@ async function runSession(session) {
   const unhold = async () => await session.unhold();
   const blindTransfer = async () => await session.transfer('sip:318@voipgrid.nl');
 
-  session.on('statsUpdated', (stats) => {
+  session.on('statsUpdated', stats => {
     printStats(stats);
     mos.innerHTML = (stats.mos.last || 0).toFixed(2);
   });
