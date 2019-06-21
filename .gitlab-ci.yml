@@ -1,3 +1,7 @@
+stages:
+  - test
+  - deploy
+
 image: node:10
 
 cache:
@@ -8,5 +12,17 @@ cache:
 before_script:
   - npm install --no-save
 
+typecheck:
+  stage: test
+  script: npm run typecheck
+
 lint:
+  stage: test
   script: npm run lint
+
+publish:
+  stage: deploy
+  # only:
+  #   - master
+  script:
+    - npm run build
