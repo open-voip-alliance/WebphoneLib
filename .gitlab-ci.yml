@@ -20,11 +20,10 @@ lint:
   stage: test
   script: npm run lint
 
-publish:
+build:
   stage: deploy
   # only:
   #   - master
   script:
     - npm run build
-    - npm config set "//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
-    - npm publish --verbose
+
