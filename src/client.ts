@@ -6,7 +6,7 @@ import { UA as UABase, Web } from 'sip.js';
 import { ClientStatus } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { Session } from './session';
-import { IMedia, IClientOptions } from './types';
+import { IClientOptions, IMedia } from './types';
 import { UA } from './ua';
 
 
