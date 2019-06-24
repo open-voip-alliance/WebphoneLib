@@ -233,6 +233,7 @@ async function incomingCall(session) {
   );
   ringerBtn.hidden = false;
 
+  let terminateTimer;
   try {
     if (await session.accepted()) {
       console.log('session is accepted \\o/', session.id);
@@ -245,7 +246,7 @@ async function incomingCall(session) {
       blindTransferBtn.addEventListener('click', blindTransfer);
 
       // Terminate the session after 60 seconds
-      setTimeout(() => {
+      terminateTimer = setTimeout(() => {
         console.log('terminating the session');
         session.terminate();
       }, 60000);
@@ -273,5 +274,9 @@ async function incomingCall(session) {
     caller.hidden = true;
     blindTransferBtn.hidden = true;
     activeSession = undefined;
+
+    if (terminateTimer) {
+      clearTimeout(terminateTimer);
+    }
   }
 }
