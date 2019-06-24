@@ -52,17 +52,28 @@ export class Session extends EventEmitter {
       this.session.once('rejected', handlers.onRejected);
     });
 
-    this.terminatedPromise = new Promise(resolve => {
-      this.session.once('terminated', () => {
-        console.log('on.terminated');
+    this.saidBye = false;
+
+    this.terminatedPromise = new Promise((resolve, reject) => {
+      this.session.once('terminated', (message, cause) => {
         this.emit('terminated', this);
-        resolve();
+
+        // Asterisk specific header that signals that the VoIP account used is not
+        // configured for WebRTC.
+        if (cause === 'BYE' && message.getHeader('X-Asterisk-Hangupcausecode') === '58') {
+          reject(new Error('MisconfiguredAccount'));
+        } else {
+          resolve();
+        }
       });
     });
 
-    this.holdState = false;
     this.saidBye = false;
-    this.session.once('bye', () => (this.saidBye = true));
+    this.session.once('bye', e => {
+      this.saidBye = true;
+    });
+
+    this.holdState = false;
   }
 
   get remoteIdentity(): IRemoteIdentity {
