@@ -16,7 +16,7 @@ export type InternalSession = WrappedInviteClientContext &
     };
 
     __streams: {
-      localStream: MediaStream;
+      localStream: MediaStreamAudioDestinationNode;
       remoteStream: MediaStream;
     };
 

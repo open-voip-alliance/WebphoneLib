@@ -7,14 +7,17 @@
     <h3 id="caller" hidden></h3>
     <div>
       <input id="ring" type="button" value="Ring ring ring..." hidden />
-      <input id="bye" type="button" value="Bye now..." hidden />
       <input id="out" type="button" value="Call out" />
       <input id="reconfigure" type="button" value="Reconfigure" />
       <input id="register" type="button" value="Register" />
       <input id="unregister" type="button" value="Unregister" />
+    </div>
+    <div id="in-call" hidden>
+      <input id="bye" type="button" value="Bye now..." />
       <input id="hold" type="button" value="Hold" />
       <input id="unhold" type="button" value="Unhold" />
-      <input id="blindtransfer" type="button" value="Blind transfer" hidden/>
+      <input id="blindtransfer" type="button" value="Blind transfer" />
+      MOS: <span id="mos"></span>
     </div>
     <div>
       Input volume:
