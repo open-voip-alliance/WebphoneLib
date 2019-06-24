@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 import {
   Grammar,
   ReferClientContext,
@@ -10,7 +9,8 @@ import { audioContext } from './audio-context';
 import { InternalSession, SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
 import * as Time from './time';
-import { IMedia, IRemoteIdentity, ISessionOptions } from './types';
+import { IMedia, IRemoteIdentity } from './types';
+import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 import { closeStream } from './utils';
 
 

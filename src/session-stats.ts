@@ -1,16 +1,16 @@
 class StatsAggregation {
   private stats: {
-    last: number;
     count: number;
-    sum: number;
-    lowest: number;
     highest: number;
+    last: number;
+    lowest: number;
+    sum: number;
   } = {
-    last: undefined,
     count: 0,
-    sum: 0,
+    highest: undefined,
+    last: undefined,
     lowest: undefined,
-    highest: undefined
+    sum: 0
   };
 
   public add(sample: number) {
@@ -55,6 +55,7 @@ class StatsAggregation {
   }
 }
 
+// tslint:disable-next-line: max-classes-per-file
 export class SessionStats {
   public readonly mos: StatsAggregation = new StatsAggregation();
 
@@ -79,9 +80,9 @@ export class SessionStats {
 
     if (inbound !== null && rtt !== null) {
       const measurements = {
-        rtt: rtt,
+        fractionLost: inbound.fractionLost,
         jitter: inbound.jitter,
-        fractionLost: inbound.fractionLost
+        rtt
       };
 
       this.mos.add(calculateMOS(measurements));
@@ -93,7 +94,7 @@ export class SessionStats {
   }
 }
 
-export type Measurement = {
+export interface IMeasurement {
   rtt: number;
   jitter: number;
   fractionLost: number;
@@ -111,7 +112,7 @@ export type Measurement = {
  * @param {Number} options.fractionLost - Fraction of packets lost (0.0 - 1.0)
  * @returns {Number} MOS value in range 0.0 (very bad) to 5.0 (very good)
  */
-export function calculateMOS({ rtt, jitter, fractionLost }: Measurement): number {
+export function calculateMOS({ rtt, jitter, fractionLost }: IMeasurement): number {
   // Take the average latency, add jitter, but double the impact to latency
   // then add 10 for protocol latencies
   const effectiveLatency = 1000 * (rtt + jitter * 2) + 10;
