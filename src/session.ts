@@ -16,7 +16,7 @@ import { closeStream } from './utils';
 type ReferContext = ReferClientContext | ReferServerContext;
 
 
-export class WebCallingSession extends EventEmitter {
+export class Session extends EventEmitter {
   public readonly id: string;
   public saidBye: boolean;
   public holdState: boolean;
@@ -165,7 +165,7 @@ export class WebCallingSession extends EventEmitter {
   // made. This NEW session (a.k.a. InviteClientContext/InviteServerContext
   // depending on whether it is outbound or inbound) should then be passed
   // to this function.
-  public async transfer(target: WebCallingSession | string): Promise<boolean> {
+  public async transfer(target: Session | string): Promise<boolean> {
     const referRequestedPromise: Promise<ReferContext> = new Promise((resolve, rejected) =>
       this.session.once('referRequested', context => {
         console.log('refer is requested');

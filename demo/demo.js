@@ -1,4 +1,4 @@
-import { WebCallingClient, Media, AudioHelper } from '../dist/vialer-web-calling.prod.mjs';
+import { Client, Media, AudioHelper } from '../dist/vialer-web-calling.prod.mjs';
 import * as CREDS from './creds.js';
 // import { sleep } from './time.js';
 
@@ -45,7 +45,7 @@ const media = {
   }
 };
 
-const client = new WebCallingClient({ account, transport, media });
+const client = new Client({ account, transport, media });
 client.on('invite', incomingCall);
 outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
 reconfigureBtn.addEventListener('click', () =>

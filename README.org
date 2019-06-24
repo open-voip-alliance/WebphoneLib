@@ -153,7 +153,9 @@ constructor?
 1. Set a primary input & output device:
 
 #+begin_src js
-  const client = new WebCallingClient({
+  import * as WebCalling from 'vialer/web-calling';
+
+  const client = new WebCalling.Client({
     media: {
       input: {
         id: undefined, // default input device
@@ -191,44 +193,3 @@ constructor?
     muted: true
   });
 #+end_src
-
-* Tickets
-
-For import into Gitlab issues. With point in the table do =M-x org-export-table=
-to export it to a =.csv=, then import the csv file into Gitlab.
-
-| Title                                       | Description                                                                                                                                  |
-|---------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------|
-| Design interface for Media devices handling |                                                                                                                                              |
-| Implement Media device enumeration          |                                                                                                                                              |
-| Implement getUserMedia permission checking  |                                                                                                                                              |
-| Refresh Media devices periodically          |                                                                                                                                              |
-| Set up project structure                    | Export as ESM module, investigate if rollup is suited for this                                                                               |
-| Write a small demo application              | It should be able to register, accept incoming calls and place an outgoing call                                                              |
-| Build a feature detection check             | Detect if the browser is capable of running the web-calling library                                                                          |
-| Design interface for WebCalling(Client)     |                                                                                                                                              |
-| Design interface for WebCallingSession      |                                                                                                                                              |
-| Design interface for BLF                    | BLF: Busy Lamp Field, also known as presence                                                                                                 |
-| Implement connecting/disconnecting          | In WebCallingClient: implement connecting and disconnecting to a SIP websocket server via sip.js                                             |
-| Implement registering of client             |                                                                                                                                              |
-| Implement unregister                        |                                                                                                                                              |
-| Incoming calls                              |                                                                                                                                              |
-| Outgoing calls                              |                                                                                                                                              |
-| Accepting/denying incoming calls            |                                                                                                                                              |
-| Terminating a call                          |                                                                                                                                              |
-| Putting a call on hold                      |                                                                                                                                              |
-| Blind transfering a call                    |                                                                                                                                              |
-| Attended transfer of a call                 |                                                                                                                                              |
-| DTMF in a call                              |                                                                                                                                              |
-| Muting a call                               |                                                                                                                                              |
-| Improve on sip.js reconnection handling     | Goal is twofold: 1) prevent thundering hurds 2) act nice and recover from network failure as best we can.                                    |
-| Extensive testing of reconnection handling  |                                                                                                                                              |
-| Implement a helper for playing of audio     | Audio helper for playing sounds like ringtone, busy tone, dtmf etc.                                                                          |
-| Audio device selection for calls            | Provide an interface to select which audio devices to use for in- and output of calls                                                        |
-| Extensive testing of failure handling       | Verify that failures are handled and documented well                                                                                         |
-| Write documentation                         | TODO: expand this                                                                                                                            |
-| Tracking of open sessions                   | Keep track of all open sessions                                                                                                              |
-| Switch to Typescript                        | Rewrite library to Typescript because type hinting is very useful for libraries, especially considering sip.js is also written in Typescript |
-| Investigate usage of unit tests             | A lot of code is dependent on browser API's, investigate what can be tested with unit tests                                                  |
-| Investigate integration tests               | Investigate what the best location for integration tests are: in the library and/or in the Web Phone.                                        |
-|                                             |                                                                                                                                              |

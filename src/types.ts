@@ -10,7 +10,7 @@ export interface ITransport {
   iceServers: string[];
 }
 
-export interface IWebCallingClientOptions {
+export interface IClientOptions {
   account: IAccount;
   transport: ITransport;
   media: IMedia;

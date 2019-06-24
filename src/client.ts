@@ -5,30 +5,30 @@ import { UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
-import { WebCallingSession } from './session';
-import { IMedia, IWebCallingClientOptions } from './types';
+import { Session } from './session';
+import { IMedia, IClientOptions } from './types';
 import { UA } from './ua';
 
 
 export interface ISessions {
-  [index: string]: WebCallingSession;
+  [index: string]: Session;
 }
 
-export interface IWebCallingClient {
-  reconfigure(options: IWebCallingClientOptions): Promise<void>;
+export interface IClient {
+  reconfigure(options: IClientOptions): Promise<void>;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
 
-  invite(contact: string): Promise<WebCallingSession>;
+  invite(contact: string): Promise<Session>;
   subscribe(contact: string): Promise<void>;
   unsubscribe(contact: string): Promise<void>;
 
-  on(event: 'invite', listener: (session: WebCallingSession) => void): this;
+  on(event: 'invite', listener: (session: Session) => void): this;
   on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
 }
 
 
-export class WebCallingClient extends EventEmitter implements IWebCallingClient {
+export class Client extends EventEmitter implements IClient {
   public readonly sessions: ISessions = {};
 
   public defaultMedia: IMedia;
@@ -38,7 +38,7 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
 
   private transport?: ReconnectableTransport;
 
-  constructor(options: IWebCallingClientOptions) {
+  constructor(options: IClientOptions) {
     super();
 
     this.defaultMedia = options.media;
@@ -47,7 +47,7 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
   }
 
   // In the case you want to switch to another account
-  public async reconfigure(options: IWebCallingClientOptions) {
+  public async reconfigure(options: IClientOptions) {
     await this.disconnect();
 
     this.defaultMedia = options.media;
@@ -66,7 +66,7 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
     await this.transport.disconnect();
   }
 
-  public async invite(phoneNumber: string): Promise<WebCallingSession> {
+  public async invite(phoneNumber: string): Promise<Session> {
     if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
@@ -137,7 +137,7 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
     });
 
     this.transport.on('invite', uaSession => {
-      const session = new WebCallingSession({
+      const session = new Session({
         media: this.defaultMedia,
         session: uaSession
       });
@@ -153,13 +153,13 @@ export class WebCallingClient extends EventEmitter implements IWebCallingClient 
     });
   }
 
-  private async tryInvite(phoneNumber: string): Promise<WebCallingSession> {
+  private async tryInvite(phoneNumber: string): Promise<Session> {
     return new Promise((resolve, reject) => {
       // Transport invite just creates a ClientContext, it doesn't send the
       // actual invite. We need to bind the event handlers below before we can
       // send out the actual invite. Otherwise we might miss the events.
       const uaSession = this.transport.invite(phoneNumber);
-      const session = new WebCallingSession({
+      const session = new Session({
         media: this.defaultMedia,
         session: uaSession
       });

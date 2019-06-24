@@ -5,7 +5,7 @@ import { UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus } from './enums';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
-import { IWebCallingClientOptions } from './types';
+import { IClientOptions } from './types';
 import { UA, WrappedTransport } from './ua';
 
 
@@ -40,7 +40,7 @@ export class ReconnectableTransport extends EventEmitter {
   private dyingCounter: number = 60000;
   private dyingIntervalID: number;
 
-  constructor(options: IWebCallingClientOptions) {
+  constructor(options: IClientOptions) {
     super();
 
     this.configure(options);
@@ -49,7 +49,7 @@ export class ReconnectableTransport extends EventEmitter {
     window.addEventListener('online', this.tryReconnecting.bind(this));
   }
 
-  public configure(options: IWebCallingClientOptions) {
+  public configure(options: IClientOptions) {
     const { account, transport } = options;
 
     this.uaOptions = {
