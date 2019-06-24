@@ -201,8 +201,23 @@ export class Session extends EventEmitter {
     this.session.bye();
   }
 
-  public dtmf(key) {
-    this.session.dtmf(key);
+  /**
+   * Send one or more DTMF tones.
+   * @param tones May only contain the characters `0-9A-D#*,`
+   */
+  public dtmf(tones: string): void {
+    // Unfortunately there is no easy way to give feedback about the DTMF
+    // tones. SIP.js uses one of two methods for sending the DTMF:
+    //
+    // 1. RTP (via the SDH)
+    // Internally returns a `boolean` for the whole strong.
+    //
+    // 2. INFO (websocket)
+    //
+    // Sends one tone after the other where the timeout is determined by the kind
+    // of tone send. If one tone fails, the entire sequence is cleared. There is
+    // no feedback about the failure.
+    this.session.dtmf(tones);
   }
 
   // public transfer() {}
