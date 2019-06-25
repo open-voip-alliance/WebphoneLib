@@ -23,7 +23,7 @@ export interface ISubscriptions {
   [index: string]: Subscription;
 }
 
-export interface IWebCallingClient {
+export interface IClient {
   reconfigure(options: IClientOptions): Promise<void>;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -36,7 +36,7 @@ export interface IWebCallingClient {
   on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
 }
 
-export class Client extends EventEmitter implements IWebCallingClient {
+export class Client extends EventEmitter implements IClient {
   public readonly sessions: ISessions = {};
   public defaultMedia: IMedia;
 
@@ -129,7 +129,7 @@ export class Client extends EventEmitter implements IWebCallingClient {
   }
 
   public subscribe(uri: string) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       if (this.subscriptions[uri]) {
         console.log('Already subscribed!');
 
