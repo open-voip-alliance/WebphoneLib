@@ -1,26 +1,37 @@
 import { EventEmitter } from 'events';
 import {
   Grammar,
-  InviteClientContext,
-  InviteServerContext,
   ReferClientContext,
   ReferServerContext
 } from 'sip.js';
 
 import { audioContext } from './audio-context';
 import { InternalSession, SessionMedia } from './session-media';
+import { SessionStats } from './session-stats';
+import * as Time from './time';
 import { IMedia, IRemoteIdentity } from './types';
+import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 import { closeStream } from './utils';
 
 
 type ReferContext = ReferClientContext | ReferServerContext;
 
 
-export class Session extends EventEmitter {
-  public readonly id: string;
+interface ISession {
+  readonly id: string;
+  readonly media: SessionMedia;
+  readonly stats: SessionStats;
+
+  on(event: 'statsUpdated', listener: () => void): this;
+}
+
+
+export class Session extends EventEmitter implements ISession {
+  public readonly id;
+  public readonly media;
+  public readonly stats;
   public saidBye: boolean;
   public holdState: boolean;
-  public readonly media: SessionMedia;
 
   private session: InternalSession;
 
@@ -30,11 +41,18 @@ export class Session extends EventEmitter {
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
 
-  constructor({ media, session }) {
+  private statsTimer: number = undefined;
+  private statsInterval: number = 5 * Time.second;
+
+  constructor({session, media}: {
+    session: WrappedInviteClientContext | WrappedInviteServerContext,
+    media: IMedia
+  }) {
     super();
-    this.session = session;
+    this.session = (session as InternalSession);
     this.id = session.request.callId;
-    this.media = new SessionMedia(session, media);
+    this.media = new SessionMedia(this.session, media);
+    this.stats = new SessionStats();
 
     this.acceptedPromise = new Promise(resolve => {
       const handlers = {
@@ -69,11 +87,31 @@ export class Session extends EventEmitter {
     });
 
     this.saidBye = false;
-    this.session.once('bye', e => {
+    this.session.once('bye', () => {
       this.saidBye = true;
     });
 
     this.holdState = false;
+
+    // Set up stats timer to priodically query and process the peer connection's
+    // statistics.
+    this.session.once('SessionDescriptionHandler-created', () => {
+      this.statsTimer = window.setInterval(() => {
+        const pc = this.session.sessionDescriptionHandler.peerConnection;
+        pc.getStats().then(stats => {
+          if (this.stats.add(stats)) {
+            this.emit('statsUpdated', this.stats);
+          }
+        });
+      }, this.statsInterval);
+    });
+
+    this.session.once('terminated', () => {
+      if (this.statsTimer) {
+        window.clearInterval(this.statsTimer);
+        delete this.statsTimer;
+      }
+    });
   }
 
   get remoteIdentity(): IRemoteIdentity {

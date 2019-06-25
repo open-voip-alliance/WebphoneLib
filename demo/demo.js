@@ -4,12 +4,11 @@ import * as CREDS from './creds.js';
 
 const caller = document.querySelector('#caller');
 const ringerBtn = document.querySelector('#ring');
-const remoteAudio = document.querySelector('#remote');
-const localAudio = document.querySelector('#local');
 const outBtn = document.querySelector('#out');
 const reconfigureBtn = document.querySelector('#reconfigure');
 const registerBtn = document.querySelector('#register');
 const unregisterBtn = document.querySelector('#unregister');
+const inCall = document.querySelector('#in-call');
 const byeBtn = document.querySelector('#bye');
 const holdBtn = document.querySelector('#hold');
 const unholdBtn = document.querySelector('#unhold');
@@ -18,6 +17,7 @@ const inVol = document.querySelector('#inVol');
 const outVol = document.querySelector('#outVol');
 const inMute = document.querySelector('#inMute');
 const outMute = document.querySelector('#outMute');
+const mos = document.querySelector('#mos');
 
 const account = {
   user: CREDS.authorizationUser,
@@ -166,59 +166,70 @@ outMute.addEventListener('change', function(e) {
   }
 });
 
-async function outgoingCall(number) {
-  const session = await client.invite(`sip:${number}@voipgrid.nl`);
 
-  if (!session) {
-    return;
-  }
+function printStats(stats) {
+  const last = (stats.mos.last || 0).toFixed(2);
+  const low = (stats.mos.lowest || 0).toFixed(2);
+  const high = (stats.mos.highest || 0).toFixed(2);
+  const avg = (stats.mos.average || 0).toFixed(2);
+  console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
+}
 
+
+async function runSession(session) {
   activeSession = session;
-
-  console.log('created outgoing call', session.id, 'to', number);
 
   const bye = () => session.bye();
   const hold = async () => await session.hold();
   const unhold = async () => await session.unhold();
   const blindTransfer = async () => await session.transfer('sip:318@voipgrid.nl');
 
-  if (await session.accepted()) {
-    console.log('outgoing call got accepted', session.id);
+  session.on('statsUpdated', (stats) => {
+    printStats(stats);
+    mos.innerHTML = (stats.mos.last || 0).toFixed(2);
+  });
 
-    byeBtn.hidden = false;
-    blindTransferBtn.hidden = false;
+  try {
+    inCall.hidden = false;
     byeBtn.addEventListener('click', bye);
     holdBtn.addEventListener('click', hold);
     unholdBtn.addEventListener('click', unhold);
     blindTransferBtn.addEventListener('click', blindTransfer);
-  } else {
-    console.log('outgoing call was rejected', session.id);
+
+    await session.terminated();
+  } finally {
+    byeBtn.removeEventListener('click', bye);
+    holdBtn.removeEventListener('click', hold);
+    unholdBtn.removeEventListener('click', unhold);
+    blindTransferBtn.removeEventListener('click', blindTransfer);
+    inCall.hidden = true;
+    activeSession = undefined;
+
+    printStats(session.stats);
+  }
+}
+
+async function outgoingCall(number) {
+  const session = await client.invite(`sip:${number}@voipgrid.nl`);
+  if (!session) {
+    return;
   }
 
-  await session.terminated();
-  console.log('session is terminated', session.id);
+  console.log('created outgoing call', session.id, 'to', number);
 
-  byeBtn.hidden = true;
-  byeBtn.removeEventListener('click', bye);
-  holdBtn.removeEventListener('click', hold);
-  unholdBtn.removeEventListener('click', unhold);
-  blindTransferBtn.removeEventListener('click', blindTransfer);
-  blindTransferBtn.hidden = true;
-  activeSession = undefined;
+  if (await session.accepted()) {
+    console.log('outgoing call got accepted', session.id);
+    await runSession(session);
+  } else {
+    console.log('outgoing call was rejected', session.id);
+    await session.terminated();
+  }
+
+  console.log('session is terminated', session.id);
 }
 
 async function incomingCall(session) {
   console.log('invited', session.id);
-  activeSession = session;
-
-  const bye = () => session.bye();
-  const hold = async () => {
-    console.log('holding...');
-    await session.hold();
-    console.log('reinvite is sent...');
-  };
-  const unhold = async () => await session.unhold();
-  const blindTransfer = async () => await session.transfer('sip:318@voipgrid.nl');
 
   const { number, displayName } = session.remoteIdentity;
   caller.innerHTML = `${displayName} (${number})`;
@@ -238,25 +249,13 @@ async function incomingCall(session) {
     if (await session.accepted()) {
       console.log('session is accepted \\o/', session.id);
 
-      blindTransferBtn.hidden = false;
-      byeBtn.hidden = false;
-      byeBtn.addEventListener('click', bye);
-      holdBtn.addEventListener('click', hold);
-      unholdBtn.addEventListener('click', unhold);
-      blindTransferBtn.addEventListener('click', blindTransfer);
-
       // Terminate the session after 60 seconds
       terminateTimer = setTimeout(() => {
         console.log('terminating the session');
         session.terminate();
       }, 60000);
 
-      await session.terminated();
-
-      byeBtn.removeEventListener('click', bye);
-      holdBtn.removeEventListener('click', hold);
-      unholdBtn.removeEventListener('click', unhold);
-      blindTransferBtn.removeEventListener('click', blindTransfer);
+      await runSession(session);
 
       // It could happen that the session was broken somehow
       if (session.saidBye) {
@@ -269,11 +268,6 @@ async function incomingCall(session) {
     console.error('session failed', session.id, e);
   } finally {
     console.log('closing session...', session.id);
-    byeBtn.hidden = true;
-    ringerBtn.hidden = true;
-    caller.hidden = true;
-    blindTransferBtn.hidden = true;
-    activeSession = undefined;
 
     if (terminateTimer) {
       clearTimeout(terminateTimer);
