@@ -6,3 +6,14 @@ export enum ClientStatus {
   DISCONNECTING,
   DISCONNECTED
 }
+
+export enum SubscriptionStatus {
+  AVAILABLE = 'available',
+  TRYING = 'trying',
+  PROCEEDING = 'proceeding',
+  EARLY = 'early',
+  RINGING = 'ringing',
+  CONFIRMED = 'confirmed',
+  BUSY = 'busy',
+  TERMINATED = 'terminated'
+}

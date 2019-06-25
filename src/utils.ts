@@ -15,3 +15,15 @@ export function isPrivateIP(ip) {
 export function closeStream(stream: MediaStream): void {
   stream.getTracks().forEach(track => track.stop());
 }
+
+/**
+ * Calculate a jitter from interval.
+ * @param {Number} interval - The interval in ms to calculate jitter for.
+ * @param {Number} percentage - The jitter range in percentage.
+ * @returns {Number} The calculated jitter in ms.
+ */
+export function jitter(interval, percentage) {
+  const min = 0 - Math.ceil(interval * (percentage / 100));
+  const max = Math.floor(interval * (percentage / 100));
+  return Math.floor(Math.random() * (max - min)) + min;
+}
