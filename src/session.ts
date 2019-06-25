@@ -297,28 +297,23 @@ export class Session extends EventEmitter implements ISession {
   // depending on whether it is outbound or inbound) should then be passed
   // to this function.
   private async transfer(target: InternalSession | string): Promise<boolean> {
-    const referRequestedPromise: Promise<{
-      referContext: ReferClientContext;
-      options: any;
-    }> = new Promise((resolve, rejected) =>
-      this.session.once('referRequested', context => {
-        console.log('refer is requested');
-        console.log(context);
-        resolve(context);
-      })
-    );
-
-    this.session.refer(target);
-
-    const { referContext, options } = await referRequestedPromise;
-
-    return pTimeout(this.isReferredPromise({ referContext, options }), 20000, () => {
+    return pTimeout(this.isTransferredPromise(target), 20000, () => {
       console.log('Could not transfer the call, sorry.');
       return Promise.resolve(false);
     });
   }
 
-  private isReferredPromise({ referContext, options }) {
+  private async isTransferredPromise(target: InternalSession | string) {
+    const { referContext, options } = await new Promise((resolve, rejected) => {
+      this.session.once('referRequested', context => {
+        console.log('refer is requested');
+        console.log(context);
+        resolve(context);
+      });
+
+      this.session.refer(target);
+    });
+
     return new Promise<boolean>((resolve, rejected) => {
       const handlers = {
         onReferAccepted: () => {

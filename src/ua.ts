@@ -28,8 +28,18 @@ export class WrappedInviteClientContext extends InviteClientContext {
     );
   }
 
+  /**
+   * The difference between this and Session.refer is that
+   * this.referContext.refer is not called here.
+   *
+   * Refer a call to someone, this can be either a blind or an attended
+   * transfer. Overrides super which, when called, immediately sends
+   * out a request and emits the appropriate refer{State}. In that case it
+   * could happen that events are emitted before our listeners are set up.
+   * To avoid this, referContext is emitted so that event listeners can be
+   * setup prior to calling refer.
+   */
   public refer(target: string | WrappedInviteClientContext, options: any = {}): ReferClientContext {
-    console.log('DEZE REFER A');
     // Check Session Status
     if (this.status !== SessionStatus.STATUS_CONFIRMED) {
       throw new Exceptions.InvalidStateError(this.status);
@@ -64,9 +74,18 @@ export class WrappedInviteServerContext extends InviteServerContext {
     );
   }
 
+  /**
+   * The difference between this and Session.refer is that
+   * this.referContext.refer is not called here.
+   *
+   * Refer a call to someone, this can be either a blind or an attended
+   * transfer. Overrides super which, when called, immediately sends
+   * out a request and emits the appropriate refer{State}. In that case it
+   * could happen that events are emitted before our listeners are set up.
+   * To avoid this, referContext is emitted so that event listeners can be
+   * setup prior to calling refer.
+   */
   public refer(target: string | WrappedInviteServerContext, options: any = {}): ReferClientContext {
-    console.log('DEZE REFER B');
-    console.log(target, options);
     // Check Session Status
     if (this.status !== SessionStatus.STATUS_CONFIRMED) {
       throw new Exceptions.InvalidStateError(this.status);
