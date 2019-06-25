@@ -6,10 +6,20 @@ import { UA as UABase, Web } from 'sip.js';
 import { ClientStatus } from './enums';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { IClientOptions } from './types';
-import { UA, WrappedTransport } from './ua';
+import { UA, WrappedInviteClientContext, WrappedInviteServerContext, WrappedTransport } from './ua';
+import { jitter } from './utils';
 
+// TODO: Implement rest of the types
+interface IReconnectableTransport {
+  configure(options: IClientOptions): void;
+  connect(): void;
+  disconnect(options: { hasSocket: boolean; hasRegistered: boolean }): Promise<void>;
+  // invite(phoneNumber: string): Promise<WrappedInviteClientContext | WrappedInviteServerContext>;
+}
 
-export class ReconnectableTransport extends EventEmitter {
+const SIP_PRESENCE_EXPIRE = 3600;
+
+export class ReconnectableTransport extends EventEmitter implements IReconnectableTransport {
   private get defaultOptions() {
     return {
       autostart: false,
@@ -174,6 +184,14 @@ export class ReconnectableTransport extends EventEmitter {
     return this.ua.invite(phoneNumber);
   }
 
+  public subscribe(contact: string) {
+    // Introducing a jitter here, to avoid mass-re-subscriptions which spam
+    // the server.
+    return this.ua.subscribe(contact, 'dialog', {
+      expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
+    });
+  }
+
   public isRegistered() {
     return this.registeredPromise;
   }
@@ -251,7 +269,7 @@ export class ReconnectableTransport extends EventEmitter {
       console.log('socket opened');
 
       this.updateStatus(ClientStatus.CONNECTED);
-      this.emit('reviveSessions');
+      this.emit('revive');
 
       this.registeredPromise = this.createRegisteredPromise();
 

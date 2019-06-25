@@ -7,6 +7,7 @@ import {
   RegisterContext,
   SessionDescriptionHandlerModifiers,
   SessionStatus,
+  Subscription,
   UA as UABase,
   UAStatus,
   URI,
@@ -74,7 +75,11 @@ export class UA extends UABase {
   }
 
   /**
-   * Make an outgoing call.
+   * Make an outgoing call. Overrides super invite which, when connected,
+   * immediately calls context.invite(). In that case it could happen that
+   * events are emitted before our listeners are set up. To avoid this,
+   * context is returned, and event listeners can be set up prior to calling
+   * invite.
    *
    * @param {String} target
    * @param {Object} views
@@ -92,6 +97,20 @@ export class UA extends UABase {
     return new WrappedInviteClientContext(this, target, options, modifiers);
     // end change
   }
+
+  /**
+   * Create a Subscription instance for a given target. Overides super which,
+   * when connected, immediately calls sub.subscribe(). In that case it could
+   * happen that events are emitted before our listeners are set up. To avoid
+   * this, sub is returned, and event listeners can be set up prior to calling
+   * subscribe.
+   */
+  public subscribe(target: string | URI, event: string, options: any): Subscription {
+    // begin change
+    return new Subscription(this, target, event, options);
+    // end change
+  }
+
   /**
    * Gracefully close.
    */
