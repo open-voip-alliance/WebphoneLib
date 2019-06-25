@@ -23,7 +23,7 @@ export interface ISubscriptions {
   [index: string]: Subscription;
 }
 
-export interface IWebCallingClient {
+export interface IClient {
   reconfigure(options: IClientOptions): Promise<void>;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
