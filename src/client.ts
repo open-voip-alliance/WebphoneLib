@@ -15,10 +15,6 @@ export interface ISessions {
   [index: string]: Session;
 }
 
-export interface IClient {
-  reconfigure(options: IClientOptions): Promise<void>;
-}
-
 export interface ISubscriptions {
   [index: string]: Subscription;
 }
