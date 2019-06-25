@@ -15,10 +15,6 @@ export interface ISessions {
   [index: string]: Session;
 }
 
-export interface IClient {
-  reconfigure(options: IClientOptions): Promise<void>;
-}
-
 export interface ISubscriptions {
   [index: string]: Subscription;
 }
@@ -178,16 +174,10 @@ export class Client extends EventEmitter implements IClient {
     });
   }
 
-  public resubscribe(uri: string) {
-    return new Promise((resolve, reject) => {
-      this.removeSubscription({ uri });
-      this.subscribe(uri)
-        .then(() => {
-          console.log(`Resubscribed to ${uri}`);
-          resolve();
-        })
-        .catch(reject);
-    });
+  public async resubscribe(uri: string) {
+    this.removeSubscription({ uri });
+    await this.subscribe(uri);
+    console.log(`Resubscribed to ${uri}`);
   }
 
   public unsubscribe(uri: string) {
