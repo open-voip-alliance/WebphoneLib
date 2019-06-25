@@ -1,5 +1,5 @@
-import pTimeout from 'p-timeout';
 import { EventEmitter } from 'events';
+import pTimeout from 'p-timeout';
 import { Grammar, ReferClientContext, ReferServerContext } from 'sip.js';
 
 import { audioContext } from './audio-context';
