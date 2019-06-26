@@ -192,9 +192,12 @@ export class Session extends EventEmitter implements ISession {
     return this.terminatedPromise;
   }
 
-  public reinvite(): void {
-    console.log('reinvite called!');
+  public async reinvite(): Promise<void> {
+    const reinvitePromise = this.getReinvitePromise();
+
     this.session.reinvite();
+
+    await reinvitePromise;
   }
 
   public hold(): Promise<boolean> {
