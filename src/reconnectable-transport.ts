@@ -116,7 +116,9 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
     this.ua.start();
 
-    await this.transportConnectedPromise;
+    await pTimeout(this.transportConnectedPromise, 10000, () =>
+      Promise.reject(new Error('Could not connect the websocket in time.'))
+    );
 
     this.ua.register();
 
@@ -332,8 +334,6 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.ua = new UA(this.uaOptions);
     this.ua.on('invite', uaSession => this.emit('invite', uaSession));
 
-    // TODO: Add a timeout here, to reject if there is no internet or no
-    // socket could be created
     this.transportConnectedPromise = new Promise(resolve => {
       this.ua.once('transportCreated', () => {
         console.log('transport created');
