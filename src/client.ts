@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
-import pTimeout from 'p-timeout';
 import { Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus } from './enums';
@@ -192,9 +191,10 @@ export class Client extends EventEmitter implements IClient {
     this.transport = new ReconnectableTransport(options);
 
     this.transport.on('revive', () => {
-      Object.values(this.sessions).forEach(session => {
+      Object.values(this.sessions).forEach(async session => {
         session.rebuildSessionDescriptionHandler();
-        session.reinvite();
+        await session.reinvite();
+        console.log(session.remoteIdentity);
       });
 
       Object.keys(this.subscriptions).forEach(async uri => {

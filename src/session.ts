@@ -1,9 +1,6 @@
 import { EventEmitter } from 'events';
-import {
-  Grammar,
-  ReferClientContext,
-  ReferServerContext
-} from 'sip.js';
+import pTimeout from 'p-timeout';
+import { Grammar, ReferClientContext, ReferServerContext } from 'sip.js';
 
 import { audioContext } from './audio-context';
 import { InternalSession, SessionMedia } from './session-media';
@@ -13,9 +10,7 @@ import { IMedia, IRemoteIdentity } from './types';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 import { closeStream } from './utils';
 
-
 type ReferContext = ReferClientContext | ReferServerContext;
-
 
 interface ISession {
   readonly id: string;
@@ -24,7 +19,6 @@ interface ISession {
 
   on(event: 'statsUpdated', listener: () => void): this;
 }
-
 
 export class Session extends EventEmitter implements ISession {
   public readonly id;
@@ -44,12 +38,15 @@ export class Session extends EventEmitter implements ISession {
   private statsTimer: number = undefined;
   private statsInterval: number = 5 * Time.second;
 
-  constructor({session, media}: {
-    session: WrappedInviteClientContext | WrappedInviteServerContext,
-    media: IMedia
+  constructor({
+    session,
+    media
+  }: {
+    session: WrappedInviteClientContext | WrappedInviteServerContext;
+    media: IMedia;
   }) {
     super();
-    this.session = (session as InternalSession);
+    this.session = session as InternalSession;
     this.id = session.request.callId;
     this.media = new SessionMedia(this.session, media);
     this.stats = new SessionStats();
@@ -195,9 +192,12 @@ export class Session extends EventEmitter implements ISession {
     return this.terminatedPromise;
   }
 
-  public reinvite(): void {
-    console.log('reinvite called!');
+  public async reinvite(): Promise<void> {
+    const reinvitePromise = this.getReinvitePromise();
+
     this.session.reinvite();
+
+    await reinvitePromise;
   }
 
   public hold(): Promise<boolean> {
@@ -208,31 +208,12 @@ export class Session extends EventEmitter implements ISession {
     return this.setHoldState(false);
   }
 
-  // In the case of a BLIND transfer, a string can be passed along with a
-  // number.
-  // In the case of an ATTENDED transfer, a NEW call(/session) should be
-  // made. This NEW session (a.k.a. InviteClientContext/InviteServerContext
-  // depending on whether it is outbound or inbound) should then be passed
-  // to this function.
-  public async transfer(target: Session | string): Promise<boolean> {
-    const referRequestedPromise: Promise<ReferContext> = new Promise((resolve, rejected) =>
-      this.session.once('referRequested', context => {
-        console.log('refer is requested');
-        resolve(context);
-      })
-    );
+  public async blindTransfer(target: string): Promise<boolean> {
+    return this.transfer(target);
+  }
 
-    // as string because we only implemented blind transfer for now
-    this.session.refer(target as string);
-
-    const referContext = await referRequestedPromise;
-
-    return new Promise((resolve, rejected) => {
-      referContext.once('referAccepted', () => {
-        console.log('refer is accepted!');
-        resolve(true);
-      });
-    });
+  public async attendedTransfer(target: Session): Promise<boolean> {
+    return this.transfer(target.session);
   }
 
   /**
@@ -268,8 +249,6 @@ export class Session extends EventEmitter implements ISession {
     // no feedback about the failure.
     this.session.dtmf(tones);
   }
-
-  // public transfer() {}
 
   private getReinvitePromise(): Promise<boolean> {
     return new Promise((resolve, reject) => {
@@ -312,5 +291,54 @@ export class Session extends EventEmitter implements ISession {
     this.holdState = flag;
 
     return this.reinvitePromise;
+  }
+
+  // In the case of a BLIND transfer, a string can be passed along with a
+  // number.
+  // In the case of an ATTENDED transfer, a NEW call(/session) should be
+  // made. This NEW session (a.k.a. InviteClientContext/InviteServerContext
+  // depending on whether it is outbound or inbound) should then be passed
+  // to this function.
+  private async transfer(target: InternalSession | string): Promise<boolean> {
+    return pTimeout(this.isTransferredPromise(target), 20000, () => {
+      console.log('Could not transfer the call, sorry.');
+      return Promise.resolve(false);
+    });
+  }
+
+  private async isTransferredPromise(target: InternalSession | string) {
+    const { referContext, options } = await new Promise((resolve, rejected) => {
+      this.session.once('referRequested', context => {
+        console.log('refer is requested');
+        console.log(context);
+        resolve(context);
+      });
+
+      this.session.refer(target);
+    });
+
+    return new Promise<boolean>((resolve, rejected) => {
+      const handlers = {
+        onReferAccepted: () => {
+          console.log('refer is accepted!');
+          referContext.removeListener('referRejected', handlers.onReferRejected);
+          resolve(true);
+        },
+        // Refer can be rejected with the following responses:
+        // - 503: Service Unavailable (i.e. server can't handle one-legged transfers)
+        // - 603: Declined
+        onReferRejected: () => {
+          console.log('refer is rejected!');
+          referContext.removeListener('referAccepted', handlers.onReferAccepted);
+          resolve(false);
+        }
+      };
+
+      referContext.once('referAccepted', handlers.onReferAccepted);
+      referContext.once('referRejected', handlers.onReferRejected);
+
+      // Refer after the handlers have been set.
+      referContext.refer(options);
+    });
   }
 }

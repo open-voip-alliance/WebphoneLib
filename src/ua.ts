@@ -2,8 +2,10 @@ import pTimeout from 'p-timeout';
 import {
   C as SIPConstants,
   Core,
+  Exceptions,
   InviteClientContext,
   InviteServerContext,
+  ReferClientContext,
   RegisterContext,
   SessionDescriptionHandlerModifiers,
   SessionStatus,
@@ -25,6 +27,38 @@ export class WrappedInviteClientContext extends InviteClientContext {
       this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
     );
   }
+
+  /**
+   * Refer a call to someone, this can be either a blind or an attended
+   * transfer. Overrides super which, when called, immediately sends
+   * out a request and emits the appropriate refer{State}. In that case it
+   * could happen that events are emitted before our listeners are set up.
+   * To avoid this, referContext is emitted so that event listeners can be
+   * setup prior to calling refer.
+   *
+   * The difference between this and Session.refer is that
+   * this.referContext.refer is not called here.
+   */
+  public refer(target: string | WrappedInviteClientContext, options: any = {}): ReferClientContext {
+    // Check Session Status
+    if (this.status !== SessionStatus.STATUS_CONFIRMED) {
+      throw new Exceptions.InvalidStateError(this.status);
+    }
+
+    // secretly accessing private variable
+    (this as any).referContext = new ReferClientContext(
+      this.ua,
+      (this as unknown) as InviteClientContext | InviteServerContext,
+      target,
+      options
+    );
+    // change start
+    this.emit('referRequested', { referContext: (this as any).referContext, options });
+    // change end
+
+    // secretly accessing private variable
+    return (this as any).referContext;
+  }
 }
 
 // tslint:disable-next-line: max-classes-per-file
@@ -38,6 +72,38 @@ export class WrappedInviteServerContext extends InviteServerContext {
       this,
       this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
     );
+  }
+
+  /**
+   * Refer a call to someone, this can be either a blind or an attended
+   * transfer. Overrides super which, when called, immediately sends
+   * out a request and emits the appropriate refer{State}. In that case it
+   * could happen that events are emitted before our listeners are set up.
+   * To avoid this, referContext is emitted so that event listeners can be
+   * setup prior to calling refer.
+   *
+   * The difference between this and Session.refer is that
+   * this.referContext.refer is not called here.
+   */
+  public refer(target: string | WrappedInviteServerContext, options: any = {}): ReferClientContext {
+    // Check Session Status
+    if (this.status !== SessionStatus.STATUS_CONFIRMED) {
+      throw new Exceptions.InvalidStateError(this.status);
+    }
+
+    // secretly accessing private variable
+    (this as any).referContext = new ReferClientContext(
+      this.ua,
+      (this as unknown) as InviteClientContext | InviteServerContext,
+      target,
+      options
+    );
+    // change start
+    this.emit('referRequested', { referContext: (this as any).referContext, options });
+    // change end
+
+    // secretly accessing private variable
+    return (this as any).referContext;
   }
 }
 
