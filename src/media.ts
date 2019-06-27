@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 import { audioContext } from './audio-context';
-import * as Features from './feature-detection';
+import * as Features from './features';
 import * as Time from './time';
 import { IMediaInput, IMediaOutput } from './types';
 import { closeStream, eqSet  } from './utils';
