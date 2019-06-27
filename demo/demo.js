@@ -166,7 +166,7 @@ inMute.addEventListener('change', function(e) {
   if (activeSession) {
     activeSession.media.input.muted = this.checked;
   } else {
-    client.defaultMedia.input.volume = this.checked;
+    client.defaultMedia.input.muted = this.checked;
   }
 });
 
@@ -183,7 +183,7 @@ outMute.addEventListener('change', function(e) {
   if (activeSession) {
     activeSession.media.output.muted = this.checked;
   } else {
-    client.defaultMedia.output.volume = this.checked;
+    client.defaultMedia.output.muted = this.checked;
   }
 });
 
@@ -224,6 +224,11 @@ async function runSession(session) {
   const unhold = async () => await session.unhold();
   const blindTransfer = async () => await session.blindTransfer('sip:318@voipgrid.nl');
   const attTransfer = async () => await attendedTransfer(session);
+
+
+  session.audioConnected
+    .then(() => console.log('audio connected!'))
+    .catch(() => console.error('connecting audio failed'));
 
   session.on('statsUpdated', stats => {
     printStats(stats);

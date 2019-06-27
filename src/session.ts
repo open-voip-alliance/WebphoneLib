@@ -1,14 +1,18 @@
 import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
-import { Grammar, ReferClientContext, ReferServerContext } from 'sip.js';
+import {
+  Grammar,
+  NameAddrHeader,
+  ReferClientContext,
+  ReferServerContext
+} from 'sip.js';
 
-import { audioContext } from './audio-context';
+import { checkAudioConnected } from './session-health';
 import { InternalSession, SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
 import * as Time from './time';
 import { IMedia, IRemoteIdentity } from './types';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
-import { closeStream } from './utils';
 
 type ReferContext = ReferClientContext | ReferServerContext;
 
@@ -16,6 +20,7 @@ interface ISession {
   readonly id: string;
   readonly media: SessionMedia;
   readonly stats: SessionStats;
+  readonly audioConnected: Promise<void>;
 
   on(event: 'statsUpdated', listener: () => void): this;
 }
@@ -24,6 +29,7 @@ export class Session extends EventEmitter implements ISession {
   public readonly id;
   public readonly media;
   public readonly stats;
+  public readonly audioConnected;
   public saidBye: boolean;
   public holdState: boolean;
 
@@ -35,21 +41,14 @@ export class Session extends EventEmitter implements ISession {
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
 
-  private statsTimer: number = undefined;
-  private statsInterval: number = 5 * Time.second;
-
-  constructor({
-    session,
-    media
-  }: {
-    session: WrappedInviteClientContext | WrappedInviteServerContext;
-    media: IMedia;
+  constructor({session, media}: {
+    session: WrappedInviteClientContext | WrappedInviteServerContext,
+    media: IMedia
   }) {
     super();
     this.session = session as InternalSession;
     this.id = session.request.callId;
     this.media = new SessionMedia(this.session, media);
-    this.stats = new SessionStats();
 
     this.acceptedPromise = new Promise(resolve => {
       const handlers = {
@@ -67,8 +66,9 @@ export class Session extends EventEmitter implements ISession {
       this.session.once('rejected', handlers.onRejected);
     });
 
-    this.saidBye = false;
-
+    // Terminated promise will resolve when the session is terminated. It will
+    // be rejected when there is some fault is detected with the session after it
+    // has been accepted.
     this.terminatedPromise = new Promise((resolve, reject) => {
       this.session.once('terminated', (message, cause) => {
         this.emit('terminated', this);
@@ -83,6 +83,7 @@ export class Session extends EventEmitter implements ISession {
       });
     });
 
+    // Track if the other side said bye before terminating.
     this.saidBye = false;
     this.session.once('bye', () => {
       this.saidBye = true;
@@ -90,30 +91,27 @@ export class Session extends EventEmitter implements ISession {
 
     this.holdState = false;
 
-    // Set up stats timer to priodically query and process the peer connection's
-    // statistics.
-    this.session.once('SessionDescriptionHandler-created', () => {
-      this.statsTimer = window.setInterval(() => {
-        const pc = this.session.sessionDescriptionHandler.peerConnection;
-        pc.getStats().then(stats => {
-          if (this.stats.add(stats)) {
-            this.emit('statsUpdated', this.stats);
-          }
-        });
-      }, this.statsInterval);
+    // Session stats will calculate a MOS value of the inbound channel every 5
+    // seconds.
+    // TODO: make this setting configurable.
+    this.stats = new SessionStats(this.session, {
+      statsInterval: 5 * Time.second
+    });
+    this.stats.on('statsUpdated', () => {
+      this.emit('statsUpdated', this.stats);
     });
 
-    this.session.once('terminated', () => {
-      if (this.statsTimer) {
-        window.clearInterval(this.statsTimer);
-        delete this.statsTimer;
-      }
+    // Promise that will resolve when the session's audio is connected.
+    // TODO: make these settings configurable.
+    this.audioConnected = checkAudioConnected(this.session, {
+      checkInterval: 0.5 * Time.second,
+      noAudioTimeout: 10 * Time.second
     });
   }
 
   get remoteIdentity(): IRemoteIdentity {
     const request = this.session.request;
-    let identity;
+    let identity: NameAddrHeader;
     ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
       if (request.hasHeader(header)) {
         identity = Grammar.nameAddrHeaderParse(request.getHeader(header));
@@ -125,7 +123,7 @@ export class Session extends EventEmitter implements ISession {
     let displayName: string;
 
     if (identity) {
-      phoneNumber = identity.uri.normal.user;
+      phoneNumber = (identity.uri as any).normal.user;
       displayName = identity.displayName;
     }
 
@@ -147,7 +145,7 @@ export class Session extends EventEmitter implements ISession {
           this.session.removeListener('failed', handlers.onFail);
           resolve();
         },
-        onFail: e => {
+        onFail: (e: Error) => {
           this.session.removeListener('accepted', handlers.onAnswered);
           reject(e);
         }
@@ -253,14 +251,14 @@ export class Session extends EventEmitter implements ISession {
   private getReinvitePromise(): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const handlers = {
-        onReinviteAccepted: e => {
+        onReinviteAccepted: () => {
           this.session.removeListener('reinviteFailed', handlers.onReinviteFailed);
           // Calling resolve after removeListener, otherwise, when it fails,
           // the resolved promise can not be rejected with an error trace
           // anymore.
           resolve(true);
         },
-        onReinviteFailed: e => {
+        onReinviteFailed: (e: Error) => {
           this.session.removeListener('reinviteAccepted', handlers.onReinviteAccepted);
           // Calling reject after removeListener, otherwise, when it fails,
           // reject returns the wrong trace.
@@ -273,7 +271,7 @@ export class Session extends EventEmitter implements ISession {
     });
   }
 
-  private setHoldState(flag) {
+  private setHoldState(flag: boolean) {
     if (this.holdState === flag) {
       return this.reinvitePromise;
     }
@@ -307,7 +305,7 @@ export class Session extends EventEmitter implements ISession {
   }
 
   private async isTransferredPromise(target: InternalSession | string) {
-    const { referContext, options } = await new Promise((resolve, rejected) => {
+    const { referContext, options } = await new Promise(resolve => {
       this.session.once('referRequested', context => {
         console.log('refer is requested');
         console.log(context);
@@ -317,7 +315,7 @@ export class Session extends EventEmitter implements ISession {
       this.session.refer(target);
     });
 
-    return new Promise<boolean>((resolve, rejected) => {
+    return new Promise<boolean>(resolve => {
       const handlers = {
         onReferAccepted: () => {
           console.log('refer is accepted!');
