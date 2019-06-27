@@ -22,8 +22,3 @@ export enum ReconnectionMode {
   ONCE,
   BURST
 }
-
-export enum ReconnectionStrategy {
-  DISCONNECT_AFTER_60_SECONDS,
-  KEEP_TRYING
-}

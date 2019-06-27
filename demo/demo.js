@@ -50,7 +50,7 @@ const media = {
 const client = new Client({ account, transport, media });
 outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
 
-const contact = 'sip:497920038@voipgrid.nl';
+const contact = 'sip:497920039@voipgrid.nl';
 
 client.on('invite', incomingCall);
 client.on('notify', (notifiedContact, notification) => {

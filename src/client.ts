@@ -84,12 +84,12 @@ export class Client extends EventEmitter implements IClient {
       // Retrying this once if it fails. While the socket seems healthy, it
       // might in fact not be. In that case the act of sending data over the
       // socket (the act of inviting) will cause us to detect that the
-      // socket is broken somehow. In that case getConnection will trigger
+      // socket is broken somehow. In that case getConnection will try
       // to regain connection, to quickly re-invite over the newly created
       // socket (or not).
       session = await this.tryInvite(uri).catch(async e => {
         console.log('something went wrong here. trying to recover.');
-        await this.transport.getConnection({ mode: ReconnectionMode.ONCE });
+        await this.transport.getConnection(ReconnectionMode.ONCE);
 
         if (this.transport.status !== ClientStatus.CONNECTED) {
           throw new Error('Not sending out invite. It appears we are not connected. =(');

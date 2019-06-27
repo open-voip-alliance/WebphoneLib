@@ -51,16 +51,20 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   private uaOptions: UABase.Options;
   private dyingCounter: number = 5000;
   private dyingIntervalID: number;
-  private reconnectionStrategy: ReconnectionStrategy = ReconnectionStrategy.KEEP_TRYING;
-  private retry: IRetry = { interval: 5000, limit: 10000, timeout: 250 }; // temp on 10000
+  private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
+  private boundOnWindowOffline: EventListenerOrEventListenerObject;
+  private boundOnWindowOnline: EventListenerOrEventListenerObject;
 
   constructor(options: IClientOptions) {
     super();
 
     this.configure(options);
 
-    window.addEventListener('offline', this.onWindowOffline.bind(this));
-    window.addEventListener('online', this.tryUntilConnected.bind(this));
+    this.boundOnWindowOffline = this.onWindowOffline.bind(this);
+    this.boundOnWindowOnline = this.tryUntilConnected.bind(this);
+
+    window.addEventListener('offline', this.boundOnWindowOffline);
+    window.addEventListener('online', this.boundOnWindowOnline);
   }
 
   public configure(options: IClientOptions) {
@@ -209,9 +213,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     return this.registeredPromise;
   }
 
-  public async getConnection(
-    { mode }: { mode: ReconnectionMode } = { mode: ReconnectionMode.ONCE }
-  ) {
+  public async getConnection(mode: ReconnectionMode = ReconnectionMode.ONCE) {
     if (!this.ua) {
       return false;
     }
@@ -225,7 +227,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.updateStatus(ClientStatus.RECOVERING);
 
     clearInterval(this.dyingIntervalID);
-    const isOnline = await this.isOnline({ mode });
+    const isOnline = await this.isOnline(mode);
     if (isOnline) {
       console.log('is really online!');
 
@@ -263,8 +265,8 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   }
 
   public close() {
-    window.removeEventListener('online', this.tryUntilConnected.bind(this));
-    window.removeEventListener('offline', this.onWindowOffline.bind(this));
+    window.removeEventListener('online', this.boundOnWindowOnline);
+    window.removeEventListener('offline', this.boundOnWindowOffline);
   }
 
   private updateStatus(status: ClientStatus) {
@@ -276,7 +278,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.emit('statusUpdate', status);
   }
 
-  private isOnlinePromise({ mode }: { mode: ReconnectionMode }) {
+  private isOnlinePromise(mode: ReconnectionMode) {
     return new Promise((resolve, reject) => {
       console.log(this.uaOptions.transportOptions.wsServers);
 
@@ -287,6 +289,8 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           console.log(e);
           console.log('it broke...');
           checkSocket.removeEventListener('open', handlers.onOpen);
+          // In the case that mode is BURST, throw an error which can be
+          // catched by pRetry.
           if (mode === ReconnectionMode.BURST) {
             throw new Error('it broke woops');
             return;
@@ -327,7 +331,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     });
   }
 
-  private isOnline({ mode }: { mode: ReconnectionMode }): Promise<any> {
+  private isOnline(mode: ReconnectionMode): Promise<any> {
     const hasConfiguredWsServer =
       this.uaOptions &&
       this.uaOptions.transportOptions &&
@@ -338,21 +342,16 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     }
 
     const tryOpeningSocketWithTimeout = () =>
-      pTimeout(this.isOnlinePromise({ mode }), 500, () => {
+      pTimeout(this.isOnlinePromise(mode), 500, () => {
         // In the case that mode is BURST, throw an error which can be
         // catched by pRetry.
         if (mode === ReconnectionMode.BURST) {
-          console.log('of toch hier');
           throw new Error('Cannot open socket. Probably DNS failure.');
           return;
         }
 
         return Promise.resolve(false);
       });
-
-    console.log('hierrr');
-    console.log(mode);
-    console.log(ReconnectionMode[mode]);
 
     // In the case that mode is ONCE, a new socket is created once, also with
     // a timeout of 500 ms.
@@ -361,7 +360,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       return tryOpeningSocketWithTimeout();
     }
 
-    // In the case that mode is KEEP_TRYING, a new socket is created roughly every
+    // In the case that mode is BURST, a new socket is created roughly every
     // 500 ms to be able to quickly revive our connection once that succeeds.
     const retryOptions = {
       forever: true,
@@ -397,7 +396,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
   /**
    * This function is generally called after a window 'online' event or
-   * after a ua.transport 'disconnected' event.
+   * after an ua.transport 'disconnected' event.
    *
    * In the scenario where the SIP server goes offline, or a socket stops
    * working, ua.transport emits a 'disconnected' event. When this happens
@@ -419,16 +418,16 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     }
 
     if (this.priority) {
-      const connected = await this.getConnection({ mode: ReconnectionMode.BURST });
+      const connected = await this.getConnection(ReconnectionMode.BURST);
 
-      this.onAfterGetConnection({ connected });
+      this.onAfterGetConnection(connected);
       return;
     }
 
     setTimeout(async () => {
-      const connected = await this.getConnection({ mode: ReconnectionMode.ONCE });
+      const connected = await this.getConnection(ReconnectionMode.ONCE);
 
-      this.onAfterGetConnection({ connected });
+      this.onAfterGetConnection(connected);
     }, this.retry.timeout);
 
     this.retry = increaseTimeout(this.retry);
@@ -483,22 +482,13 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       }
     };
 
-    this.dyingIntervalID = window.setInterval(subtractTillDead, 500);
+    this.dyingIntervalID = window.setInterval(subtractTillDead, subtractValue);
   }
 
-  private async onAfterGetConnection({ connected }) {
+  private async onAfterGetConnection(connected: boolean) {
     if (connected) {
       this.dyingCounter = 60000;
       console.log('it appears we are connected!');
-      return;
-    }
-
-    if (this.reconnectionStrategy === ReconnectionStrategy.DISCONNECT_AFTER_60_SECONDS) {
-      // There is either no internet, or no sip available server, so skipping
-      // unregistering, as unregistering doesn't make sense in those cases.
-      await this.disconnect({ hasSocket: false });
-
-      this.updateStatus(ClientStatus.DISCONNECTED);
       return;
     }
 
