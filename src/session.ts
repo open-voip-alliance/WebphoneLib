@@ -1,12 +1,8 @@
 import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
-import {
-  Grammar,
-  NameAddrHeader,
-  ReferClientContext,
-  ReferServerContext
-} from 'sip.js';
+import { Grammar, ReferClientContext, ReferServerContext } from 'sip.js';
 
+import { audioContext } from './audio-context';
 import { checkAudioConnected } from './session-health';
 import { InternalSession, SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
@@ -41,9 +37,12 @@ export class Session extends EventEmitter implements ISession {
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
 
-  constructor({session, media}: {
-    session: WrappedInviteClientContext | WrappedInviteServerContext,
-    media: IMedia
+  constructor({
+    session,
+    media
+  }: {
+    session: WrappedInviteClientContext | WrappedInviteServerContext;
+    media: IMedia;
   }) {
     super();
     this.session = session as InternalSession;
