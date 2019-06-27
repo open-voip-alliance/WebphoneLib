@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import { Subscription, UA as UABase, Web } from 'sip.js';
 
-import { ClientStatus } from './enums';
+import { ClientStatus, ReconnectionMode } from './enums';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { Session } from './session';
 import { statusFromDialog } from './subscription';
@@ -84,10 +84,12 @@ export class Client extends EventEmitter implements IClient {
       // Retrying this once if it fails. While the socket seems healthy, it
       // might in fact not be. In that case the act of sending data over the
       // socket (the act of inviting) will cause us to detect that the
-      // socket is broken somehow. In that case onDisconnected will trigger
+      // socket is broken somehow. In that case getConnection will try
+      // to regain connection, to quickly re-invite over the newly created
+      // socket (or not).
       session = await this.tryInvite(uri).catch(async e => {
         console.log('something went wrong here. trying to recover.');
-        await this.transport.tryReconnecting({ timeLeft: 2000 });
+        await this.transport.getConnection(ReconnectionMode.ONCE);
 
         if (this.transport.status !== ClientStatus.CONNECTED) {
           throw new Error('Not sending out invite. It appears we are not connected. =(');
@@ -102,10 +104,12 @@ export class Client extends EventEmitter implements IClient {
     }
 
     this.sessions[session.id] = session;
+    this.updatePriority();
 
     session.once('terminated', () => {
       console.log('terminated....');
       delete this.sessions[session.id];
+      this.updatePriority();
     });
 
     return session;
@@ -190,13 +194,15 @@ export class Client extends EventEmitter implements IClient {
   private configureTransport(options) {
     this.transport = new ReconnectableTransport(options);
 
-    this.transport.on('revive', () => {
+    this.transport.on('reviveSessions', () => {
       Object.values(this.sessions).forEach(async session => {
         session.rebuildSessionDescriptionHandler();
         await session.reinvite();
         console.log(session.remoteIdentity);
       });
+    });
 
+    this.transport.on('reviveSubscriptions', () => {
       Object.keys(this.subscriptions).forEach(async uri => {
         // Awaiting each uri, because if a uri cannot be resolved
         // 'immediately' due to rate-limiting, there is a big chance that
@@ -214,8 +220,13 @@ export class Client extends EventEmitter implements IClient {
       });
 
       this.sessions[session.id] = session;
+      this.updatePriority();
       this.emit('invite', session);
-      session.once('terminated', () => delete this.sessions[session.id]);
+      session.once('terminated', () => {
+        console.log('TERMINATED SOMEHOW...');
+        delete this.sessions[session.id];
+        this.updatePriority();
+      });
     });
 
     this.transport.on('statusUpdate', status => {
@@ -263,5 +274,13 @@ export class Client extends EventEmitter implements IClient {
     }
 
     delete this.subscriptions[uri];
+  }
+
+  private updatePriority() {
+    if (!this.transport) {
+      return;
+    }
+
+    this.transport.updatePriority(Object.entries(this.sessions).length !== 0);
   }
 }

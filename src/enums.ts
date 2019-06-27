@@ -17,3 +17,8 @@ export enum SubscriptionStatus {
   BUSY = 'busy',
   TERMINATED = 'terminated'
 }
+
+export enum ReconnectionMode {
+  ONCE,
+  BURST
+}
