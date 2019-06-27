@@ -3,7 +3,8 @@ import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
 
-import { ClientStatus, ReconnectionMode, ReconnectionStrategy } from './enums';
+import { ClientStatus, ReconnectionMode } from './enums';
+import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { hour, minute } from './time';
 import { IClientOptions, IRetry } from './types';
@@ -73,6 +74,11 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.uaOptions = {
       ...this.defaultOptions,
       authorizationUser: account.user,
+      log: {
+        builtinEnabled: false,
+        connector: log.connector.bind(log),
+        level: 'debug'
+      },
       password: account.password,
       sessionDescriptionHandlerFactory,
       sessionDescriptionHandlerFactoryOptions: {
@@ -105,20 +111,21 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     }
 
     if (this.status === ClientStatus.CONNECTED) {
-      console.log('pssh. already registered.');
+      log.info('Already registered.', this.constructor.name);
       return this.registeredPromise;
     }
 
     this.updateStatus(ClientStatus.CONNECTING);
 
     if (!this.ua) {
-      console.log('configuring ua');
+      log.debug('Configuring UA.', this.constructor.name);
       this.configureUA();
     }
 
     if (this.unregisteredPromise) {
-      console.error(
-        'Cannot connect while unregistering takes place. Waiting until unregistering is resolved.'
+      log.info(
+        'Cannot connect while unregistering takes place. Waiting until unregistering is resolved.',
+        this.constructor.name
       );
 
       await this.unregisteredPromise;
@@ -146,7 +153,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   // which then also manages status updates.
   public async disconnect({ hasSocket = true, hasRegistered = true } = {}): Promise<void> {
     if (!this.ua) {
-      console.log('pssh. already disconnected.');
+      log.info('Already disconnected.', this.constructor.name);
       return;
     }
 
@@ -168,7 +175,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
         })
       );
 
-      console.log('trying to unregister..');
+      log.debug('Trying to unregister.', this.constructor.name);
       this.ua.unregister();
 
       // Little protection to make sure our account is actually unregistered
@@ -176,7 +183,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       // (i.e. ua.disconnect)
       await this.unregisteredPromise;
 
-      console.log('unregistered!');
+      log.debug('Unregistered.', this.constructor.name);
     }
 
     await this.ua.disconnect();
@@ -185,7 +192,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       this.updateStatus(ClientStatus.DISCONNECTED);
     }
 
-    console.log('disconnected!');
+    log.debug('Disconnected.', this.constructor.name);
 
     this.ua.transport.removeAllListeners();
     this.ua.removeAllListeners();
@@ -196,6 +203,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
   public invite(phoneNumber: string) {
     if (this.status !== ClientStatus.CONNECTED) {
+      log.info('Could not send an invite. Not connected.', this.constructor.name);
       throw new Error('Cannot send an invite. Not connected.');
     }
 
@@ -222,20 +230,17 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       return false;
     }
 
-    console.log(`Mode is: ${ReconnectionMode[mode]}`);
-
     this.updateStatus(ClientStatus.RECOVERING);
 
     clearInterval(this.dyingIntervalID);
     const isOnline = await this.isOnline(mode);
+    log.debug(`isOnline: ${isOnline}`, this.constructor.name);
     if (isOnline) {
-      console.log('is really online!');
-
       await this.ua.transport.disconnect();
-      console.log('socket closed');
+      log.debug('Socket closed', this.constructor.name);
 
       await this.ua.transport.connect();
-      console.log('socket opened');
+      log.debug('Socket opened', this.constructor.name);
 
       // Before the dyingCounter reached 0, there is a decent chance our
       // sessions are still alive and kicking. Let's try to revive them.
@@ -250,18 +255,17 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       this.ua.register();
 
       await this.registeredPromise;
-      console.log('reregistered!!');
+      log.debug('Reregistered!', this.constructor.name);
 
       this.updateStatus(ClientStatus.CONNECTED);
     }
 
-    console.log(`Returning isOnline: ${isOnline}`);
     return isOnline;
   }
 
   public updatePriority(flag) {
     this.priority = flag;
-    console.log(`priority is: ${flag}`);
+    log.debug(`Priority is ${flag}`, this.constructor.name);
   }
 
   public close() {
@@ -280,14 +284,11 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
   private isOnlinePromise(mode: ReconnectionMode) {
     return new Promise((resolve, reject) => {
-      console.log(this.uaOptions.transportOptions.wsServers);
-
       const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
 
       const handlers = {
         onError: e => {
-          console.log(e);
-          console.log('it broke...');
+          log.debug(e, this.constructor.name);
           checkSocket.removeEventListener('open', handlers.onOpen);
           // In the case that mode is BURST, throw an error which can be
           // catched by pRetry.
@@ -299,7 +300,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           resolve(false);
         },
         onOpen: () => {
-          console.log('yay it works');
+          log.debug('Opening a socket to sip server worked.', this.constructor.name);
           checkSocket.close();
           checkSocket.removeEventListener('error', handlers.onError);
           resolve(true);
@@ -317,14 +318,14 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
     this.transportConnectedPromise = new Promise(resolve => {
       this.ua.once('transportCreated', () => {
-        console.log('transport created');
+        log.debug('Transport created.', this.constructor.name);
         this.ua.transport.once('connected', () => {
-          console.log('connected');
+          log.debug('Transport connected.', this.constructor.name);
           resolve();
         });
 
         this.ua.transport.once('disconnected', () => {
-          console.log('Disconnected emitted');
+          log.debug('Transport disconnected..', this.constructor.name);
           this.tryUntilConnected();
         });
       });
@@ -356,10 +357,11 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     // In the case that mode is ONCE, a new socket is created once, also with
     // a timeout of 500 ms.
     if (mode === ReconnectionMode.ONCE) {
-      console.log('Trying to reconnect once!');
+      log.debug('Trying to reconnect once.', this.constructor.name);
       return tryOpeningSocketWithTimeout();
     }
 
+    log.debug('Trying to reconnect asap.', this.constructor.name);
     // In the case that mode is BURST, a new socket is created roughly every
     // 500 ms to be able to quickly revive our connection once that succeeds.
     const retryOptions = {
@@ -367,10 +369,11 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       maxTimeout: 100,
       minTimeout: 100,
       onFailedAttempt: error => {
-        console.log(
+        log.debug(
           `Connection attempt ${error.attemptNumber} failed. There are ${
             error.retriesLeft
-          } retries left.`
+          } retries left.`,
+          this.constructor.name
         );
       }
     };
@@ -386,9 +389,10 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     }, retryOptions);
 
     return pTimeout(retryForever, this.dyingCounter, () => {
-      console.log(
+      log.info(
         'We could not recover the session(s) within 1 minute. ' +
-          'After this time the SIP server has terminated the session(s).'
+          'After this time the SIP server has terminated the session(s).',
+        this.constructor.name
       );
       return Promise.resolve(false);
     });
@@ -431,7 +435,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     }, this.retry.timeout);
 
     this.retry = increaseTimeout(this.retry);
-    console.log('Delaying reconnecting to avoid thundering herd.');
+    log.debug('Delaying reconnecting to avoid thundering herd.', this.constructor.name);
   }
 
   private createRegisteredPromise() {
@@ -459,7 +463,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   }
 
   private onWindowOffline() {
-    console.log('OFFLINE NOW');
+    log.info('We appear to be offline.', this.constructor.name);
     this.updateStatus(ClientStatus.DYING);
     this.registeredPromise = undefined;
 
@@ -477,7 +481,10 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
         // As the counter reached 0, there are no calls left over. Thus the
         // reconnection strategy does not have to prioritize this client
         // anymore.
-        console.log('Priority set to false');
+        log.debug(
+          'Priority set to false. Our call was probably terminated by the SIP server.',
+          this.constructor.name
+        );
         this.priority = false;
       }
     };
@@ -488,7 +495,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   private async onAfterGetConnection(connected: boolean) {
     if (connected) {
       this.dyingCounter = 60000;
-      console.log('it appears we are connected!');
+      log.info('We appear to be connected.', this.constructor.name);
       return;
     }
 

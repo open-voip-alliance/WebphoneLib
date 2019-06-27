@@ -1,10 +1,12 @@
 import { SessionDescriptionHandlerModifier, UA, Web } from 'sip.js';
 
 import { audioContext } from './audio-context';
+import { log } from './logger';
 import { isPrivateIP } from './utils';
 
-
-export function stripPrivateIps(description: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
+export function stripPrivateIps(
+  description: RTCSessionDescriptionInit
+): Promise<RTCSessionDescriptionInit> {
   const lines = description.sdp.split(/\r\n/);
   const filtered = lines.filter(line => {
     const m = /a=candidate:\d+ \d+ (?:udp|tcp) \d+ (\d+\.\d+\.\d+\.\d+)/i.exec(line);
@@ -14,13 +16,12 @@ export function stripPrivateIps(description: RTCSessionDescriptionInit): Promise
   return Promise.resolve(description);
 }
 
-
 export function sessionDescriptionHandlerFactory(session, options) {
   const sdh = Web.SessionDescriptionHandler.defaultFactory(session, options);
 
   session.__streams = {
     localStream: audioContext.createMediaStreamDestination(),
-    remoteStream: new MediaStream(),
+    remoteStream: new MediaStream()
   };
 
   (sdh as any).WebRTC.getUserMedia = async () => {
@@ -30,7 +31,7 @@ export function sessionDescriptionHandlerFactory(session, options) {
 
   (sdh as any).on('addTrack', async (track, stream) => {
     const pc = session.sessionDescriptionHandler.peerConnection;
-    console.log('addTrack', arguments);
+    log.debug('addTrack' + arguments, 'sessionDescriptionHandlerFactory');
 
     let remoteStream = new MediaStream();
     if (pc.getReceivers) {
@@ -48,6 +49,6 @@ export function sessionDescriptionHandlerFactory(session, options) {
     session.__media.setOutput();
   });
 
-  console.log('returning patched SDH for session', session);
+  log.debug('Returning patched SDH for session' + session, 'sessionDescriptionHandlerFactory');
   return sdh;
 }
