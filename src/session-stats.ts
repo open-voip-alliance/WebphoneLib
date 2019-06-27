@@ -1,3 +1,6 @@
+import { EventEmitter } from 'events';
+import { InternalSession } from './session-media';
+
 class StatsAggregation {
   private stats: {
     count: number;
@@ -56,8 +59,46 @@ class StatsAggregation {
 }
 
 // tslint:disable-next-line: max-classes-per-file
-export class SessionStats {
+export class SessionStats extends EventEmitter {
   public readonly mos: StatsAggregation = new StatsAggregation();
+
+  private statsTimer: number;
+  private statsInterval: number;
+
+  public constructor(
+    session: InternalSession,
+    {
+      statsInterval
+    }: {
+      statsInterval: number;
+    }
+  ) {
+    super();
+
+    this.statsInterval = statsInterval;
+
+    // Set up stats timer to priodically query and process the peer connection's
+    // statistics and feed them to the stats aggregator.
+    session.once('SessionDescriptionHandler-created', () => {
+      this.statsTimer = window.setInterval(() => {
+        const pc = session.sessionDescriptionHandler.peerConnection;
+        pc.getStats().then((stats: RTCStatsReport) => {
+          if (this.add(stats)) {
+            this.emit('statsUpdated', this);
+          } else {
+            console.log('no useful stats', stats);
+          }
+        });
+      }, this.statsInterval);
+    });
+
+    session.once('terminated', () => {
+      if (this.statsTimer) {
+        window.clearInterval(this.statsTimer);
+        delete this.statsTimer;
+      }
+    });
+  }
 
   /**
    * Add stats for inbound RTP.
@@ -66,28 +107,34 @@ export class SessionStats {
    * @param {RTCStatsReport} stats - Stats returned by `pc.getStats()`
    * @return {boolean} False if report did not contain any useful stats.
    */
-  public add(stats: RTCStatsReport): boolean {
-    let inbound = null;
-    let rtt = null;
+  private add(stats: RTCStatsReport): boolean {
+    let inbound = undefined;
+    let candidatePair = undefined;
 
     for (const obj of stats.values()) {
       if (obj.type === 'inbound-rtp') {
         inbound = obj;
       } else if (obj.type === 'candidate-pair' && obj.nominated) {
-        rtt = obj.currentRoundTripTime;
+        candidatePair = obj;
       }
     }
 
-    if (inbound !== null && rtt !== null) {
-      const measurements = {
-        fractionLost: inbound.fractionLost,
-        jitter: inbound.jitter,
-        rtt
-      };
+    if (inbound && candidatePair) {
+      // Firefox doesn't have `fractionLost`, fallback to calculating the total
+      // packet loss. TODO: It would be better to calculate the fraction of lost
+      // packets since that the last measurement.
+      const fractionLost = inbound.fractionLost || inbound.packetsLost / inbound.packetsReceived;
 
-      this.mos.add(calculateMOS(measurements));
-      return true;
+      // Firefox doesn't have or expose this property. Fallback to using 50ms as
+      // a guess for RTT.
+      const rtt = candidatePair.currentRoundTripTime || 0.050;
+
+      const jitter = inbound.jitter;
+      const measurement = { fractionLost, rtt, jitter };
+      console.log(measurement);
+      this.mos.add(calculateMOS(measurement));
       // this.app.logger.info(`${this}MOS=${measurements.mos.toFixed(2)}`, measurements);
+      return true;
     }
 
     return false;
@@ -98,7 +145,7 @@ export interface IMeasurement {
   rtt: number;
   jitter: number;
   fractionLost: number;
-};
+}
 
 /**
  * Calculate a Mean Opinion Score (MOS).
@@ -114,11 +161,11 @@ export interface IMeasurement {
  */
 export function calculateMOS({ rtt, jitter, fractionLost }: IMeasurement): number {
   // Take the average latency, add jitter, but double the impact to latency
-  // then add 10 for protocol latencies
+  // then add 10 for protocol latencies.
   const effectiveLatency = 1000 * (rtt + jitter * 2) + 10;
 
   // Implement a basic curve - deduct 4 for the R value at 160ms of latency
-  // (round trip).  Anything over that gets a much more agressive deduction
+  // (round trip). Anything over that gets a much more agressive deduction.
   let R: number;
   if (effectiveLatency < 160) {
     R = 93.2 - effectiveLatency / 40;
@@ -126,10 +173,11 @@ export function calculateMOS({ rtt, jitter, fractionLost }: IMeasurement): numbe
     R = 93.2 - (effectiveLatency - 120) / 10;
   }
 
-  // Now, let's deduct 2.5 R values per percentage of packet loss
-  R = R - fractionLost * 250;
+  // Now, let's deduct 2.5 R values per percentage of packet loss.
+  // Never go below 0, then the MOS value would go up again.
+  R = Math.max(R - fractionLost * 250, 0);
 
-  // Convert the R into an MOS value. (this is a known formula)
+  // Convert the R into an MOS value (this is a known formula).
   const MOS = 1 + 0.035 * R + 0.000007 * R * (R - 60) * (100 - R);
 
   return MOS;

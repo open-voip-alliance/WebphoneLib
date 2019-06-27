@@ -145,7 +145,7 @@ inMute.addEventListener('change', function(e) {
   if (activeSession) {
     activeSession.media.input.muted = this.checked;
   } else {
-    client.defaultMedia.input.volume = this.checked;
+    client.defaultMedia.input.muted = this.checked;
   }
 });
 
@@ -162,10 +162,9 @@ outMute.addEventListener('change', function(e) {
   if (activeSession) {
     activeSession.media.output.muted = this.checked;
   } else {
-    client.defaultMedia.output.volume = this.checked;
+    client.defaultMedia.output.muted = this.checked;
   }
 });
-
 
 function printStats(stats) {
   const last = (stats.mos.last || 0).toFixed(2);
@@ -175,7 +174,6 @@ function printStats(stats) {
   console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
 }
 
-
 async function runSession(session) {
   activeSession = session;
 
@@ -184,7 +182,11 @@ async function runSession(session) {
   const unhold = async () => await session.unhold();
   const blindTransfer = async () => await session.transfer('sip:318@voipgrid.nl');
 
-  session.on('statsUpdated', (stats) => {
+  session.audioConnected
+    .then(() => console.log('audio connected!'))
+    .catch(() => console.error('connecting audio failed'));
+
+  session.on('statsUpdated', stats => {
     printStats(stats);
     mos.innerHTML = (stats.mos.last || 0).toFixed(2);
   });
