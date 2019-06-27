@@ -21,6 +21,8 @@ interface IReconnectableTransport {
 
 const SIP_PRESENCE_EXPIRE = hour;
 
+const connector = (level, category, label, content) => log.debug(content, category);
+
 export class ReconnectableTransport extends EventEmitter implements IReconnectableTransport {
   private get defaultOptions() {
     return {
@@ -76,7 +78,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       authorizationUser: account.user,
       log: {
         builtinEnabled: false,
-        connector: log.connector.bind(log),
+        connector: connector.bind(log),
         level: 'debug'
       },
       password: account.password,

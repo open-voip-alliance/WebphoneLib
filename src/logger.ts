@@ -15,10 +15,13 @@ class Logger {
     verbose: LoggerLevel.VERBOSE,
     warn: LoggerLevel.WARN
   };
+  private connector?: (message: string) => void;
 
-  constructor({ level }: { level: LoggerLevel }) {
-    if (level) {
-      this.level = level;
+  constructor(level: LoggerLevel, connector?: (message: string) => void) {
+    this.level = level;
+
+    if (connector) {
+      this.connector = connector;
     }
   }
 
@@ -42,18 +45,11 @@ class Logger {
     this.log('verbose', message, context);
   }
 
-  /**
-   * Connector used to relay sipjs messages.
-   */
-  public connector(level, category, label, content) {
-    this.debug(content, category);
-  }
-
-  private log(level, message, context) {
-    if (this.level >= this.levels[level]) {
-      console[level](`[${context}]: ${message}`);
+  public log(level, message, context) {
+    if (this.connector && this.level >= this.levels[level]) {
+      this.connector(`[${context}]: ${message}`);
     }
   }
 }
 
-export const log = new Logger({ level: LoggerLevel.INFO });
+export const log = new Logger(LoggerLevel.INFO);
