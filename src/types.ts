@@ -18,9 +18,11 @@ export interface IClientOptions {
   media: IMedia;
 }
 
+export type MediaDeviceId = string | undefined;
+
 export interface IMediaDevice {
   // undefined means let the browser pick the default.
-  id: string | undefined;
+  id: MediaDeviceId;
 
   volume: number;
   muted: boolean;
