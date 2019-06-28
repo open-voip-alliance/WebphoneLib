@@ -1,4 +1,4 @@
-import { ReconnectionMode, ReconnectionStrategy } from './enums';
+import { ReconnectionMode } from './enums';
 
 export interface IAccount {
   user: string;
@@ -16,7 +16,6 @@ export interface IClientOptions {
   account: IAccount;
   transport: ITransport;
   media: IMedia;
-  // reconnectionStrategy: ReconnectionStrategy; should we add this?
 }
 
 export interface IMediaDevice {

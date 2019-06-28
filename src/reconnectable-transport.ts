@@ -3,7 +3,7 @@ import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { UA as UABase, Web } from 'sip.js';
 
-import { ClientStatus, ReconnectionMode, ReconnectionStrategy } from './enums';
+import { ClientStatus, ReconnectionMode } from './enums';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { hour, minute } from './time';
 import { IClientOptions, IRetry } from './types';
