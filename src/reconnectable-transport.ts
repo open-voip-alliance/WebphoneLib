@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
-import { UA as UABase, Web } from 'sip.js';
+import { Core, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
-import { log } from './logger';
+import { log, LoggerLevel } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { hour, minute } from './time';
 import { IClientOptions, IRetry } from './types';
@@ -21,7 +21,25 @@ interface IReconnectableTransport {
 
 const SIP_PRESENCE_EXPIRE = hour;
 
-const connector = (level, category, label, content) => log.debug(content, category);
+const connector = (level, category, label, content) => {
+  let convertedLevel;
+  switch (level) {
+    case Core.Levels.debug:
+      convertedLevel = LoggerLevel.DEBUG;
+      break;
+    case Core.Levels.warn:
+      convertedLevel = LoggerLevel.WARN;
+      break;
+    case Core.Levels.log:
+      convertedLevel = LoggerLevel.INFO;
+      break;
+    case Core.Levels.error:
+      convertedLevel = LoggerLevel.ERROR;
+      break;
+  }
+
+  log.log(convertedLevel, content, category);
+};
 
 export class ReconnectableTransport extends EventEmitter implements IReconnectableTransport {
   private get defaultOptions() {
@@ -78,7 +96,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       authorizationUser: account.user,
       log: {
         builtinEnabled: false,
-        connector: connector.bind(log),
+        connector,
         level: 'debug'
       },
       password: account.password,

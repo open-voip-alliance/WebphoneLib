@@ -1,10 +1,18 @@
-enum LoggerLevel {
+export enum LoggerLevel {
   ERROR,
   WARN,
   INFO,
   VERBOSE,
   DEBUG
 }
+
+interface ILoggerConnector {
+  level: LoggerLevel;
+  message: string;
+  context: any;
+}
+
+type LoggerConnector = (ILoggerConnector) => void;
 
 class Logger {
   public level: LoggerLevel = LoggerLevel.INFO;
@@ -15,9 +23,9 @@ class Logger {
     verbose: LoggerLevel.VERBOSE,
     warn: LoggerLevel.WARN
   };
-  private connector?: (message: string) => void;
+  private connector?: LoggerConnector;
 
-  constructor(level: LoggerLevel, connector?: (message: string) => void) {
+  constructor(level: LoggerLevel, connector?: LoggerConnector) {
     this.level = level;
 
     if (connector) {
@@ -47,7 +55,7 @@ class Logger {
 
   public log(level, message, context) {
     if (this.connector && this.level >= this.levels[level]) {
-      this.connector(`[${context}]: ${message}`);
+      this.connector({ level, message, context });
     }
   }
 }
