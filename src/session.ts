@@ -2,6 +2,8 @@ import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
 import { Grammar, NameAddrHeader, ReferClientContext, ReferServerContext } from 'sip.js';
 
+import { audioContext } from './audio-context';
+import { log } from './logger';
 import { checkAudioConnected } from './session-health';
 import { InternalSession, SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
@@ -277,10 +279,10 @@ export class Session extends EventEmitter implements ISession {
     this.reinvitePromise = this.getReinvitePromise();
 
     if (flag) {
-      console.log('hold!');
+      log.debug('Hold requested', this.constructor.name);
       this.session.hold();
     } else {
-      console.log('unhold!');
+      log.debug('Unhold requested', this.constructor.name);
       this.session.unhold();
     }
 
@@ -297,7 +299,7 @@ export class Session extends EventEmitter implements ISession {
   // to this function.
   private async transfer(target: InternalSession | string): Promise<boolean> {
     return pTimeout(this.isTransferredPromise(target), 20000, () => {
-      console.log('Could not transfer the call, sorry.');
+      log.error('Could not transfer the call', this.constructor.name);
       return Promise.resolve(false);
     });
   }
@@ -305,8 +307,7 @@ export class Session extends EventEmitter implements ISession {
   private async isTransferredPromise(target: InternalSession | string) {
     const { referContext, options } = await new Promise(resolve => {
       this.session.once('referRequested', context => {
-        console.log('refer is requested');
-        console.log(context);
+        log.debug('Refer is requested', this.constructor.name);
         resolve(context);
       });
 
@@ -316,7 +317,7 @@ export class Session extends EventEmitter implements ISession {
     return new Promise<boolean>(resolve => {
       const handlers = {
         onReferAccepted: () => {
-          console.log('refer is accepted!');
+          log.debug('Refer is accepted', this.constructor.name);
           referContext.removeListener('referRejected', handlers.onReferRejected);
           resolve(true);
         },
@@ -324,7 +325,7 @@ export class Session extends EventEmitter implements ISession {
         // - 503: Service Unavailable (i.e. server can't handle one-legged transfers)
         // - 603: Declined
         onReferRejected: () => {
-          console.log('refer is rejected!');
+          log.debug('Refer is rejected', this.constructor.name);
           referContext.removeListener('referAccepted', handlers.onReferAccepted);
           resolve(false);
         }

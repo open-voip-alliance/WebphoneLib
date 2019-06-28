@@ -15,13 +15,14 @@ import {
   URI,
   Web
 } from 'sip.js';
+import { log } from './logger';
 
 export class WrappedInviteClientContext extends InviteClientContext {
   /**
    * Reconfigure the WebRTC peerconnection.
    */
   public rebuildSessionDescriptionHandler() {
-    console.log('session descrioption handler is rebuild!!');
+    log.debug('Session Description Handler is rebuild!', this.constructor.name);
     this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
       this,
       this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
@@ -67,7 +68,7 @@ export class WrappedInviteServerContext extends InviteServerContext {
    * Reconfigure the WebRTC peerconnection.
    */
   public rebuildSessionDescriptionHandler() {
-    console.log('session descrioption handler is rebuild!!');
+    log.debug('Session Description Handler is rebuild!', this.constructor.name);
     this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
       this,
       this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
@@ -119,7 +120,7 @@ export class WrappedTransport extends Web.Transport {
    */
   protected disconnectPromise(options: any = {}): Promise<any> {
     return pTimeout(super.disconnectPromise(), 1000, () => {
-      console.log('calling on close by myself!');
+      log.debug('Fake-closing the the socket by ourselves.', this.constructor.name);
       (this as any).onClose({ code: 'fake', reason: 'Artificial timeout' });
     }).then(() => ({ overrideEvent: true }));
   }
@@ -181,10 +182,10 @@ export class UA extends UABase {
    * Gracefully close.
    */
   public stop(): this {
-    console.log('user requested closure...');
+    log.debug('user requested closure...', this.constructor.name);
 
     if (this.status === UAStatus.STATUS_USER_CLOSED) {
-      console.log('UA already closed');
+      log.debug('UA already closed', this.constructor.name);
       return this;
     }
 
@@ -193,7 +194,7 @@ export class UA extends UABase {
     // Run terminate on every Session
     for (const session in this.sessions) {
       if (this.sessions[session]) {
-        console.log('closing session ' + session);
+        log.debug('closing session ' + session, this.constructor.name);
         this.sessions[session].terminate();
       }
     }
@@ -201,7 +202,7 @@ export class UA extends UABase {
     // Run unsubscribe on every Subscription
     for (const subscription in this.subscriptions) {
       if (this.subscriptions[subscription]) {
-        console.log('unsubscribe ' + subscription);
+        log.debug('unsubscribe ' + subscription, this.constructor.name);
         this.subscriptions[subscription].unsubscribe();
       }
     }
@@ -209,7 +210,7 @@ export class UA extends UABase {
     // Run close on every Publisher
     for (const publisher in this.publishers) {
       if (this.publishers[publisher]) {
-        console.log('unpublish ' + publisher);
+        log.debug('unpublish ' + publisher, this.constructor.name);
         this.publishers[publisher].close();
       }
     }
@@ -317,7 +318,7 @@ export class UA extends UABase {
       if (context.autoSendAnInitialProvisionalResponse) {
         context.progress();
       }
-      console.log('incoming request being delegated.');
+      log.debug('incoming request being delegated', this.constructor.name);
       this.emit('invite', context);
     };
   }
