@@ -40,16 +40,8 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
   private timer: number = undefined;
   private hadPermission: boolean = false;
 
-  constructor() {
+  public constructor() {
     super();
-
-    if (!Features.mediaDevices || !Features.getUserMedia) {
-      // TODO: centralize this?
-      throw new Error('Media devices are not supported in this browser.');
-    }
-  }
-
-  public init() {
     this.update();
   }
 
