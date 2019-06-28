@@ -3,6 +3,7 @@ import pRetry from 'p-retry';
 import { Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
+import { log } from './logger';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { Session } from './session';
 import { statusFromDialog } from './subscription';
@@ -88,18 +89,18 @@ export class Client extends EventEmitter implements IClient {
       // to regain connection, to quickly re-invite over the newly created
       // socket (or not).
       session = await this.tryInvite(uri).catch(async e => {
-        console.log('something went wrong here. trying to recover.');
+        log.error('The WebSocket broke during the act of inviting.', this.constructor.name);
         await this.transport.getConnection(ReconnectionMode.ONCE);
 
         if (this.transport.status !== ClientStatus.CONNECTED) {
           throw new Error('Not sending out invite. It appears we are not connected. =(');
         }
 
-        console.log('it appears we are back!');
+        log.debug('New WebSocket is created.', this.constructor.name);
         return await this.tryInvite(uri);
       });
     } catch (e) {
-      console.error('', e);
+      log.error(e, this.constructor.name);
       return;
     }
 
@@ -107,7 +108,7 @@ export class Client extends EventEmitter implements IClient {
     this.updatePriority();
 
     session.once('terminated', () => {
-      console.log('terminated....');
+      log.info(`Outgoing session ${session.id} is terminated.`, this.constructor.name);
       delete this.sessions[session.id];
       this.updatePriority();
     });
@@ -130,7 +131,7 @@ export class Client extends EventEmitter implements IClient {
   public subscribe(uri: string) {
     return new Promise<void>((resolve, reject) => {
       if (this.subscriptions[uri]) {
-        console.log('Already subscribed!');
+        log.info('Already subscribed', this.constructor.name);
 
         resolve();
         return;
@@ -153,7 +154,10 @@ export class Client extends EventEmitter implements IClient {
             return;
           }
 
-          console.log(`Subscription rate-limited. Retrying after ${retryAfter} seconds.`);
+          log.info(
+            `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
+            this.constructor.name
+          );
 
           setTimeout(() => {
             this.removeSubscription({ uri });
@@ -180,7 +184,7 @@ export class Client extends EventEmitter implements IClient {
   public async resubscribe(uri: string) {
     this.removeSubscription({ uri });
     await this.subscribe(uri);
-    console.log(`Resubscribed to ${uri}`);
+    log.debug(`Resubscribed to ${uri}`, this.constructor.name);
   }
 
   public unsubscribe(uri: string) {
@@ -198,7 +202,6 @@ export class Client extends EventEmitter implements IClient {
       Object.values(this.sessions).forEach(async session => {
         session.rebuildSessionDescriptionHandler();
         await session.reinvite();
-        console.log(session.remoteIdentity);
       });
     });
 
@@ -223,14 +226,14 @@ export class Client extends EventEmitter implements IClient {
       this.updatePriority();
       this.emit('invite', session);
       session.once('terminated', () => {
-        console.log('TERMINATED SOMEHOW...');
+        log.info(`Incoming session ${session.id} is terminated.`, this.constructor.name);
         delete this.sessions[session.id];
         this.updatePriority();
       });
     });
 
     this.transport.on('statusUpdate', status => {
-      console.log(`Status change to: ${ClientStatus[status]}`);
+      log.debug(`Status change to: ${ClientStatus[status]}`, this.constructor.name);
       this.emit('statusUpdate', status);
     });
   }
@@ -248,12 +251,12 @@ export class Client extends EventEmitter implements IClient {
 
       const handlers = {
         onFailed: () => {
-          console.log('something went wrong here...');
+          log.error('Session emitted failed after an invite.', this.constructor.name);
           uaSession.removeListener('progress', handlers.onProgress);
           reject(new Error('Could not send an invite. Socket could be broken.'));
         },
         onProgress: () => {
-          console.log('lib emitted progress');
+          log.debug('Session emitted progress after an invite.', this.constructor.name);
           uaSession.removeListener('failed', handlers.onFailed);
           resolve(session);
         }
