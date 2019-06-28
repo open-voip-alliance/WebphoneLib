@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { log } from './logger';
 import { InternalSession } from './session-media';
 
 class StatsAggregation {
@@ -86,7 +87,7 @@ export class SessionStats extends EventEmitter {
           if (this.add(stats)) {
             this.emit('statsUpdated', this);
           } else {
-            console.log('no useful stats', stats);
+            log.debug('No useful stats' + stats, this.constructor.name);
           }
         });
       }, this.statsInterval);
@@ -130,7 +131,7 @@ export class SessionStats extends EventEmitter {
 
         // Firefox doesn't have or expose this property. Fallback to using 50ms as
         // a guess for RTT.
-        rtt: candidatePair.currentRoundTripTime || 0.050
+        rtt: candidatePair.currentRoundTripTime || 0.05
       };
 
       this.mos.add(calculateMOS(measurement));
