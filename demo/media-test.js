@@ -1,4 +1,4 @@
-import { Media, AudioHelper } from '../dist/vialer-web-calling.prod.mjs';
+import { Autoplay, Media, Sound } from '../dist/vialer-web-calling.prod.mjs';
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
@@ -45,28 +45,13 @@ Media.on('devicesChanged', () => {
   makeOptions(outputSelect, Media.outputs);
 });
 
-let sample;
-(async () => {
-  sample = await AudioHelper.fetchStream('/demo/sounds/dtmf-9.mp3');
-})();
+const sound = new Sound('/demo/sounds/dtmf-0.mp3', {volume: 1.0, overlap: true});
 
-let curSink = undefined, output;
 document.querySelector('#play').addEventListener('click', async () => {
-  const sinkId = getSelectedOption(outputSelect).value;
-  if (!output || curSink !== sinkId) {
-    output = await Media.openOutput(sinkId);
-  }
-
-  const stream = await sample();
-  await output(stream);
-  console.log('playing!');
-  // await sleep(1000);
-  // sample.pause();
+  sound.sinkId = getSelectedOption(outputSelect).value;
+  sound.play().then(console.log);
 });
 
 Media.requestPermission();
 
-AudioHelper.autoplayAllowed.then(() => console.log('Autoplay allowed!!'));
-
-window.Media = Media;
-window.AudioHelper = AudioHelper;
+Autoplay.allowed.then(() => console.log('Autoplay allowed!!'));

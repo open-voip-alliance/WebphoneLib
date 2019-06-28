@@ -1,3 +1,4 @@
+import { audioContext } from './audio-context';
 import { SubscriptionStatus } from './enums';
 
 export function eqSet<T>(a: Set<T>, b: Set<T>): boolean {
@@ -16,6 +17,21 @@ export function isPrivateIP(ip) {
 
 export function closeStream(stream: MediaStream): void {
   stream.getTracks().forEach(track => track.stop());
+}
+
+export async function fetchStream(url: string): Promise<() => Promise<AudioBufferSourceNode>> {
+  const response = await fetch(url);
+  const data = await response.arrayBuffer();
+  const buffer = await audioContext.decodeAudioData(data);
+  return () => {
+    const soundSource = audioContext.createBufferSource();
+    soundSource.buffer = buffer;
+    soundSource.start(0, 0);
+    return soundSource;
+    // const destination = audioContext.createMediaStreamDestination();
+    // soundSource.connect(destination);
+    // return destination.stream;
+  };
 }
 
 /**

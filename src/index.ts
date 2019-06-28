@@ -1,10 +1,12 @@
-import { AudioHelper } from './audio-helper';
+import { Autoplay } from './autoplay';
 import { Client } from './client';
-import { checkRequired } from './features';
 import { Media } from './media';
+import { Sound } from './sound';
+
+import { checkRequired } from './features';
 
 if (!checkRequired()) {
   throw new Error('Your browser is not supported by this library');
 }
 
-export { Client, Media, AudioHelper };
+export { Autoplay, Client, Media, Sound };
