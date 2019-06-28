@@ -7,6 +7,7 @@
     "jsRules": {},
     "rulesDirectory": ["tslint-plugin-prettier"],
     "rules": {
-      "no-console": false
+      "no-console": false,
+      "object-literal-sort-keys": false
     }
 }

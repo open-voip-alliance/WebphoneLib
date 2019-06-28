@@ -2,7 +2,6 @@ import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
 import { Grammar, NameAddrHeader, ReferClientContext, ReferServerContext } from 'sip.js';
 
-import { audioContext } from './audio-context';
 import { checkAudioConnected } from './session-health';
 import { InternalSession, SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
