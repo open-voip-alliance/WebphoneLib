@@ -4,11 +4,12 @@ import pTimeout from 'p-timeout';
 import { Core, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
-import { log, LoggerLevel } from './logger';
+import * as Features from './features';
+import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
-import { hour, minute } from './time';
+import { hour } from './time';
 import { IClientOptions, IRetry } from './types';
-import { UA, WrappedInviteClientContext, WrappedInviteServerContext, WrappedTransport } from './ua';
+import { UA, WrappedTransport } from './ua';
 import { increaseTimeout, jitter } from './utils';
 
 // TODO: Implement rest of the types
@@ -21,23 +22,15 @@ interface IReconnectableTransport {
 
 const SIP_PRESENCE_EXPIRE = hour;
 
-const connector = (level, category, label, content) => {
-  let convertedLevel;
-  switch (level) {
-    case Core.Levels.debug:
-      convertedLevel = LoggerLevel.DEBUG;
-      break;
-    case Core.Levels.warn:
-      convertedLevel = LoggerLevel.WARN;
-      break;
-    case Core.Levels.log:
-      convertedLevel = LoggerLevel.INFO;
-      break;
-    case Core.Levels.error:
-      convertedLevel = LoggerLevel.ERROR;
-      break;
-  }
+const logLevelConversion = {
+  [Core.Levels.debug]: 'debug',
+  [Core.Levels.log]: 'info',
+  [Core.Levels.warn]: 'warn',
+  [Core.Levels.error]: 'error'
+};
 
+const connector = (level, category, label, content) => {
+  const convertedLevel = logLevelConversion[level] || 'debug';
   log.log(convertedLevel, content, category);
 };
 
@@ -67,8 +60,6 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   private priority: boolean = false;
   private unregisteredPromise?: Promise<any>;
   private ua: UA;
-  private isReconnecting: boolean = false;
-  private isRecovering: boolean = false;
   private uaOptions: UABase.Options;
   private dyingCounter: number = 5000;
   private dyingIntervalID: number;

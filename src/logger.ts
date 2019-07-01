@@ -1,31 +1,29 @@
-export enum LoggerLevel {
-  ERROR,
-  WARN,
-  INFO,
-  VERBOSE,
-  DEBUG
-}
-
 interface ILoggerConnector {
-  level: LoggerLevel;
+  level: string;
   message: string;
   context: any;
 }
 
-type LoggerConnector = (ILoggerConnector) => void;
+type LoggerConnector = (connector: ILoggerConnector) => void;
 
 class Logger {
-  public level: LoggerLevel = LoggerLevel.INFO;
-  private levels: { [index: string]: LoggerLevel } = {
-    debug: LoggerLevel.DEBUG,
-    error: LoggerLevel.ERROR,
-    info: LoggerLevel.INFO,
-    verbose: LoggerLevel.VERBOSE,
-    warn: LoggerLevel.WARN
+  private static readonly levels: { [index: string]: number } = {
+    error: 4,
+    warn: 3,
+    info: 2,
+    verbose: 1,
+    debug: 0
   };
-  private connector?: LoggerConnector;
 
-  constructor(level: LoggerLevel, connector?: LoggerConnector) {
+  private static getLevelIdx(level: string) {
+    const idx = Logger.levels[level];
+    return idx === undefined ? 0 : idx;
+  }
+
+  public level: string = 'info';
+  public connector?: LoggerConnector;
+
+  constructor(level: string, connector?: LoggerConnector) {
     this.level = level;
 
     if (connector) {
@@ -54,10 +52,12 @@ class Logger {
   }
 
   public log(level, message, context) {
-    if (this.connector && this.level >= this.levels[level]) {
+    const levelIdx = Logger.getLevelIdx(level);
+    const thresholdIdx = Logger.getLevelIdx(this.level);
+    if (this.connector && levelIdx >= thresholdIdx) {
       this.connector({ level, message, context });
     }
   }
 }
 
-export const log = new Logger(LoggerLevel.INFO);
+export const log = new Logger('info');

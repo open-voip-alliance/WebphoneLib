@@ -1,12 +1,11 @@
 import { audioContext } from './audio-context';
-import { SubscriptionStatus } from './enums';
 
 export function eqSet<T>(a: Set<T>, b: Set<T>): boolean {
   return a.size === b.size && [...a].every(b.has.bind(b));
 }
 
 // https://stackoverflow.com/a/13969691/248948
-export function isPrivateIP(ip) {
+export function isPrivateIP(ip: string): boolean {
   const parts = ip.split('.');
   return (
     parts[0] === '10' ||
@@ -40,7 +39,7 @@ export async function fetchStream(url: string): Promise<() => Promise<AudioBuffe
  * @param {Number} percentage - The jitter range in percentage.
  * @returns {Number} The calculated jitter in ms.
  */
-export function jitter(interval, percentage) {
+export function jitter(interval: number, percentage: number): number {
   const min = 0 - Math.ceil(interval * (percentage / 100));
   const max = Math.floor(interval * (percentage / 100));
   return Math.floor(Math.random() * (max - min)) + min;

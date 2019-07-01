@@ -1,6 +1,5 @@
-import { Client, Media, AudioHelper } from '../dist/vialer-web-calling.prod.mjs';
+import { Client, Media, Sound, log } from '../dist/vialer-web-calling.prod.mjs';
 import * as CREDS from './creds.js';
-// import { sleep } from './time.js';
 
 const caller = document.querySelector('#caller');
 const ringerBtn = document.querySelector('#ring');
@@ -45,6 +44,19 @@ const media = {
     volume: 1.0,
     muted: false
   }
+};
+
+log.level = 'debug';
+log.connector = ({level, context, message}) => {
+  const print = {
+    debug: console.debug,
+    verbose: console.debug,
+    info: console.info,
+    warn: console.warn,
+    error: console.error
+  }[level];
+
+  print(`${level} [${context}] ${message}`);
 };
 
 const client = new Client({ account, transport, media });
@@ -145,11 +157,7 @@ outputSelect.addEventListener('change', function() {
 
 Media.requestPermission();
 
-AudioHelper.autoplayAllowed.then(() => console.log('Autoplay allowed!!'));
-
 window.Media = Media;
-
-window.AudioHelper = AudioHelper;
 
 let activeSession = null;
 
