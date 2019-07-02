@@ -4,7 +4,11 @@ import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
-import { closeStream } from './utils';
+import { closeStream, fetchAudio } from './utils';
+
+
+import { Jungle } from './jungle.js';
+
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -78,9 +82,18 @@ export class SessionMedia implements IMedia {
       newInput = this.media.input;
     }
 
-    // First open a new stream, then close the old one.
-    const constraints = getInputConstraints(newInput);
-    const newInputStream = await navigator.mediaDevices.getUserMedia(constraints);
+    let newInputStream;
+    if (newInput.id === 'mp3') {
+      const mp3 = await (await fetchAudio('/demo/sounds/random.mp3'))();
+      const destination = audioContext.createMediaStreamDestination();
+      mp3.connect(destination);
+      newInputStream = destination.stream;
+    } else {
+      // First open a new stream, then close the old one.
+      const constraints = getInputConstraints(newInput);
+      newInputStream = await navigator.mediaDevices.getUserMedia(constraints);
+    }
+
     // Close the old inputStream and disconnect from WebRTC.
     if (this.inputStream) {
       closeStream(this.inputStream);
@@ -89,9 +102,12 @@ export class SessionMedia implements IMedia {
 
     this.inputStream = newInputStream;
     const sourceNode = audioContext.createMediaStreamSource(newInputStream);
+    const effect = new Jungle(audioContext);
+    sourceNode.connect(effect.input);
     const gainNode = audioContext.createGain();
     gainNode.gain.value = newInput.volume;
-    sourceNode.connect(gainNode);
+    effect.output.connect(gainNode);
+    (window as any).effect = effect;
 
     // If muted; don't connect the node to the local stream.
     if (!newInput.muted) {

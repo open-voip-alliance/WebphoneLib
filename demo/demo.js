@@ -129,7 +129,9 @@ Media.on('permissionGranted', () => console.log('Permission granted'));
 Media.on('permissionRevoked', () => console.log('Permission revoked'));
 Media.on('devicesChanged', () => {
   console.log('Devices changed: ', Media.devices);
-  makeOptions(inputSelect, Media.inputs);
+  const inputs = Media.inputs.slice(0);
+  inputs.push({id: 'mp3', name: 'mp3'});
+  makeOptions(inputSelect, inputs);
   makeOptions(outputSelect, Media.outputs);
 });
 

@@ -18,7 +18,7 @@ export function closeStream(stream: MediaStream): void {
   stream.getTracks().forEach(track => track.stop());
 }
 
-export async function fetchStream(url: string): Promise<() => Promise<AudioBufferSourceNode>> {
+export async function fetchAudio(url: string): Promise<() => Promise<AudioBufferSourceNode>> {
   const response = await fetch(url);
   const data = await response.arrayBuffer();
   const buffer = await audioContext.decodeAudioData(data);
