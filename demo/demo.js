@@ -46,7 +46,7 @@ const media = {
   }
 };
 
-log.level = 'debug';
+log.level = 'info';
 log.connector = ({level, context, message}) => {
   const print = {
     debug: console.debug,
@@ -335,3 +335,11 @@ async function incomingCall(session) {
     }
   }
 }
+
+
+const sound = new Sound('/demo/sounds/dtmf-0.mp3', {volume: 1.0, overlap: true});
+
+document.querySelector('#play').addEventListener('click', async () => {
+  sound.sinkId = getSelectedOption(outputSelect).value;
+  sound.play().then(console.log);
+});

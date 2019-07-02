@@ -82,6 +82,11 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   public configure(options: IClientOptions) {
     const { account, transport } = options;
 
+    const modifiers = [Web.Modifiers.stripVideo];
+    if (Features.isSafari) {
+      modifiers.push(Web.Modifiers.stripG722);
+    }
+
     this.uaOptions = {
       ...this.defaultOptions,
       authorizationUser: account.user,
@@ -93,8 +98,9 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       password: account.password,
       sessionDescriptionHandlerFactory,
       sessionDescriptionHandlerFactoryOptions: {
+        alwaysAcquireMediaFirst: Features.isFirefox,
         constraints: { audio: true, video: false },
-        modifiers: [Web.Modifiers.stripVideo],
+        modifiers,
         peerConnectionOptions: {
           rtcConfiguration: {
             iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
