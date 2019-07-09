@@ -12,6 +12,7 @@ export class Sound {
 
   private samples: HTMLAudioElement[] = [];
   private options: ISoundOptions;
+  private stopTimer?: number;
 
   constructor(uri: string, options: ISoundOptions = {}) {
     this.uri = uri;
@@ -48,7 +49,9 @@ export class Sound {
     });
   }
 
-  public async play(loop = false): Promise<void> {
+  public async play(
+    { loop, timeout }: { loop: boolean; timeout: number } = { loop: false, timeout: undefined }
+  ): Promise<void> {
     if (this.options.overlap && loop) {
       throw new Error('loop and overlap cannot be combined');
     }
@@ -62,13 +65,17 @@ export class Sound {
     sample.volume = this.options.volume;
     sample.loop = loop;
 
-    const removeSample = () => {
+    const cleanup = () => {
+      if (this.stopTimer) {
+        window.clearTimeout(this.stopTimer);
+        delete this.stopTimer;
+      }
       this.samples = this.samples.filter(s => s !== sample);
     };
 
     const resultPromise = new Promise<void>((resolve, reject) => {
       sample.addEventListener('error', e => {
-        removeSample();
+        cleanup();
         reject(e);
       });
 
@@ -80,18 +87,24 @@ export class Sound {
           // before playing audio".
           await audioContext.resume();
 
-          // Set the output sink and play the sound on this device.
-          await (sample as any).setSinkId(this.options.sinkId);
-          await sample.play();
+          // Set the output sink if applicable.
+          if (this.options.sinkId) {
+            await (sample as any).setSinkId(this.options.sinkId);
+          }
 
+          if (timeout) {
+            this.stopTimer = window.setTimeout(() => this.stop(), timeout);
+          }
+
+          await sample.play();
         } catch (e) {
-          removeSample();
-          throw e;
+          cleanup();
+          reject(e);
         }
       });
 
       sample.addEventListener('ended', () => {
-        removeSample();
+        cleanup();
         resolve();
       });
     });
@@ -108,5 +121,6 @@ export class Sound {
     });
 
     this.samples = [];
+    this.stopTimer = undefined;
   }
 }
