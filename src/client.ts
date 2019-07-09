@@ -23,6 +23,7 @@ export interface IClient {
   reconfigure(options: IClientOptions): Promise<void>;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
+  isConnected(): boolean;
 
   invite(uri: string): Promise<Session>;
   subscribe(uri: string): Promise<void>;
@@ -39,6 +40,7 @@ export class Client extends EventEmitter implements IClient {
   private subscriptions: ISubscriptions = {};
   private ua: UA;
   private uaOptions: UABase.Options;
+  private connected: boolean = false;
 
   private transport?: ReconnectableTransport;
 
@@ -63,6 +65,7 @@ export class Client extends EventEmitter implements IClient {
   // Connect (and subsequently register) to server
   public async connect() {
     await this.transport.connect();
+    this.connected = true;
   }
 
   // Unregister (and subsequently disconnect) to server
@@ -70,7 +73,12 @@ export class Client extends EventEmitter implements IClient {
     // Actual unsubscribing is done in ua.stop
     await this.transport.disconnect();
 
+    this.connected = false;
     this.subscriptions = {};
+  }
+
+  public isConnected(): boolean {
+    return this.connected;
   }
 
   public async invite(uri: string): Promise<Session> {
