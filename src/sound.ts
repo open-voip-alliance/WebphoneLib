@@ -62,25 +62,36 @@ export class Sound {
     sample.volume = this.options.volume;
     sample.loop = loop;
 
+    const removeSample = () => {
+      this.samples = this.samples.filter(s => s !== sample);
+    };
+
     const resultPromise = new Promise<void>((resolve, reject) => {
       sample.addEventListener('error', e => {
+        removeSample();
         reject(e);
       });
 
       sample.addEventListener('loadeddata', async () => {
         this.samples.push(sample);
 
-        // Wake up audio context to prevent the error "require user interaction
-        // before playing audio".
-        await audioContext.resume();
+        try {
+          // Wake up audio context to prevent the error "require user interaction
+          // before playing audio".
+          await audioContext.resume();
 
-        // Set the output sink and play the sound on this device.
-        await (sample as any).setSinkId(this.options.sinkId);
-        await sample.play();
+          // Set the output sink and play the sound on this device.
+          await (sample as any).setSinkId(this.options.sinkId);
+          await sample.play();
+
+        } catch (e) {
+          removeSample();
+          throw e;
+        }
       });
 
       sample.addEventListener('ended', () => {
-        this.samples = this.samples.filter(s => s !== sample);
+        removeSample();
         resolve();
       });
     });
