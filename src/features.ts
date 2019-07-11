@@ -23,7 +23,6 @@ export const isLocalhost = ['127.0.0.1', 'localhost'].includes(window.location.h
 const required = [
   webrtc.peerConnection,
   webaudio.mediaDevices,
-  webaudio.setSinkId,
   webaudio.getUserMedia,
   webaudio.audioContext
 ];

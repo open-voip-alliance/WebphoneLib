@@ -3,6 +3,7 @@ import pRetry from 'p-retry';
 import { Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
+import * as Features from './features';
 import { log } from './logger';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { Session } from './session';
@@ -46,6 +47,10 @@ export class Client extends EventEmitter implements IClient {
 
   constructor(options: IClientOptions) {
     super();
+
+    if (!Features.checkRequired()) {
+      throw new Error('Your browser is not supported by this library');
+    }
 
     this.defaultMedia = options.media;
 

@@ -1,4 +1,6 @@
 import { audioContext } from './audio-context';
+import * as Features from './features';
+import { log } from './logger';
 import { MediaDeviceId } from './types';
 
 interface ISoundOptions {
@@ -44,9 +46,13 @@ export class Sound {
 
   public set sinkId(newSinkId: MediaDeviceId) {
     this.options.sinkId = newSinkId;
-    this.samples.forEach(s => {
-      (s as any).setSinkId(newSinkId);
-    });
+    if (Features.webaudio.setSinkId) {
+      this.samples.forEach(s => {
+        (s as any).setSinkId(newSinkId);
+      });
+    } else {
+      log.warn('cannot set output device: setSinkId is not supported', 'sound');
+    }
   }
 
   public async play(
@@ -89,7 +95,11 @@ export class Sound {
 
           // Set the output sink if applicable.
           if (this.options.sinkId) {
-            await (sample as any).setSinkId(this.options.sinkId);
+            if (Features.webaudio.setSinkId) {
+              await (sample as any).setSinkId(this.options.sinkId);
+            } else {
+              log.warn('cannot set output device: setSinkId is not supported', 'sound');
+            }
           }
 
           if (timeout) {

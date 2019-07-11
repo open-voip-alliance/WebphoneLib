@@ -1,6 +1,7 @@
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 import { audioContext } from './audio-context';
+import { log } from './logger';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
 import { closeStream } from './utils';
 
@@ -112,7 +113,11 @@ export class SessionMedia implements IMedia {
     // Attach it to the correct output device.
     await audioContext.resume();
     if (newOutput.id) {
-      await (audio as any).setSinkId(newOutput.id);
+      if (Features.webaudio.setSinkId) {
+        await (audio as any).setSinkId(newOutput.id);
+      } else {
+        log.warn('cannot set output device: setSinkId is not supported', 'session-media');
+      }
     }
 
     // Close the old audio output.
