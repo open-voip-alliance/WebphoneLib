@@ -1,6 +1,7 @@
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 import { audioContext } from './audio-context';
+import * as Features from './features';
 import { log } from './logger';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
 import { closeStream } from './utils';

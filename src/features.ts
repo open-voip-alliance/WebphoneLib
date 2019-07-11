@@ -1,6 +1,6 @@
 const mediaDevices = 'mediaDevices' in window.navigator;
 
-const webaudio = {
+export const webaudio = {
   mediaDevices,
   setSinkId: 'setSinkId' in new Audio(),
   getUserMedia: mediaDevices && 'getUserMedia' in window.navigator.mediaDevices,
