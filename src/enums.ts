@@ -7,6 +7,11 @@ export enum ClientStatus {
   DISCONNECTED
 }
 
+export enum SessionStatus {
+  RINGING,
+  BUSY
+}
+
 export enum SubscriptionStatus {
   AVAILABLE = 'available',
   TRYING = 'trying',

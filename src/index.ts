@@ -1,6 +1,6 @@
 import { Autoplay } from './autoplay';
 import { Client } from './client';
-import { ClientStatus } from './enums';
+import { ClientStatus, SessionStatus } from './enums';
 import * as Features from './features';
 import { log } from './logger';
 import { Media } from './media';

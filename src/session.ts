@@ -3,6 +3,7 @@ import pTimeout from 'p-timeout';
 import { Grammar, NameAddrHeader, ReferClientContext, ReferServerContext } from 'sip.js';
 
 import { audioContext } from './audio-context';
+import { SessionStatus } from './enums';
 import { log } from './logger';
 import { checkAudioConnected } from './session-health';
 import { InternalSession, SessionMedia } from './session-media';
@@ -29,6 +30,7 @@ export class Session extends EventEmitter implements ISession {
   public readonly audioConnected;
   public saidBye: boolean;
   public holdState: boolean;
+  public status: SessionStatus = SessionStatus.RINGING;
 
   private session: InternalSession;
 
@@ -54,6 +56,7 @@ export class Session extends EventEmitter implements ISession {
       const handlers = {
         onAccepted: () => {
           this.session.removeListener('rejected', handlers.onRejected);
+          this.status = SessionStatus.BUSY;
           resolve(true);
         },
         onRejected: () => {
