@@ -6,4 +6,4 @@ import { log } from './logger';
 import { Media } from './media';
 import { Sound } from './sound';
 
-export { Autoplay, Client, ClientStatus, Features, log, Media, Sound };
+export { Autoplay, Client, ClientStatus, Features, log, Media, SessionStatus, Sound };
