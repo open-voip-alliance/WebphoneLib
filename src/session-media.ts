@@ -48,6 +48,11 @@ export class SessionMedia implements IMedia {
       output: Object.assign({}, media.output)
     };
 
+    session.on('terminated', () => {
+      this.stopInput();
+      this.stopOutput();
+    });
+
     const self = this;
 
     // prettier-ignore
@@ -82,10 +87,7 @@ export class SessionMedia implements IMedia {
     const constraints = getInputConstraints(newInput);
     const newInputStream = await navigator.mediaDevices.getUserMedia(constraints);
     // Close the old inputStream and disconnect from WebRTC.
-    if (this.inputStream) {
-      closeStream(this.inputStream);
-      this.inputNode.disconnect();
-    }
+    this.stopInput();
 
     this.inputStream = newInputStream;
     const sourceNode = audioContext.createMediaStreamSource(newInputStream);
@@ -122,13 +124,7 @@ export class SessionMedia implements IMedia {
     }
 
     // Close the old audio output.
-    if (this.audioOutput) {
-      // HTMLAudioElement can't be stopped, but pause should have the same
-      // effect. It should be garbage collected if we don't keep references to
-      // it.
-      this.audioOutput.pause();
-      this.audioOutput.srcObject = undefined;
-    }
+    this.stopOutput();
 
     this.audioOutput = audio;
     this.media.output = newOutput;
@@ -183,6 +179,23 @@ export class SessionMedia implements IMedia {
     }
 
     this.media.output.muted = newMuted;
+  }
+
+  private stopInput() {
+    if (this.inputStream) {
+      closeStream(this.inputStream);
+      this.inputNode.disconnect();
+    }
+  }
+
+  private stopOutput() {
+    if (this.audioOutput) {
+      // HTMLAudioElement can't be stopped, but pause should have the same
+      // effect. It should be garbage collected if we don't keep references to
+      // it.
+      this.audioOutput.pause();
+      this.audioOutput.srcObject = undefined;
+    }
   }
 }
 
