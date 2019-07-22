@@ -4,7 +4,7 @@ import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
-import { closeStream } from './utils';
+import { clamp, closeStream } from './utils';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
@@ -117,7 +117,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
 
     // Create the new audio output.
     const audio = new Audio();
-    audio.volume = newOutput.volume;
+    audio.volume = clamp(newOutput.volume, 0.0, 1.0);
     audio.muted = newOutput.muted;
 
     // Attach it to the correct output device.
