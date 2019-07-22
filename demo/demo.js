@@ -238,7 +238,7 @@ async function runSession(session) {
     .then(() => console.log('audio connected!'))
     .catch(() => console.error('connecting audio failed'));
 
-  session.on('statsUpdated', stats => {
+  session.on('callQualityUpdate', stats => {
     printStats(stats);
     mos.innerHTML = (stats.mos.last || 0).toFixed(2);
   });

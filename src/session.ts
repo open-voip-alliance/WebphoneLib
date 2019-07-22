@@ -20,7 +20,8 @@ interface ISession {
   readonly stats: SessionStats;
   readonly audioConnected: Promise<void>;
 
-  on(event: 'statsUpdated', listener: () => void): this;
+  on(event: 'terminated' | 'statusUpdate', listener: (session: ISession) => void): this;
+  on(event: 'callQualityUpdate', listener: () => void): this;
 }
 
 export class Session extends EventEmitter implements ISession {
@@ -56,7 +57,8 @@ export class Session extends EventEmitter implements ISession {
       const handlers = {
         onAccepted: () => {
           this.session.removeListener('rejected', handlers.onRejected);
-          this.status = SessionStatus.BUSY;
+          this.status = SessionStatus.ACTIVE;
+          this.emit('sessionUpdate', this);
           resolve(true);
         },
         onRejected: () => {
@@ -75,6 +77,8 @@ export class Session extends EventEmitter implements ISession {
     this.terminatedPromise = new Promise((resolve, reject) => {
       this.session.once('terminated', (message, cause) => {
         this.emit('terminated', this);
+        this.status = SessionStatus.TERMINATED;
+        this.emit('statusUpdate', this.status);
 
         // Asterisk specific header that signals that the VoIP account used is not
         // configured for WebRTC.
@@ -101,7 +105,7 @@ export class Session extends EventEmitter implements ISession {
       statsInterval: 5 * Time.second
     });
     this.stats.on('statsUpdated', () => {
-      this.emit('statsUpdated', this.stats);
+      this.emit('callQualityUpdate', this.stats);
     });
 
     // Promise that will resolve when the session's audio is connected.
@@ -301,6 +305,8 @@ export class Session extends EventEmitter implements ISession {
     }
 
     this.holdState = flag;
+    this.status = flag ? SessionStatus.ON_HOLD : SessionStatus.ACTIVE;
+    this.emit('statusUpdate', this);
 
     return this.reinvitePromise;
   }
