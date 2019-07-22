@@ -133,6 +133,17 @@ export class Session extends EventEmitter implements ISession {
     return { phoneNumber, displayName };
   }
 
+  get autoAnswer(): boolean {
+    let callInfo = this.session.request.headers['Call-Info'];
+
+    if (callInfo && callInfo[0]) {
+      const rawString = callInfo[0].raw;
+      return rawString.includes('answer-after=0');
+    }
+
+    return false;
+  }
+
   public accept(options: any = {}): Promise<void> {
     if (this.rejectPromise) {
       throw new Error('invalid operation: session is rejected');
