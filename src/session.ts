@@ -52,6 +52,10 @@ export class Session extends EventEmitter implements ISession {
     this.session = session as InternalSession;
     this.id = session.request.callId;
     this.media = new SessionMedia(this.session, media);
+    this.media.on('mediaFailure', () => {
+      // TODO: fix this so it doesn't `reject` the `terminatedPromise`?
+      this.session.terminate();
+    });
 
     this.acceptedPromise = new Promise(resolve => {
       const handlers = {

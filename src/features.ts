@@ -15,8 +15,9 @@ export const webrtc = {
 };
 
 const browserUa: string = navigator.userAgent.toLowerCase();
-export const isSafari = browserUa.indexOf('safari') > -1 && browserUa.indexOf('chrome') < 0;
-export const isFirefox = browserUa.indexOf('firefox') > -1 && browserUa.indexOf('chrome') < 0;
+export const isSafari = browserUa.indexOf('safari') !== -1 && browserUa.indexOf('chrome') < 0;
+export const isFirefox = browserUa.indexOf('firefox') !== -1 && browserUa.indexOf('chrome') < 0;
+export const isChrome = browserUa.indexOf('chrome') !== -1 && !isSafari && !isFirefox;
 
 export const isLocalhost = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
 

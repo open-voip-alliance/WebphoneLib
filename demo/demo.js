@@ -233,6 +233,9 @@ async function runSession(session) {
   const blindTransfer = async () => await session.blindTransfer('sip:318@voipgrid.nl');
   const attTransfer = async () => await attendedTransfer(session);
 
+  session.on('statusUpdate', (s) => {
+    console.log(`Status updated: ${s.status}`);
+  });
 
   session.audioConnected
     .then(() => console.log('audio connected!'))

@@ -1,10 +1,11 @@
-import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
+import { EventEmitter } from 'events';
 
 import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
-import { closeStream } from './utils';
+import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
+import { clamp, closeStream } from './utils';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -25,7 +26,11 @@ export type InternalSession = WrappedInviteClientContext &
     __media: SessionMedia;
   };
 
-export class SessionMedia implements IMedia {
+interface ISessionMedia extends IMedia {
+  on(event: 'setupFailed', listener: () => void): this;
+}
+
+export class SessionMedia extends EventEmitter implements ISessionMedia {
   public readonly input: IMediaInput;
   public readonly output: IMediaOutput;
 
@@ -37,6 +42,8 @@ export class SessionMedia implements IMedia {
   private inputNode: GainNode;
 
   public constructor(session: InternalSession, media: IMedia) {
+    super();
+
     this.session = session;
 
     // This link is for the custom SessionDescriptionHandler.
@@ -110,7 +117,7 @@ export class SessionMedia implements IMedia {
 
     // Create the new audio output.
     const audio = new Audio();
-    audio.volume = newOutput.volume;
+    audio.volume = clamp(newOutput.volume, 0.0, 1.0);
     audio.muted = newOutput.muted;
 
     // Attach it to the correct output device.
