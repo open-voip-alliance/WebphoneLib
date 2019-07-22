@@ -134,7 +134,7 @@ export class Session extends EventEmitter implements ISession {
   }
 
   get autoAnswer(): boolean {
-    let callInfo = this.session.request.headers['Call-Info'];
+    const callInfo = this.session.request.headers['Call-Info'];
 
     if (callInfo && callInfo[0]) {
       const rawString = callInfo[0].raw;
