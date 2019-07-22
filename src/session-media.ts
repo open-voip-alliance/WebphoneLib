@@ -4,8 +4,8 @@ import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
-import { clamp, closeStream } from './utils';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
+import { clamp, closeStream } from './utils';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
