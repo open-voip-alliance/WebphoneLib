@@ -48,7 +48,7 @@ const media = {
 };
 
 log.level = 'info';
-log.connector = ({ level, context, message }) => {
+log.connector = ({level, context, message}) => {
   const print = {
     debug: console.debug,
     verbose: console.debug,
@@ -61,6 +61,7 @@ log.connector = ({ level, context, message }) => {
 };
 
 const client = new Client({ account, transport, media });
+
 client.on('sessionsUpdate', sessions => {
   sessionsCount.innerHTML = Object.keys(sessions).length;
 });
@@ -312,7 +313,8 @@ async function incomingCall(session) {
 
   let terminateTimer;
   try {
-    if (await session.accepted()) {
+    const {accepted, rejectCause} = await session.accepted();
+    if (accepted) {
       console.log('session is accepted \\o/', session.id);
 
       // Terminate the session after 60 seconds
@@ -328,7 +330,7 @@ async function incomingCall(session) {
         console.log('The session was polite to you.');
       }
     } else {
-      console.log('session was rejected...', session.id);
+      console.log('session was rejected...', rejectCause);
     }
   } catch (e) {
     console.error('session failed', session.id, e);
