@@ -47,7 +47,9 @@ const media = {
   }
 };
 
-log.level = 'info';
+let activeSession = null;
+
+log.level = 'debug';
 log.connector = ({level, context, message}) => {
   const print = {
     debug: console.debug,
@@ -95,6 +97,16 @@ resubscribeBtn.addEventListener(
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
+
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'star', 'hash'].forEach(key => {
+  const btn = document.querySelector(`#dtmf-${key}`);
+  btn.addEventListener('click', () => {
+    if (activeSession) {
+      console.log(`Sending DTMF ${key}`);
+      activeSession.dtmf(btn.value);
+    }
+  });
+});
 
 function getSelectedOption(select) {
   try {
@@ -164,8 +176,6 @@ outputSelect.addEventListener('change', function() {
 Media.requestPermission();
 
 window.Media = Media;
-
-let activeSession = null;
 
 inVol.addEventListener('input', function(e) {
   const vol = this.value / 10;
