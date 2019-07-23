@@ -94,7 +94,7 @@ export class Client extends EventEmitter implements IClient {
 
     await this.transport.registeredPromise;
 
-    let session;
+    let session: Session;
     try {
       // Retrying this once if it fails. While the socket seems healthy, it
       // might in fact not be. In that case the act of sending data over the
@@ -102,12 +102,12 @@ export class Client extends EventEmitter implements IClient {
       // socket is broken somehow. In that case getConnection will try
       // to regain connection, to quickly re-invite over the newly created
       // socket (or not).
-      session = await this.tryInvite(uri).catch(async e => {
+      session = await this.tryInvite(uri).catch(async () => {
         log.error('The WebSocket broke during the act of inviting.', this.constructor.name);
         await this.transport.getConnection(ReconnectionMode.ONCE);
 
         if (this.transport.status !== ClientStatus.CONNECTED) {
-          throw new Error('Not sending out invite. It appears we are not connected. =(');
+          throw new Error('Not sending out invite. It appears we are not connected.');
         }
 
         log.debug('New WebSocket is created.', this.constructor.name);
@@ -118,16 +118,7 @@ export class Client extends EventEmitter implements IClient {
       return;
     }
 
-    this.sessions[session.id] = session;
-    this.emit('sessionsUpdate', this.sessions);
-    this.updatePriority();
-
-    session.once('terminated', () => {
-      log.info(`Outgoing session ${session.id} is terminated.`, this.constructor.name);
-      delete this.sessions[session.id];
-      this.emit('sessionsUpdate', this.sessions);
-      this.updatePriority();
-    });
+    this.addSession(session);
 
     return session;
   }
@@ -239,16 +230,14 @@ export class Client extends EventEmitter implements IClient {
         isIncoming: true
       });
 
-      this.sessions[session.id] = session;
-      this.emit('sessionsUpdate', this.sessions);
-      this.updatePriority();
-      this.emit('invite', session);
-      session.once('terminated', () => {
+      uaSession.once('terminated', () => {
         log.info(`Incoming session ${session.id} is terminated.`, this.constructor.name);
-        delete this.sessions[session.id];
-        this.emit('sessionsUpdate', this.sessions);
-        this.updatePriority();
+        this.removeSession(session);
       });
+
+      this.addSession(session);
+
+      this.emit('invite', session);
     });
 
     this.transport.on('statusUpdate', status => {
@@ -278,6 +267,10 @@ export class Client extends EventEmitter implements IClient {
         onProgress: () => {
           log.debug('Session emitted progress after an invite.', this.constructor.name);
           uaSession.removeListener('failed', handlers.onFailed);
+          uaSession.once('terminated', () => {
+            log.info(`Outgoing session ${session.id} is terminated.`, this.constructor.name);
+            this.removeSession(session);
+          });
           resolve(session);
         }
       };
@@ -297,6 +290,18 @@ export class Client extends EventEmitter implements IClient {
     }
 
     delete this.subscriptions[uri];
+  }
+
+  private addSession(session: Session) {
+    this.sessions[session.id] = session;
+    this.emit('sessionsUpdate', this.sessions);
+    this.updatePriority();
+  }
+
+  private removeSession(session: Session) {
+    delete this.sessions[session.id];
+    this.emit('sessionsUpdate', this.sessions);
+    this.updatePriority();
   }
 
   private updatePriority() {
