@@ -19,6 +19,7 @@ const inMute = document.querySelector('#inMute');
 const outMute = document.querySelector('#outMute');
 const mos = document.querySelector('#mos');
 const resubscribeBtn = document.querySelector('#resubscribe');
+const sessionsCount = document.querySelector('#sessions-count');
 
 const account = {
   user: CREDS.authorizationUser,
@@ -47,7 +48,7 @@ const media = {
 };
 
 log.level = 'info';
-log.connector = ({level, context, message}) => {
+log.connector = ({ level, context, message }) => {
   const print = {
     debug: console.debug,
     verbose: console.debug,
@@ -60,6 +61,10 @@ log.connector = ({level, context, message}) => {
 };
 
 const client = new Client({ account, transport, media });
+client.on('sessionsUpdated', sessions => {
+  sessionsCount.innerHTML = Object.keys(sessions).length;
+});
+
 outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
 
 const contact = 'sip:497920039@voipgrid.nl';
@@ -233,7 +238,6 @@ async function runSession(session) {
   const blindTransfer = async () => await session.blindTransfer('sip:318@voipgrid.nl');
   const attTransfer = async () => await attendedTransfer(session);
 
-
   session.audioConnected
     .then(() => console.log('audio connected!'))
     .catch(() => console.error('connecting audio failed'));
@@ -336,8 +340,7 @@ async function incomingCall(session) {
   }
 }
 
-
-const sound = new Sound('/demo/sounds/dtmf-0.mp3', {volume: 1.0, overlap: true});
+const sound = new Sound('/demo/sounds/dtmf-0.mp3', { volume: 1.0, overlap: true });
 
 document.querySelector('#play').addEventListener('click', async () => {
   sound.sinkId = getSelectedOption(outputSelect).value;
