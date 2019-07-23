@@ -36,6 +36,7 @@ export class Session extends EventEmitter implements ISession {
   public readonly media;
   public readonly stats;
   public readonly audioConnected;
+  public readonly isIncoming: boolean;
   public saidBye: boolean;
   public holdState: boolean;
   public status: SessionStatus = SessionStatus.RINGING;
@@ -50,10 +51,12 @@ export class Session extends EventEmitter implements ISession {
 
   constructor({
     session,
-    media
+    media,
+    isIncoming
   }: {
     session: WrappedInviteClientContext | WrappedInviteServerContext;
     media: IMedia;
+    isIncoming: boolean;
   }) {
     super();
     this.session = session as InternalSession;
@@ -63,6 +66,7 @@ export class Session extends EventEmitter implements ISession {
       // TODO: fix this so it doesn't `reject` the `terminatedPromise`?
       this.session.terminate();
     });
+    this.isIncoming = isIncoming;
 
     this.acceptedPromise = new Promise(resolve => {
       const handlers = {
@@ -152,11 +156,26 @@ export class Session extends EventEmitter implements ISession {
     const callInfo = this.session.request.headers['Call-Info'];
 
     if (callInfo && callInfo[0]) {
-      const rawString = callInfo[0].raw;
-      return rawString.includes('answer-after=0');
+      return callInfo[0].raw.includes('answer-after=0');
     }
 
     return false;
+  }
+
+  get phoneNumber(): string {
+    if (this.isIncoming) {
+      return this.remoteIdentity.phoneNumber;
+    } else {
+      return this.session.request.to.uri.user;
+    }
+  }
+
+  get startTime() {
+    return this.session.startTime;
+  }
+
+  get endTime() {
+    return this.session.endTime;
   }
 
   public accept(options: any = {}): Promise<void> {

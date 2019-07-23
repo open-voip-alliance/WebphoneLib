@@ -235,7 +235,8 @@ export class Client extends EventEmitter implements IClient {
     this.transport.on('invite', uaSession => {
       const session = new Session({
         media: this.defaultMedia,
-        session: uaSession
+        session: uaSession,
+        isIncoming: true
       });
 
       this.sessions[session.id] = session;
@@ -264,7 +265,8 @@ export class Client extends EventEmitter implements IClient {
       const uaSession = this.transport.invite(phoneNumber);
       const session = new Session({
         media: this.defaultMedia,
-        session: uaSession
+        session: uaSession,
+        isIncoming: false
       });
 
       const handlers = {
