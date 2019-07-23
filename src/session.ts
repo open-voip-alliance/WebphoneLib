@@ -1,6 +1,13 @@
 import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
-import { Grammar, NameAddrHeader, ReferClientContext, ReferServerContext } from 'sip.js';
+import {
+  Grammar,
+  NameAddrHeader,
+  ReferClientContext,
+  ReferServerContext,
+  SessionStatus as SIPSessionStatus,
+  TypeStrings as SIPTypeStrings
+} from 'sip.js';
 
 import { audioContext } from './audio-context';
 import { SessionStatus } from './enums';
@@ -82,7 +89,7 @@ export class Session extends EventEmitter implements ISession {
       this.session.once('terminated', (message, cause) => {
         this.emit('terminated', this);
         this.status = SessionStatus.TERMINATED;
-        this.emit('statusUpdate', this.status);
+        this.emit('statusUpdate', this);
 
         // Asterisk specific header that signals that the VoIP account used is not
         // configured for WebRTC.
@@ -329,13 +336,25 @@ export class Session extends EventEmitter implements ISession {
   }
 
   private async isTransferredPromise(target: InternalSession | string) {
-    const { referContext, options } = await new Promise(resolve => {
+    const { referContext, options } = await new Promise((resolve, reject) => {
       this.session.once('referRequested', context => {
         log.debug('Refer is requested', this.constructor.name);
         resolve(context);
       });
 
-      this.session.refer(target);
+      try {
+        this.session.refer(target);
+      } catch (e) {
+        log.error(e, this.constructor.name);
+        // When there are multiple attended transfer requests, it could occur
+        // that the status of this session is set by another one of these requests
+        // is set to an unexpected state.
+        if (e.type === SIPTypeStrings.InvalidStateError) {
+          reject();
+        }
+
+        throw e;
+      }
     });
 
     return new Promise<boolean>(resolve => {

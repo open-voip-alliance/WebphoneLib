@@ -61,11 +61,11 @@ log.connector = ({ level, context, message }) => {
 };
 
 const client = new Client({ account, transport, media });
-client.on('sessionsUpdated', sessions => {
+client.on('sessionsUpdate', sessions => {
   sessionsCount.innerHTML = Object.keys(sessions).length;
 });
 
-outBtn.addEventListener('click', () => outgoingCall('999').catch(console.error));
+outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
 
 const contact = 'sip:497920039@voipgrid.nl';
 
