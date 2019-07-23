@@ -1,6 +1,8 @@
 import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
+
 import {
+  C as SIPConstants,
   Grammar,
   NameAddrHeader,
   ReferClientContext,
@@ -31,6 +33,51 @@ interface ISession {
   on(event: 'callQualityUpdate', listener: () => void): this;
 }
 
+export enum SessionCause {
+  BUSY = 'busy',
+  REJECTED = 'rejected',
+  UNAVAILABLE = 'unavailable',
+  CANCELLED = 'cancelled',
+  CALL_COMPLETED_ELSEWHERE = 'call_completed_elsewhere',
+  ADDRESS_INCOMPLETE = 'address_incomplete',
+  NOT_FOUND = 'not_found',
+  REDIRECTED = 'redirected'
+}
+
+const CAUSE_MAPPING = {
+  [SIPConstants.causes.BUSY]: SessionCause.BUSY,
+  [SIPConstants.causes.REJECTED]: SessionCause.REJECTED,
+  [SIPConstants.causes.UNAVAILABLE]: SessionCause.UNAVAILABLE,
+  [SIPConstants.causes.ADDRESS_INCOMPLETE]: SessionCause.ADDRESS_INCOMPLETE,
+  [SIPConstants.causes.NOT_FOUND]: SessionCause.NOT_FOUND,
+  [SIPConstants.causes.REDIRECTED]: SessionCause.REDIRECTED,
+  [SIPConstants.causes.CANCELED]: SessionCause.CANCELLED
+};
+
+const CAUSE_ERRORS = [
+  SIPConstants.causes.CONNECTION_ERROR,
+  SIPConstants.causes.INTERNAL_ERROR,
+  SIPConstants.causes.REQUEST_TIMEOUT,
+  SIPConstants.causes.SIP_FAILURE_CODE,
+  SIPConstants.causes.AUTHENTICATION_ERROR,
+  SIPConstants.causes.DIALOG_ERROR,
+  SIPConstants.causes.INCOMPATIBLE_SDP,
+  SIPConstants.causes.BAD_MEDIA_DESCRIPTION,
+  SIPConstants.causes.EXPIRES,
+  SIPConstants.causes.NO_ACK,
+  SIPConstants.causes.NO_ANSWER,
+  SIPConstants.causes.NO_PRACK,
+  SIPConstants.causes.RTP_TIMEOUT,
+  SIPConstants.causes.USER_DENIED_MEDIA_ACCESS,
+  SIPConstants.causes.WEBRTC_ERROR,
+  SIPConstants.causes.WEBRTC_NOT_SUPPORTED
+];
+
+interface ISessionAccept {
+  accepted: boolean;
+  rejectCause?: SessionCause;
+}
+
 export class Session extends EventEmitter implements ISession {
   public readonly id;
   public readonly media;
@@ -43,7 +90,7 @@ export class Session extends EventEmitter implements ISession {
 
   private session: InternalSession;
 
-  private acceptedPromise: Promise<boolean>;
+  private acceptedPromise: Promise<ISessionAccept>;
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
@@ -68,17 +115,25 @@ export class Session extends EventEmitter implements ISession {
     });
     this.isIncoming = isIncoming;
 
-    this.acceptedPromise = new Promise(resolve => {
+    this.acceptedPromise = new Promise((resolve, reject) => {
       const handlers = {
         onAccepted: () => {
           this.session.removeListener('rejected', handlers.onRejected);
           this.status = SessionStatus.ACTIVE;
           this.emit('sessionUpdate', this);
-          resolve(true);
+          resolve({accepted: true});
         },
-        onRejected: () => {
+        onRejected: (response, cause) => {
           this.session.removeListener('accepted', handlers.onAccepted);
-          resolve(false);
+          try {
+            resolve({
+              accepted: false,
+              rejectCause: this.findCause(response, cause)
+            });
+          } catch (e) {
+            log.error(`Session failed: ${e}`, this.constructor.name);
+            reject(e);
+          }
         }
       };
 
@@ -193,9 +248,14 @@ export class Session extends EventEmitter implements ISession {
           this.session.removeListener('failed', handlers.onFail);
           resolve();
         },
-        onFail: (e: Error) => {
+        onFail: (response, cause) => {
           this.session.removeListener('accepted', handlers.onAnswered);
-          reject(e);
+          try {
+            reject(this.findCause(response, cause));
+          } catch (e) {
+            log.error(`Accepting session failed: ${e}`, this.constructor.name);
+            reject(e);
+          }
         }
       };
       this.session.once('accepted', handlers.onAnswered);
@@ -225,7 +285,7 @@ export class Session extends EventEmitter implements ISession {
     return this.rejectPromise;
   }
 
-  public accepted(): Promise<boolean> {
+  public accepted(): Promise<ISessionAccept> {
     return this.acceptedPromise;
   }
 
@@ -399,5 +459,46 @@ export class Session extends EventEmitter implements ISession {
       // Refer after the handlers have been set.
       referContext.refer(options);
     });
+  }
+
+  private findCause(response, cause): SessionCause {
+    if (cause === SIPConstants.causes.CANCELED) {
+      const reason = parseReason(response.getHeader('Reason'));
+      if (reason && reason.get('text') === 'Call completed elsewhere') {
+        return SessionCause.CALL_COMPLETED_ELSEWHERE;
+      }
+    }
+
+    if (CAUSE_ERRORS.includes(cause)) {
+      throw new Error(`Session error: ${cause}`);
+    }
+
+    const result = CAUSE_MAPPING[cause];
+    if (result) {
+      return result;
+    }
+
+    log.warn(`Unknown cause: ${cause}`, this.constructor.name);
+    return undefined;
+  }
+}
+
+
+/**
+ * Convert a comma-separated string like:
+ * `SIP;cause=200;text="Call completed elsewhere` to a Map.
+ * @param {String} header - The header to parse.
+ * @returns {Map} - A map of key/values of the header.
+ */
+function parseReason(header?: string): Map<string, string> {
+  if (header) {
+    return new Map(
+      header
+        .replace(/"/g, '')
+        .split(';')
+        .map(i => i.split('=') as [string, string])
+    );
+  } else {
+    return undefined;
   }
 }
