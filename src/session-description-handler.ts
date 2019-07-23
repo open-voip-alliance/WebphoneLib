@@ -46,7 +46,12 @@ export function sessionDescriptionHandlerFactory(session, options) {
     }
 
     session.__streams.remoteStream = remoteStream;
-    session.__media.setOutput();
+    try {
+      await session.__media.setOutput();
+    } catch (e) {
+      log.error(e, 'sessionDescriptionHandlerFactory');
+      session.__media.emit('mediaFailure');
+    }
   });
 
   log.debug('Returning patched SDH for session' + session, 'sessionDescriptionHandlerFactory');

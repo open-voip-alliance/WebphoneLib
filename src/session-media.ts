@@ -1,10 +1,11 @@
-import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
+import { EventEmitter } from 'events';
 
 import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
-import { closeStream } from './utils';
+import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
+import { clamp, closeStream } from './utils';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -25,7 +26,11 @@ export type InternalSession = WrappedInviteClientContext &
     __media: SessionMedia;
   };
 
-export class SessionMedia implements IMedia {
+interface ISessionMedia extends IMedia {
+  on(event: 'setupFailed', listener: () => void): this;
+}
+
+export class SessionMedia extends EventEmitter implements ISessionMedia {
   public readonly input: IMediaInput;
   public readonly output: IMediaOutput;
 
@@ -37,6 +42,8 @@ export class SessionMedia implements IMedia {
   private inputNode: GainNode;
 
   public constructor(session: InternalSession, media: IMedia) {
+    super();
+
     this.session = session;
 
     // This link is for the custom SessionDescriptionHandler.
@@ -47,6 +54,11 @@ export class SessionMedia implements IMedia {
       input: Object.assign({}, media.input),
       output: Object.assign({}, media.output)
     };
+
+    session.on('terminated', () => {
+      this.stopInput();
+      this.stopOutput();
+    });
 
     const self = this;
 
@@ -82,10 +94,7 @@ export class SessionMedia implements IMedia {
     const constraints = getInputConstraints(newInput);
     const newInputStream = await navigator.mediaDevices.getUserMedia(constraints);
     // Close the old inputStream and disconnect from WebRTC.
-    if (this.inputStream) {
-      closeStream(this.inputStream);
-      this.inputNode.disconnect();
-    }
+    this.stopInput();
 
     this.inputStream = newInputStream;
     const sourceNode = audioContext.createMediaStreamSource(newInputStream);
@@ -108,7 +117,7 @@ export class SessionMedia implements IMedia {
 
     // Create the new audio output.
     const audio = new Audio();
-    audio.volume = newOutput.volume;
+    audio.volume = clamp(newOutput.volume, 0.0, 1.0);
     audio.muted = newOutput.muted;
 
     // Attach it to the correct output device.
@@ -122,13 +131,7 @@ export class SessionMedia implements IMedia {
     }
 
     // Close the old audio output.
-    if (this.audioOutput) {
-      // HTMLAudioElement can't be stopped, but pause should have the same
-      // effect. It should be garbage collected if we don't keep references to
-      // it.
-      this.audioOutput.pause();
-      this.audioOutput.srcObject = undefined;
-    }
+    this.stopOutput();
 
     this.audioOutput = audio;
     this.media.output = newOutput;
@@ -183,6 +186,23 @@ export class SessionMedia implements IMedia {
     }
 
     this.media.output.muted = newMuted;
+  }
+
+  private stopInput() {
+    if (this.inputStream) {
+      closeStream(this.inputStream);
+      this.inputNode.disconnect();
+    }
+  }
+
+  private stopOutput() {
+    if (this.audioOutput) {
+      // HTMLAudioElement can't be stopped, but pause should have the same
+      // effect. It should be garbage collected if we don't keep references to
+      // it.
+      this.audioOutput.pause();
+      this.audioOutput.srcObject = undefined;
+    }
   }
 }
 

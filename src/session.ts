@@ -20,7 +20,8 @@ interface ISession {
   readonly stats: SessionStats;
   readonly audioConnected: Promise<void>;
 
-  on(event: 'statsUpdated', listener: () => void): this;
+  on(event: 'terminated' | 'statusUpdate', listener: (session: ISession) => void): this;
+  on(event: 'callQualityUpdate', listener: () => void): this;
 }
 
 export class Session extends EventEmitter implements ISession {
@@ -51,12 +52,17 @@ export class Session extends EventEmitter implements ISession {
     this.session = session as InternalSession;
     this.id = session.request.callId;
     this.media = new SessionMedia(this.session, media);
+    this.media.on('mediaFailure', () => {
+      // TODO: fix this so it doesn't `reject` the `terminatedPromise`?
+      this.session.terminate();
+    });
 
     this.acceptedPromise = new Promise(resolve => {
       const handlers = {
         onAccepted: () => {
           this.session.removeListener('rejected', handlers.onRejected);
-          this.status = SessionStatus.BUSY;
+          this.status = SessionStatus.ACTIVE;
+          this.emit('sessionUpdate', this);
           resolve(true);
         },
         onRejected: () => {
@@ -75,6 +81,8 @@ export class Session extends EventEmitter implements ISession {
     this.terminatedPromise = new Promise((resolve, reject) => {
       this.session.once('terminated', (message, cause) => {
         this.emit('terminated', this);
+        this.status = SessionStatus.TERMINATED;
+        this.emit('statusUpdate', this.status);
 
         // Asterisk specific header that signals that the VoIP account used is not
         // configured for WebRTC.
@@ -101,7 +109,7 @@ export class Session extends EventEmitter implements ISession {
       statsInterval: 5 * Time.second
     });
     this.stats.on('statsUpdated', () => {
-      this.emit('statsUpdated', this.stats);
+      this.emit('callQualityUpdate', this.stats);
     });
 
     // Promise that will resolve when the session's audio is connected.
@@ -131,6 +139,17 @@ export class Session extends EventEmitter implements ISession {
     }
 
     return { phoneNumber, displayName };
+  }
+
+  get autoAnswer(): boolean {
+    const callInfo = this.session.request.headers['Call-Info'];
+
+    if (callInfo && callInfo[0]) {
+      const rawString = callInfo[0].raw;
+      return rawString.includes('answer-after=0');
+    }
+
+    return false;
   }
 
   public accept(options: any = {}): Promise<void> {
@@ -290,6 +309,8 @@ export class Session extends EventEmitter implements ISession {
     }
 
     this.holdState = flag;
+    this.status = flag ? SessionStatus.ON_HOLD : SessionStatus.ACTIVE;
+    this.emit('statusUpdate', this);
 
     return this.reinvitePromise;
   }

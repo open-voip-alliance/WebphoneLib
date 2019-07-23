@@ -32,7 +32,7 @@ export interface IClient {
 
   on(event: 'invite', listener: (session: Session) => void): this;
   on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
-  on(event: 'sessionsUpdated', listener: (sessions: ISessions) => void): this;
+  on(event: 'sessionsUpdate', listener: (sessions: ISessions) => void): this;
 }
 
 export class Client extends EventEmitter implements IClient {
@@ -119,13 +119,13 @@ export class Client extends EventEmitter implements IClient {
     }
 
     this.sessions[session.id] = session;
-    this.emit('sessionsUpdated', this.sessions);
+    this.emit('sessionsUpdate', this.sessions);
     this.updatePriority();
 
     session.once('terminated', () => {
       log.info(`Outgoing session ${session.id} is terminated.`, this.constructor.name);
       delete this.sessions[session.id];
-      this.emit('sessionsUpdated', this.sessions);
+      this.emit('sessionsUpdate', this.sessions);
       this.updatePriority();
     });
 
@@ -239,13 +239,13 @@ export class Client extends EventEmitter implements IClient {
       });
 
       this.sessions[session.id] = session;
-      this.emit('sessionsUpdated', this.sessions);
+      this.emit('sessionsUpdate', this.sessions);
       this.updatePriority();
       this.emit('invite', session);
       session.once('terminated', () => {
         log.info(`Incoming session ${session.id} is terminated.`, this.constructor.name);
         delete this.sessions[session.id];
-        this.emit('sessionsUpdated', this.sessions);
+        this.emit('sessionsUpdate', this.sessions);
         this.updatePriority();
       });
     });

@@ -238,11 +238,15 @@ async function runSession(session) {
   const blindTransfer = async () => await session.blindTransfer('sip:318@voipgrid.nl');
   const attTransfer = async () => await attendedTransfer(session);
 
+  session.on('statusUpdate', s => {
+    console.log(`Status updated: ${s.status}`);
+  });
+
   session.audioConnected
     .then(() => console.log('audio connected!'))
     .catch(() => console.error('connecting audio failed'));
 
-  session.on('statsUpdated', stats => {
+  session.on('callQualityUpdate', stats => {
     printStats(stats);
     mos.innerHTML = (stats.mos.last || 0).toFixed(2);
   });

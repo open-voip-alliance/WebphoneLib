@@ -9,7 +9,9 @@ export enum ClientStatus {
 
 export enum SessionStatus {
   RINGING = 'ringing',
-  BUSY = 'busy'
+  ACTIVE = 'active',
+  ON_HOLD = 'on_hold',
+  TERMINATED = 'terminated'
 }
 
 export enum SubscriptionStatus {
