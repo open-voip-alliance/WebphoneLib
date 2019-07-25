@@ -7,6 +7,7 @@ import * as Features from './features';
 import { log } from './logger';
 import { ReconnectableTransport } from './reconnectable-transport';
 import { Session } from './session';
+import { InternalSession } from './session-media';
 import { statusFromDialog } from './subscription';
 import { second } from './time';
 import { IClientOptions, IMedia } from './types';
@@ -227,12 +228,8 @@ export class Client extends EventEmitter implements IClient {
       const session = new Session({
         media: this.defaultMedia,
         session: uaSession,
+        onTerminated: this.onSessionTerminated.bind(this),
         isIncoming: true
-      });
-
-      uaSession.once('terminated', () => {
-        log.info(`Incoming session ${session.id} is terminated.`, this.constructor.name);
-        this.removeSession(session);
       });
 
       this.addSession(session);
@@ -246,6 +243,12 @@ export class Client extends EventEmitter implements IClient {
     });
   }
 
+  private onSessionTerminated(sessionId: number) {
+    const session = this.sessions[sessionId];
+    log.info(`Incoming session ${sessionId} is terminated.`, this.constructor.name);
+    this.removeSession(session);
+  }
+
   private async tryInvite(phoneNumber: string): Promise<Session> {
     return new Promise((resolve, reject) => {
       // Transport invite just creates a ClientContext, it doesn't send the
@@ -255,6 +258,7 @@ export class Client extends EventEmitter implements IClient {
       const session = new Session({
         media: this.defaultMedia,
         session: uaSession,
+        onTerminated: this.onSessionTerminated.bind(this),
         isIncoming: false
       });
 
@@ -267,10 +271,6 @@ export class Client extends EventEmitter implements IClient {
         onProgress: () => {
           log.debug('Session emitted progress after an invite.', this.constructor.name);
           uaSession.removeListener('failed', handlers.onFailed);
-          uaSession.once('terminated', () => {
-            log.info(`Outgoing session ${session.id} is terminated.`, this.constructor.name);
-            this.removeSession(session);
-          });
           resolve(session);
         }
       };

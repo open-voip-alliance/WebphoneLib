@@ -96,13 +96,17 @@ export class Session extends EventEmitter implements ISession {
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
 
+  private onTerminated: (sessionId: string) => void;
+
   constructor({
     session,
     media,
+    onTerminated,
     isIncoming
   }: {
     session: WrappedInviteClientContext | WrappedInviteServerContext;
     media: IMedia;
+    onTerminated: (sessionId: string) => void;
     isIncoming: boolean;
   }) {
     super();
@@ -113,6 +117,7 @@ export class Session extends EventEmitter implements ISession {
       // TODO: fix this so it doesn't `reject` the `terminatedPromise`?
       this.session.terminate();
     });
+    this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
 
     this.acceptedPromise = new Promise((resolve, reject) => {
@@ -121,7 +126,7 @@ export class Session extends EventEmitter implements ISession {
           this.session.removeListener('rejected', handlers.onRejected);
           this.status = SessionStatus.ACTIVE;
           this.emit('sessionUpdate', this);
-          resolve({accepted: true});
+          resolve({ accepted: true });
         },
         onRejected: (response, cause) => {
           this.session.removeListener('accepted', handlers.onAccepted);
@@ -146,6 +151,7 @@ export class Session extends EventEmitter implements ISession {
     // has been accepted.
     this.terminatedPromise = new Promise((resolve, reject) => {
       this.session.once('terminated', (message, cause) => {
+        this.onTerminated(this.id);
         this.emit('terminated', this);
         this.status = SessionStatus.TERMINATED;
         this.emit('statusUpdate', this);
@@ -482,7 +488,6 @@ export class Session extends EventEmitter implements ISession {
     return undefined;
   }
 }
-
 
 /**
  * Convert a comma-separated string like:
