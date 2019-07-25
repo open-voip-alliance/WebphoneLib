@@ -39,38 +39,41 @@ export enum SessionCause {
   UNAVAILABLE = 'unavailable',
   CANCELLED = 'cancelled',
   CALL_COMPLETED_ELSEWHERE = 'call_completed_elsewhere',
-  ADDRESS_INCOMPLETE = 'address_incomplete',
   NOT_FOUND = 'not_found',
-  REDIRECTED = 'redirected'
+  REDIRECTED = 'redirected',
+  NO_ANSWER = 'no_answer',
+  REQUEST_TERMINATED = 'request_terminated',
+  TEMPORARILY_UNAVAILABLE = 'temporarily_unavailable'
 }
 
 const CAUSE_MAPPING = {
   [SIPConstants.causes.BUSY]: SessionCause.BUSY,
   [SIPConstants.causes.REJECTED]: SessionCause.REJECTED,
   [SIPConstants.causes.UNAVAILABLE]: SessionCause.UNAVAILABLE,
-  [SIPConstants.causes.ADDRESS_INCOMPLETE]: SessionCause.ADDRESS_INCOMPLETE,
   [SIPConstants.causes.NOT_FOUND]: SessionCause.NOT_FOUND,
   [SIPConstants.causes.REDIRECTED]: SessionCause.REDIRECTED,
-  [SIPConstants.causes.CANCELED]: SessionCause.CANCELLED
+  [SIPConstants.causes.CANCELED]: SessionCause.CANCELLED,
+  [SIPConstants.causes.NO_ANSWER]: SessionCause.NO_ANSWER,
+  'Temporarily Unavailable': SessionCause.TEMPORARILY_UNAVAILABLE
 };
 
 const CAUSE_ERRORS = [
   SIPConstants.causes.CONNECTION_ERROR,
   SIPConstants.causes.INTERNAL_ERROR,
   SIPConstants.causes.REQUEST_TIMEOUT,
-  SIPConstants.causes.SIP_FAILURE_CODE,
   SIPConstants.causes.AUTHENTICATION_ERROR,
+  SIPConstants.causes.ADDRESS_INCOMPLETE,
   SIPConstants.causes.DIALOG_ERROR,
   SIPConstants.causes.INCOMPATIBLE_SDP,
   SIPConstants.causes.BAD_MEDIA_DESCRIPTION,
   SIPConstants.causes.EXPIRES,
   SIPConstants.causes.NO_ACK,
-  SIPConstants.causes.NO_ANSWER,
   SIPConstants.causes.NO_PRACK,
   SIPConstants.causes.RTP_TIMEOUT,
   SIPConstants.causes.USER_DENIED_MEDIA_ACCESS,
   SIPConstants.causes.WEBRTC_ERROR,
-  SIPConstants.causes.WEBRTC_NOT_SUPPORTED
+  SIPConstants.causes.WEBRTC_NOT_SUPPORTED,
+  SIPConstants.causes.SIP_FAILURE_CODE
 ];
 
 interface ISessionAccept {
@@ -136,6 +139,7 @@ export class Session extends EventEmitter implements ISession {
               rejectCause: this.findCause(response, cause)
             });
           } catch (e) {
+            console.log(response);
             log.error(`Session failed: ${e}`, this.constructor.name);
             reject(e);
           }
@@ -472,6 +476,13 @@ export class Session extends EventEmitter implements ISession {
       const reason = parseReason(response.getHeader('Reason'));
       if (reason && reason.get('text') === 'Call completed elsewhere') {
         return SessionCause.CALL_COMPLETED_ELSEWHERE;
+      }
+    } else if (cause === SIPConstants.causes.SIP_FAILURE_CODE) {
+      if (response.statusCode === 487) {
+        return SessionCause.REQUEST_TERMINATED;
+      } else {
+        log.warn(`Unknown error: ${response.statusCode} (${response.reasonPhrase})`,
+                this.constructor.name);
       }
     }
 
