@@ -4,7 +4,7 @@ import { audioContext } from './audio-context';
 import * as Features from './features';
 import * as Time from './time';
 import { IMediaInput, IMediaOutput } from './types';
-import { closeStream, eqSet  } from './utils';
+import { eqSet } from './utils';
 
 export interface IAudioDevice {
   /**
@@ -93,7 +93,7 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
         }
 
         // Close the stream and delete the promise.
-        closeStream(stream);
+        this.closeStream(stream);
         resolve();
       } catch (err) {
         reject(err);
@@ -103,6 +103,15 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
     });
 
     return this.requestPermissionPromise;
+  }
+
+  public openInputStream(input: IMediaInput): Promise<MediaStream> {
+    const constraints = getInputConstraints(input);
+    return navigator.mediaDevices.getUserMedia(constraints);
+  }
+
+  public closeStream(stream: MediaStream): void {
+    stream.getTracks().forEach(track => track.stop());
   }
 
   private async enumerateDevices(): Promise<MediaDeviceInfo[]> {
@@ -175,3 +184,26 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
 }
 
 export const Media = new MediaSingleton();
+
+
+function getInputConstraints(input: IMediaInput): MediaStreamConstraints {
+  const presets = input.audioProcessing
+    ? {}
+    : {
+        echoCancellation: false,
+        googAudioMirroring: false,
+        googAutoGainControl: false,
+        googAutoGainControl2: false,
+        googEchoCancellation: false,
+        googHighpassFilter: false,
+        googNoiseSuppression: false,
+        googTypingNoiseDetection: false
+      };
+
+  const constraints: MediaStreamConstraints = { audio: presets, video: false };
+  if (input.id) {
+    (constraints.audio as MediaTrackConstraints).deviceId = input.id;
+  }
+
+  return constraints;
+}
