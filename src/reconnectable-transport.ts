@@ -61,7 +61,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   private unregisteredPromise?: Promise<any>;
   private ua: UA;
   private uaOptions: UABase.Options;
-  private dyingCounter: number = 5000;
+  private dyingCounter: number = 60000;
   private dyingIntervalID: number;
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
@@ -502,6 +502,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           'Priority set to false. Our call was probably terminated by the SIP server.',
           this.constructor.name
         );
+        this.updateStatus(ClientStatus.DISCONNECTED);
         this.priority = false;
       }
     };
