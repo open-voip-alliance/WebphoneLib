@@ -40,8 +40,7 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
   private timer: number = undefined;
   private hadPermission: boolean = false;
 
-  public constructor() {
-    super();
+  public init() {
     this.update();
   }
 
