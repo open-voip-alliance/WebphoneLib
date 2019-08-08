@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 
+import { IncomingInviteRequest } from 'sip.js/lib/core';
 import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
@@ -25,6 +26,8 @@ export type InternalSession = WrappedInviteClientContext &
     };
 
     __media: SessionMedia;
+
+    on(event: 'reinvite', listener: (session: InternalSession, request: IncomingInviteRequest) => void): InternalSession
   };
 
 interface ISessionMedia extends IMedia {
