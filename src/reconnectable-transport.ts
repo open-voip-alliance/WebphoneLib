@@ -48,8 +48,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       register: false,
       registerOptions: {
         expires: 3600
-      },
-      userAgentString: 'vialer-calling-lib'
+      }
     };
   }
 
@@ -80,7 +79,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   }
 
   public configure(options: IClientOptions) {
-    const { account, transport } = options;
+    const { account, transport, userAgent } = options;
 
     const modifiers = [Web.Modifiers.stripVideo];
     if (Features.isSafari) {
@@ -113,7 +112,8 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
         traceSip: false,
         wsServers: transport.wsServers
       },
-      uri: account.uri
+      uri: account.uri,
+      userAgentString: userAgent || 'vialer-calling-lib'
     };
   }
 
