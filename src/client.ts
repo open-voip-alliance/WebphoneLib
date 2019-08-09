@@ -72,15 +72,12 @@ export class Client extends EventEmitter implements IClient {
   // Connect (and subsequently register) to server
   public async connect() {
     await this.transport.connect();
-    this.connected = true;
   }
 
   // Unregister (and subsequently disconnect) to server
   public async disconnect(): Promise<void> {
     // Actual unsubscribing is done in ua.stop
     await this.transport.disconnect();
-
-    this.connected = false;
     this.subscriptions = {};
   }
 
@@ -239,6 +236,14 @@ export class Client extends EventEmitter implements IClient {
 
     this.transport.on('statusUpdate', status => {
       log.debug(`Status change to: ${ClientStatus[status]}`, this.constructor.name);
+
+      if (status === 'connected') {
+        this.connected = true;
+      }
+      if (status === 'disconnected') {
+        this.connected = false;
+      }
+
       this.emit('statusUpdate', status);
     });
   }
