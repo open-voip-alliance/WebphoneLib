@@ -14,10 +14,6 @@ export function isPrivateIP(ip: string): boolean {
   );
 }
 
-export function closeStream(stream: MediaStream): void {
-  stream.getTracks().forEach(track => track.stop());
-}
-
 export async function fetchStream(url: string): Promise<() => Promise<AudioBufferSourceNode>> {
   const response = await fetch(url);
   const data = await response.arrayBuffer();

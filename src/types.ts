@@ -16,6 +16,7 @@ export interface IClientOptions {
   account: IAccount;
   transport: ITransport;
   media: IMedia;
+  userAgent?: string;
 }
 
 export type MediaDeviceId = string | undefined;

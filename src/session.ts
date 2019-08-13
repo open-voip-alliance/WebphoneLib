@@ -31,6 +31,10 @@ interface ISession {
 
   on(event: 'terminated' | 'statusUpdate', listener: (session: ISession) => void): this;
   on(event: 'callQualityUpdate', listener: () => void): this;
+  on(
+    event: 'remoteIdentityUpdate',
+    listener: (session: ISession, remoteIdentity: IRemoteIdentity) => void
+  ): this;
 }
 
 export enum SessionCause {
@@ -101,6 +105,8 @@ export class Session extends EventEmitter implements ISession {
 
   private onTerminated: (sessionId: string) => void;
 
+  private _remoteIdentity: IRemoteIdentity;
+
   constructor({
     session,
     media,
@@ -170,6 +176,13 @@ export class Session extends EventEmitter implements ISession {
       });
     });
 
+    this._remoteIdentity = this.getRemoteIdentity(this.session.request);
+
+    this.session.on('reinvite', (_, request) => {
+      this._remoteIdentity = this.getRemoteIdentity(request);
+      this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
+    });
+
     // Track if the other side said bye before terminating.
     this.saidBye = false;
     this.session.once('bye', () => {
@@ -197,29 +210,11 @@ export class Session extends EventEmitter implements ISession {
   }
 
   get remoteIdentity(): IRemoteIdentity {
-    const request = this.session.request;
-    let identity: NameAddrHeader;
-    ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
-      if (request.hasHeader(header)) {
-        identity = Grammar.nameAddrHeaderParse(request.getHeader(header));
-        return true;
-      }
-    });
-
-    let phoneNumber = this.session.remoteIdentity.uri.user;
-    let displayName: string;
-
-    if (identity) {
-      phoneNumber = (identity.uri as any).normal.user;
-      displayName = identity.displayName;
-    }
-
-    return { phoneNumber, displayName };
+    return this._remoteIdentity;
   }
 
   get autoAnswer(): boolean {
     const callInfo = this.session.request.headers['Call-Info'];
-
     if (callInfo && callInfo[0]) {
       return callInfo[0].raw.includes('answer-after=0');
     }
@@ -481,8 +476,10 @@ export class Session extends EventEmitter implements ISession {
       if (response.statusCode === 487) {
         return SessionCause.REQUEST_TERMINATED;
       } else {
-        log.warn(`Unknown error: ${response.statusCode} (${response.reasonPhrase})`,
-                this.constructor.name);
+        log.warn(
+          `Unknown error: ${response.statusCode} (${response.reasonPhrase})`,
+          this.constructor.name
+        );
       }
     }
 
@@ -497,6 +494,26 @@ export class Session extends EventEmitter implements ISession {
 
     log.warn(`Unknown cause: ${cause}`, this.constructor.name);
     return undefined;
+  }
+
+  private getRemoteIdentity(request): IRemoteIdentity {
+    let identity: NameAddrHeader;
+    ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
+      if (request.hasHeader(header)) {
+        identity = Grammar.nameAddrHeaderParse(request.getHeader(header));
+        return true;
+      }
+    });
+
+    let phoneNumber = this.session.remoteIdentity.uri.user;
+    let displayName: string;
+
+    if (identity) {
+      phoneNumber = (identity.uri as any).normal.user;
+      displayName = identity.displayName;
+    }
+
+    return { phoneNumber, displayName };
   }
 }
 

@@ -1,11 +1,13 @@
 import { EventEmitter } from 'events';
 
+import { IncomingInviteRequest } from 'sip.js/lib/core';
 import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
+import { Media } from './media';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
-import { clamp, closeStream } from './utils';
+import { clamp } from './utils';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -24,6 +26,8 @@ export type InternalSession = WrappedInviteClientContext &
     };
 
     __media: SessionMedia;
+
+    on(event: 'reinvite', listener: (session: InternalSession, request: IncomingInviteRequest) => void): InternalSession
   };
 
 interface ISessionMedia extends IMedia {
@@ -91,8 +95,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
     }
 
     // First open a new stream, then close the old one.
-    const constraints = getInputConstraints(newInput);
-    const newInputStream = await navigator.mediaDevices.getUserMedia(constraints);
+    const newInputStream = await Media.openInputStream(newInput);
     // Close the old inputStream and disconnect from WebRTC.
     this.stopInput();
 
@@ -190,7 +193,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
 
   private stopInput() {
     if (this.inputStream) {
-      closeStream(this.inputStream);
+      Media.closeStream(this.inputStream);
       this.inputNode.disconnect();
     }
   }
@@ -204,26 +207,4 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
       this.audioOutput.srcObject = undefined;
     }
   }
-}
-
-function getInputConstraints(input: IMediaInput): MediaStreamConstraints {
-  const presets = input.audioProcessing
-    ? {}
-    : {
-        echoCancellation: false,
-        googAudioMirroring: false,
-        googAutoGainControl: false,
-        googAutoGainControl2: false,
-        googEchoCancellation: false,
-        googHighpassFilter: false,
-        googNoiseSuppression: false,
-        googTypingNoiseDetection: false
-      };
-
-  const constraints: MediaStreamConstraints = { audio: presets, video: false };
-  if (input.id) {
-    (constraints.audio as MediaTrackConstraints).deviceId = input.id;
-  }
-
-  return constraints;
 }

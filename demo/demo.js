@@ -150,6 +150,7 @@ Media.on('devicesChanged', () => {
   makeOptions(inputSelect, Media.inputs);
   makeOptions(outputSelect, Media.outputs);
 });
+Media.init();
 
 inputSelect.addEventListener('change', function() {
   const selected = getSelectedOption(inputSelect);
