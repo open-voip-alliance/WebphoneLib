@@ -249,7 +249,6 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
     this.updateStatus(ClientStatus.RECOVERING);
 
-    clearInterval(this.dyingIntervalID);
     const isOnline = await this.isOnline(mode);
     log.debug(`isOnline: ${isOnline}`, this.constructor.name);
     if (isOnline) {
@@ -502,7 +501,6 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           'Priority set to false. Our call was probably terminated by the SIP server.',
           this.constructor.name
         );
-        this.updateStatus(ClientStatus.DISCONNECTED);
         this.priority = false;
       }
     };
@@ -512,7 +510,19 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
   private async onAfterGetConnection(connected: boolean) {
     if (connected) {
+      // To make sure that the dying counter can be used again.
+      clearInterval(this.dyingIntervalID);
+      this.dyingIntervalID = undefined;
+
       this.dyingCounter = 60000;
+
+      // Setting up the disconnected listener once again, so that we can
+      // recover if connectivity drops a second time.
+      this.ua.transport.once('disconnected', () => {
+        log.debug('Transport disconnected..', this.constructor.name);
+        this.tryUntilConnected();
+      });
+
       log.info('We appear to be connected.', this.constructor.name);
       return;
     }
