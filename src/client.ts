@@ -238,7 +238,7 @@ export class Client extends EventEmitter implements IClient {
     });
 
     this.transport.on('statusUpdate', status => {
-      log.debug(`Status change to: ${ClientStatus[status]}`, this.constructor.name);
+      log.debug(`Status change to: ${status}`, this.constructor.name);
       this.emit('statusUpdate', status);
     });
   }
