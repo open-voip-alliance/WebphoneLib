@@ -65,6 +65,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
+  private wasWindowOffline: boolean = false;
 
   constructor(options: IClientOptions) {
     super();
@@ -247,9 +248,8 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       return false;
     }
 
-    this.updateStatus(ClientStatus.RECOVERING);
-
     const isOnline = await this.isOnline(mode);
+
     log.debug(`isOnline: ${isOnline}`, this.constructor.name);
     if (isOnline) {
       await this.ua.transport.disconnect();
@@ -274,6 +274,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       log.debug('Reregistered!', this.constructor.name);
 
       this.updateStatus(ClientStatus.CONNECTED);
+      this.retry.timeout = 250;
     }
 
     return isOnline;
@@ -340,10 +341,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           resolve();
         });
 
-        this.ua.transport.once('disconnected', () => {
-          log.debug('Transport disconnected..', this.constructor.name);
-          this.tryUntilConnected();
-        });
+        this.ua.transport.on('disconnected', this.onTransportDisconnected.bind(this));
       });
     });
   }
@@ -437,6 +435,8 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       return;
     }
 
+    this.updateStatus(ClientStatus.RECOVERING);
+
     if (this.priority) {
       const connected = await this.getConnection(ReconnectionMode.BURST);
 
@@ -445,9 +445,12 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     }
 
     setTimeout(async () => {
-      const connected = await this.getConnection(ReconnectionMode.ONCE);
+      // Only trigger this function if we haven't reconnected in the same time.
+      if (this.status !== ClientStatus.CONNECTED) {
+        const connected = await this.getConnection(ReconnectionMode.ONCE);
 
-      this.onAfterGetConnection(connected);
+        this.onAfterGetConnection(connected);
+      }
     }, this.retry.timeout);
 
     this.retry = increaseTimeout(this.retry);
@@ -480,6 +483,8 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
   private onWindowOffline() {
     log.info('We appear to be offline.', this.constructor.name);
+
+    this.wasWindowOffline = true;
     this.updateStatus(ClientStatus.DYING);
     this.registeredPromise = undefined;
 
@@ -508,6 +513,37 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     this.dyingIntervalID = window.setInterval(subtractTillDead, subtractValue);
   }
 
+  private onTransportDisconnected() {
+    // There are different scenarios in place for when the transport might
+    // have disconnected. One is loss of internet, this is detected by the
+    // offline listener on window. Whenever this happens, it is inevitable that
+    // the transport disconnected event will trigger. In that case we do not
+    // want to try to reconnect, because there is no internet so it will be
+    // futile. In this scenario, when internet comes back, tryUntilConnected
+    // will be triggered by the window online event. The
+    // 'wasWindowOffline' should account for these events. If internet
+    // connectivity is lost and the transport disconnected event triggers,
+    // we make sure to avoid triggering this function 2 times.
+    //
+    // Then there is another scenario that we have to account for, namely the
+    // scenario where the transport is disconnected because the socket
+    // connection to the sip server is lost somehow, while there still was
+    // internet. In that case, the 'window' events won't help us. That is why
+    // we can call tryUntilConnected in that case, because the
+    // 'wasWindowOffline' will be false.
+    log.debug('Transport disconnected..', this.constructor.name);
+
+    if (!this.wasWindowOffline) {
+      log.debug(
+        'Transport disconnected while there is internet, trying to reconnect',
+        this.constructor.name
+      );
+      this.tryUntilConnected();
+    }
+
+    this.wasWindowOffline = false;
+  }
+
   private async onAfterGetConnection(connected: boolean) {
     if (connected) {
       // To make sure that the dying counter can be used again.
@@ -515,13 +551,6 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       this.dyingIntervalID = undefined;
 
       this.dyingCounter = 60000;
-
-      // Setting up the disconnected listener once again, so that we can
-      // recover if connectivity drops a second time.
-      this.ua.transport.once('disconnected', () => {
-        log.debug('Transport disconnected..', this.constructor.name);
-        this.tryUntilConnected();
-      });
 
       log.info('We appear to be connected.', this.constructor.name);
       return;
