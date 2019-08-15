@@ -24,7 +24,7 @@ export function sessionDescriptionHandlerFactory(session, options) {
     remoteStream: new MediaStream()
   };
 
-  (sdh as any).WebRTC.getUserMedia = async () => {
+  (sdh as any).getMediaStream = async () => {
     await session.__media.setInput();
     return session.__streams.localStream.stream;
   };
