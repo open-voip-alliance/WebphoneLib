@@ -34,6 +34,8 @@ export interface IClient {
   on(event: 'invite', listener: (session: Session) => void): this;
   on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
   on(event: 'sessionsUpdate', listener: (sessions: ISessions) => void): this;
+  on(event: 'sessionsAdd', listener: (session: Session) => void): this;
+  on(event: 'sessionsRemove', listener: (session: Session) => void): this;
 }
 
 export class Client extends EventEmitter implements IClient {
@@ -299,12 +301,14 @@ export class Client extends EventEmitter implements IClient {
   private addSession(session: Session) {
     this.sessions[session.id] = session;
     this.emit('sessionsUpdate', this.sessions);
+    this.emit('sessionsAdd', session);
     this.updatePriority();
   }
 
   private removeSession(session: Session) {
     delete this.sessions[session.id];
     this.emit('sessionsUpdate', this.sessions);
+    this.emit('sessionsRemove', session);
     this.updatePriority();
   }
 
