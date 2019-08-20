@@ -31,11 +31,13 @@ export interface IClient {
   subscribe(uri: string): Promise<void>;
   unsubscribe(uri: string): void;
 
+  /* tslint:disable:unified-signatures */
   on(event: 'invite', listener: (session: Session) => void): this;
   on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
   on(event: 'sessionsUpdate', listener: (sessions: ISessions) => void): this;
   on(event: 'sessionsAdd', listener: (session: Session) => void): this;
   on(event: 'sessionsRemove', listener: (session: Session) => void): this;
+  /* tslint:enable:unified-signatures */
 }
 
 export class Client extends EventEmitter implements IClient {
