@@ -2,10 +2,10 @@ import { EventEmitter } from 'events';
 
 import { audioContext } from './audio-context';
 import * as Features from './features';
+import { log } from './logger';
 import * as Time from './time';
 import { IMediaInput, IMediaOutput } from './types';
 import { eqSet } from './utils';
-import { log } from './logger';
 
 export interface IAudioDevice {
   /**
