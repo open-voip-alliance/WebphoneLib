@@ -5,6 +5,7 @@ import * as Features from './features';
 import * as Time from './time';
 import { IMediaInput, IMediaOutput } from './types';
 import { eqSet } from './utils';
+import { log } from './logger';
 
 export interface IAudioDevice {
   /**
@@ -28,7 +29,6 @@ interface IMediaDevices {
 }
 
 const UPDATE_INTERVAL = 1 * Time.second;
-
 
 /**
  * Offers an abstraction over Media permissions and device enumeration for use
@@ -105,8 +105,15 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
   }
 
   public openInputStream(input: IMediaInput): Promise<MediaStream> {
+    log.debug(`Requesting input stream with: audioProcessing=${input.audioProcessing}`, 'media');
     const constraints = getInputConstraints(input);
-    return navigator.mediaDevices.getUserMedia(constraints);
+    const promise = navigator.mediaDevices.getUserMedia(constraints);
+    promise.then(stream => {
+      stream.getTracks().forEach(track => {
+        log.debug(`Media stream track has settings: ${JSON.stringify(track.getSettings())}`, 'media');
+      });
+    });
+    return promise;
   }
 
   public closeStream(stream: MediaStream): void {
@@ -184,12 +191,24 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
 
 export const Media = new MediaSingleton();
 
-
 function getInputConstraints(input: IMediaInput): MediaStreamConstraints {
   const presets = input.audioProcessing
-    ? {}
+    ? {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        googAudioMirroring: true,
+        googAutoGainControl: true,
+        googAutoGainControl2: true,
+        googEchoCancellation: true,
+        googHighpassFilter: true,
+        googNoiseSuppression: true,
+        googTypingNoiseDetection: true
+      }
     : {
         echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
         googAudioMirroring: false,
         googAutoGainControl: false,
         googAutoGainControl2: false,
@@ -203,6 +222,8 @@ function getInputConstraints(input: IMediaInput): MediaStreamConstraints {
   if (input.id) {
     (constraints.audio as MediaTrackConstraints).deviceId = input.id;
   }
+
+  log.debug(`Using input constraints: ${JSON.stringify(constraints)}`, 'media');
 
   return constraints;
 }
