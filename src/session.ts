@@ -134,7 +134,7 @@ export class Session extends EventEmitter implements ISession {
         onAccepted: () => {
           this.session.removeListener('rejected', handlers.onRejected);
           this.status = SessionStatus.ACTIVE;
-          this.emit('sessionUpdate', this);
+          this.emit('statusUpdate', this);
           resolve({ accepted: true });
         },
         onRejected: (response, cause) => {
