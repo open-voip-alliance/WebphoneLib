@@ -150,6 +150,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
   }
 
   private setInputAudioProcessing(audioProcessing: boolean) {
+    log.debug(`setting audioProcessing to: ${audioProcessing}`, 'media');
     this.setInput(Object.assign({}, this.media.input, { audioProcessing }));
   }
 

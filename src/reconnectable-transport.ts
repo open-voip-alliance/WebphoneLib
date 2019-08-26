@@ -110,7 +110,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       transportConstructor: WrappedTransport,
       transportOptions: {
         maxReconnectionAttempts: 0,
-        traceSip: false,
+        traceSip: true,
         wsServers: transport.wsServers
       },
       uri: account.uri,
