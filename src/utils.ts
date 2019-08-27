@@ -67,3 +67,46 @@ export function clamp(value: number, min: number, max: number): number {
     return value;
   }
 }
+
+
+export function createFrozenProxy(obj, properties) {
+  function getPropertyDescriptor(obj, name) {
+    if (obj) {
+      return Object.getOwnPropertyDescriptor(obj, name)
+        || getPropertyDescriptor(Object.getPrototypeOf(obj), name);
+    }
+  }
+
+  const missingDescriptors = properties.filter(
+    name => getPropertyDescriptor(obj, name) === undefined
+  );
+
+  if (missingDescriptors.length > 0) {
+    throw new Error(`Implementation is not complete, missing properties: ${missingDescriptors.join(', ')}`);
+  }
+
+
+  return Object.freeze(properties.reduce((proxy, name) => {
+    const desc = getPropertyDescriptor(obj, name);
+
+    if (desc.value) {
+      if (typeof(desc.value) === 'function') {
+        proxy[name] = desc.value.bind(obj);
+      } else {
+        proxy[name] = desc.value;
+      }
+      return proxy;
+    } else {
+      return Object.defineProperty(proxy, name, {
+        get: desc.get.bind(obj)
+      })
+    }
+  }, {}));
+};
+
+
+export function frozenClass(cls, properties: string[]) {
+  return function(...args) {
+    return createFrozenProxy(new cls(...args), properties);
+  };
+}

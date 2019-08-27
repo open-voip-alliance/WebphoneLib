@@ -12,6 +12,7 @@ import { statusFromDialog } from './subscription';
 import { second } from './time';
 import { IClientOptions, IMedia } from './types';
 import { UA } from './ua';
+import { frozenClass } from './utils';
 
 export interface ISessions {
   [index: string]: Session;
@@ -20,6 +21,11 @@ export interface ISessions {
 export interface ISubscriptions {
   [index: string]: Subscription;
 }
+
+// TODO: return facades for everything,
+// never expose a reference to our internal classes/fields
+// basically treat all output as immutable to the caller.
+// TODO: use EventTarget instead of EventEmitter.
 
 export interface IClient {
   reconfigure(options: IClientOptions): Promise<void>;
@@ -38,7 +44,8 @@ export interface IClient {
   /* tslint:enable:unified-signatures */
 }
 
-export class Client extends EventEmitter implements IClient {
+
+class ClientImpl extends EventEmitter implements IClient {
   public readonly sessions: ISessions = {};
   public defaultMedia: IMedia;
 
@@ -318,3 +325,16 @@ export class Client extends EventEmitter implements IClient {
     this.transport.updatePriority(Object.entries(this.sessions).length !== 0);
   }
 }
+
+
+export const Client = frozenClass(ClientImpl, [
+  'connect',
+  'disconnect',
+  'isConnected',
+  'invite',
+  'subscribe',
+  'unsubscribe',
+  'on',
+  'once',
+  'sessions',
+]);
