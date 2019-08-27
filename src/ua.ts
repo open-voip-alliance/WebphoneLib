@@ -6,7 +6,6 @@ import {
   InviteClientContext,
   InviteServerContext,
   ReferClientContext,
-  RegisterContext,
   SessionDescriptionHandlerModifiers,
   SessionStatus,
   Subscription,
