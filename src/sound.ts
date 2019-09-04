@@ -135,8 +135,6 @@ export class Sound {
   }
 
   public stop() {
-    console.log('stop', this.samples);
-
     this.samples.forEach(s => {
       s.currentTime = 0;
       s.pause();
