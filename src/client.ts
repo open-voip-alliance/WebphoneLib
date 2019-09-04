@@ -1,33 +1,18 @@
 import { EventEmitter } from 'events';
-import pRetry from 'p-retry';
-import { Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { log } from './logger';
 import { ReconnectableTransport } from './reconnectable-transport';
-import { Session } from './session';
-import { InternalSession } from './session-media';
-import { statusFromDialog } from './subscription';
+import { Session, SessionImpl } from './session';
+import { Subscription, statusFromDialog } from './subscription';
 import { second } from './time';
 import { IClientOptions, IMedia } from './types';
-import { UA } from './ua';
-import { frozenClass } from './utils';
+import { frozenClass } from './lib/freeze';
 
-export interface ISessions {
-  [index: string]: Session;
-}
-
-export interface ISubscriptions {
-  [index: string]: Subscription;
-}
-
-// TODO: return facades for everything,
-// never expose a reference to our internal classes/fields
-// basically treat all output as immutable to the caller.
 // TODO: use EventTarget instead of EventEmitter.
 
-export interface IClient {
+interface IClient {
   reconfigure(options: IClientOptions): Promise<void>;
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -37,21 +22,25 @@ export interface IClient {
   subscribe(uri: string): Promise<void>;
   unsubscribe(uri: string): void;
 
+  getSession(id: string): Session;
+  getSessions(): Session[];
+
+  attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean>;
+
   /* tslint:disable:unified-signatures */
   on(event: 'invite', listener: (session: Session) => void): this;
   on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
-  on(event: 'sessionsUpdated', listener: (sessions: ISessions) => void): this;
+  on(event: 'sessionAdded', listener: ({ id }) => void): this;
+  on(event: 'sessionRemoved', listener: ({ id }) => void): this;
   /* tslint:enable:unified-signatures */
 }
 
 
 class ClientImpl extends EventEmitter implements IClient {
-  public readonly sessions: ISessions = {};
   public defaultMedia: IMedia;
 
-  private subscriptions: ISubscriptions = {};
-  private ua: UA;
-  private uaOptions: UABase.Options;
+  private readonly sessions: { [index: string]: SessionImpl } = {};
+  private subscriptions: { [index: string]: Subscription } = {};
   private connected: boolean = false;
 
   private transport?: ReconnectableTransport;
@@ -60,7 +49,7 @@ class ClientImpl extends EventEmitter implements IClient {
     super();
 
     if (!Features.checkRequired()) {
-      throw new Error('Your browser is not supported by this library');
+      throw new Error('unsupported_browser');
     }
 
     this.defaultMedia = options.media;
@@ -68,7 +57,9 @@ class ClientImpl extends EventEmitter implements IClient {
     this.configureTransport(options);
   }
 
-  // In the case you want to switch to another account
+  /**
+   * In the case you want to switch to another account
+   */
   public async reconfigure(options: IClientOptions) {
     await this.disconnect();
 
@@ -101,7 +92,7 @@ class ClientImpl extends EventEmitter implements IClient {
 
     await this.transport.registeredPromise;
 
-    let session: Session;
+    let session: SessionImpl;
     try {
       // Retrying this once if it fails. While the socket seems healthy, it
       // might in fact not be. In that case the act of sending data over the
@@ -127,7 +118,7 @@ class ClientImpl extends EventEmitter implements IClient {
 
     this.addSession(session);
 
-    return session;
+    return session.freeze();
   }
 
   /**
@@ -209,7 +200,32 @@ class ClientImpl extends EventEmitter implements IClient {
     this.removeSubscription({ uri, unsubscribe: true });
   }
 
-  private configureTransport(options) {
+  public getSession(id: string): Session {
+    const session = this.sessions[id];
+    if (session) {
+      return session.freeze();
+    }
+  }
+
+  public getSessions(): Session[] {
+    return Object.values(this.sessions).map(session => session.freeze());
+  }
+
+  public attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean> {
+    const sessionA = this.sessions[a.id];
+    if (!sessionA) {
+      return Promise.reject('Session A not found');
+    }
+
+    const sessionB = this.sessions[b.id];
+    if (!sessionB) {
+      return Promise.reject('Session B not found');
+    }
+
+    return sessionA.attendedTransfer(sessionB);
+  }
+
+  private configureTransport(options: IClientOptions) {
     this.transport = new ReconnectableTransport(options);
 
     this.transport.on('reviveSessions', () => {
@@ -231,7 +247,7 @@ class ClientImpl extends EventEmitter implements IClient {
     });
 
     this.transport.on('invite', uaSession => {
-      const session = new Session({
+      const session = new SessionImpl({
         media: this.defaultMedia,
         session: uaSession,
         onTerminated: this.onSessionTerminated.bind(this),
@@ -240,7 +256,7 @@ class ClientImpl extends EventEmitter implements IClient {
 
       this.addSession(session);
 
-      this.emit('invite', session);
+      this.emit('invite', session.freeze());
     });
 
     this.transport.on('statusUpdate', status => {
@@ -256,19 +272,19 @@ class ClientImpl extends EventEmitter implements IClient {
     });
   }
 
-  private onSessionTerminated(sessionId: number) {
+  private onSessionTerminated(sessionId: string) {
     const session = this.sessions[sessionId];
     log.info(`Incoming session ${sessionId} is terminated.`, this.constructor.name);
     this.removeSession(session);
   }
 
-  private async tryInvite(phoneNumber: string): Promise<Session> {
+  private async tryInvite(phoneNumber: string): Promise<SessionImpl> {
     return new Promise((resolve, reject) => {
       // Transport invite just creates a ClientContext, it doesn't send the
       // actual invite. We need to bind the event handlers below before we can
       // send out the actual invite. Otherwise we might miss the events.
       const uaSession = this.transport.invite(phoneNumber);
-      const session = new Session({
+      const session = new SessionImpl({
         media: this.defaultMedia,
         session: uaSession,
         onTerminated: this.onSessionTerminated.bind(this),
@@ -305,15 +321,17 @@ class ClientImpl extends EventEmitter implements IClient {
     delete this.subscriptions[uri];
   }
 
-  private addSession(session: Session) {
+  private addSession(session: SessionImpl) {
     this.sessions[session.id] = session;
     this.emit('sessionsUpdated', this.sessions);
+    // TODO
     this.updatePriority();
   }
 
-  private removeSession(session: Session) {
+  private removeSession(session: SessionImpl) {
     delete this.sessions[session.id];
     this.emit('sessionsUpdated', this.sessions);
+    // TODO
     this.updatePriority();
   }
 
@@ -327,7 +345,16 @@ class ClientImpl extends EventEmitter implements IClient {
 }
 
 
-export const Client = frozenClass(ClientImpl, [
+/**
+ * Never expose a reference to our internal classes/fields by wrapping the
+ * ClientImpl class into a proxy object that is frozen. Only the properties
+ * listed here are exposed on the proxy.
+ *
+ * Typescript users of this library don't need strictly need this, as Typescript
+ * generally prevents using private attributes. But, even in Typescript there
+ * are ways around this.
+ */
+export const Client = frozenClass<IClient>(ClientImpl, [
   'connect',
   'disconnect',
   'isConnected',
@@ -336,5 +363,6 @@ export const Client = frozenClass(ClientImpl, [
   'unsubscribe',
   'on',
   'once',
-  'sessions',
+  'getSessions',
+  'getSession',
 ]);

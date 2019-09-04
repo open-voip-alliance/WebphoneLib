@@ -4,7 +4,7 @@ import { audioContext } from './audio-context';
 import * as Features from './features';
 import * as Time from './time';
 import { IMediaInput, IMediaOutput } from './types';
-import { eqSet } from './utils';
+import { eqSet } from './lib/utils';
 
 export interface IAudioDevice {
   /**

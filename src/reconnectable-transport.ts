@@ -10,7 +10,7 @@ import { sessionDescriptionHandlerFactory } from './session-description-handler'
 import { hour } from './time';
 import { IClientOptions, IRetry } from './types';
 import { UA, WrappedTransport } from './ua';
-import { increaseTimeout, jitter } from './utils';
+import { increaseTimeout, jitter } from './lib/utils';
 
 // TODO: Implement rest of the types
 interface IReconnectableTransport {
