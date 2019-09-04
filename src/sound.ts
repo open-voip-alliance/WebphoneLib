@@ -71,6 +71,7 @@ export class Sound {
     const sample = new Audio();
     sample.volume = clamp(this.options.volume, 0.0, 1.0);
     sample.loop = loop;
+    this.samples.push(sample);
 
     const cleanup = () => {
       if (this.stopTimer) {
@@ -87,8 +88,6 @@ export class Sound {
       });
 
       sample.addEventListener('loadeddata', async () => {
-        this.samples.push(sample);
-
         try {
           // Wake up audio context to prevent the error "require user interaction
           // before playing audio".
@@ -103,6 +102,11 @@ export class Sound {
             }
           }
 
+          if (!this.samples.includes(sample)) {
+            resolve();
+            return;
+          }
+
           if (timeout) {
             this.stopTimer = window.setTimeout(() => this.stop(), timeout);
           }
@@ -112,6 +116,11 @@ export class Sound {
           cleanup();
           reject(e);
         }
+      });
+
+      sample.addEventListener('pause', () => {
+        cleanup();
+        resolve();
       });
 
       sample.addEventListener('ended', () => {
@@ -126,6 +135,8 @@ export class Sound {
   }
 
   public stop() {
+    console.log('stop', this.samples);
+
     this.samples.forEach(s => {
       s.currentTime = 0;
       s.pause();
@@ -135,4 +146,3 @@ export class Sound {
     this.stopTimer = undefined;
   }
 }
-
