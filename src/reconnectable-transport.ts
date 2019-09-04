@@ -7,7 +7,7 @@ import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
-import { hour } from './time';
+import { hour, second } from './time';
 import { IClientOptions, IRetry } from './types';
 import { UA, WrappedTransport } from './ua';
 import { increaseTimeout, jitter } from './utils';
@@ -20,7 +20,7 @@ interface IReconnectableTransport {
   // invite(phoneNumber: string): Promise<WrappedInviteClientContext | WrappedInviteServerContext>;
 }
 
-const SIP_PRESENCE_EXPIRE = hour;
+const SIP_PRESENCE_EXPIRE = hour / second; // one hour in seconds
 
 const logLevelConversion = {
   [Core.Levels.debug]: 'debug',

@@ -50,7 +50,7 @@ const media = {
 let activeSession = null;
 
 log.level = 'debug';
-log.connector = ({level, context, message}) => {
+log.connector = ({ level, context, message }) => {
   const print = {
     debug: console.debug,
     verbose: console.debug,
@@ -90,10 +90,10 @@ registerBtn.addEventListener('click', () =>
     .catch(console.error)
 );
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
-resubscribeBtn.addEventListener(
-  'click',
-  async () => await client.resubscribe(contact).catch(console.error)
-);
+resubscribeBtn.addEventListener('click', async () => {
+  await client.resubscribe(contact).catch(console.error);
+  console.log('resubscribed!');
+});
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
@@ -324,7 +324,7 @@ async function incomingCall(session) {
 
   let terminateTimer;
   try {
-    const {accepted, rejectCause} = await session.accepted();
+    const { accepted, rejectCause } = await session.accepted();
     if (accepted) {
       console.log('session is accepted \\o/', session.id);
 

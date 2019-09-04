@@ -189,6 +189,11 @@ export class Client extends EventEmitter implements IClient {
   }
 
   public async resubscribe(uri: string) {
+    if (!this.subscriptions[uri]) {
+      throw new Error('Cannot resubscribe to nonexistant subscription.');
+      return;
+    }
+
     this.removeSubscription({ uri });
     await this.subscribe(uri);
     log.debug(`Resubscribed to ${uri}`, this.constructor.name);
@@ -293,6 +298,8 @@ export class Client extends EventEmitter implements IClient {
 
     if (unsubscribe) {
       this.subscriptions[uri].unsubscribe();
+    } else {
+      this.subscriptions[uri].dispose();
     }
 
     delete this.subscriptions[uri];
