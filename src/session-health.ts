@@ -10,7 +10,7 @@ export function checkAudioConnected(
     checkInterval: number;
     noAudioTimeout: number;
   }
-) {
+): Promise<void> {
   let checkTimer: number;
 
   return new Promise((resolve, reject) => {

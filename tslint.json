@@ -9,6 +9,7 @@
     "rules": {
       "no-console": false,
       "object-literal-sort-keys": false,
+      "interface-name": false,
       "variable-name": {
         "options": [
           "check-format",

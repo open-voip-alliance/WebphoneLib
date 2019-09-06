@@ -2,7 +2,7 @@ import { audioContext } from './audio-context';
 import * as Features from './features';
 import { log } from './logger';
 import { MediaDeviceId } from './types';
-import { clamp } from './utils';
+import { clamp } from './lib/utils';
 
 interface ISoundOptions {
   volume?: number;
@@ -68,7 +68,7 @@ export class Sound {
       return;
     }
 
-    const sample = new Audio();
+     const sample = new Audio();
     sample.volume = clamp(this.options.volume, 0.0, 1.0);
     sample.loop = loop;
     this.samples.push(sample);

@@ -5,13 +5,10 @@ import {
   C as SIPConstants,
   Grammar,
   NameAddrHeader,
-  ReferClientContext,
-  ReferServerContext,
-  SessionStatus as SIPSessionStatus,
-  TypeStrings as SIPTypeStrings
+  TypeStrings as SIPTypeStrings,
+  IncomingResponse
 } from 'sip.js';
 
-import { audioContext } from './audio-context';
 import { SessionStatus } from './enums';
 import { log } from './logger';
 import { checkAudioConnected } from './session-health';
@@ -20,22 +17,45 @@ import { SessionStats } from './session-stats';
 import * as Time from './time';
 import { IMedia, IRemoteIdentity } from './types';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
-
-type ReferContext = ReferClientContext | ReferServerContext;
+import { createFrozenProxy } from './lib/freeze';
 
 interface ISession {
   readonly id: string;
   readonly media: SessionMedia;
   readonly stats: SessionStats;
   readonly audioConnected: Promise<void>;
+  readonly isIncoming: boolean;
+  saidBye: boolean;
+  holdState: boolean;
+  status: SessionStatus;
 
-  on(event: 'terminated' | 'statusUpdate', listener: (session: ISession) => void): this;
-  on(event: 'callQualityUpdate', listener: () => void): this;
-  on(
-    event: 'remoteIdentityUpdate',
-    listener: (session: ISession, remoteIdentity: IRemoteIdentity) => void
-  ): this;
+  remoteIdentity: IRemoteIdentity;
+  autoAnswer: boolean;
+  phoneNumber: string;
+  startTime: any;
+  endTime: any;
+
+  accept(): Promise<void>;
+  reject(): Promise<void>;
+  accepted(): Promise<SessionAccept>;
+  terminated(): Promise<void>;
+  terminate(): Promise<void>;
+  reinvite(): Promise<void>;
+  hold(): Promise<boolean>;
+  unhold(): Promise<boolean>;
+  blindTransfer(target: string): Promise<boolean>;
+  bye(): void;
+  dtmf(tones: string): void;
+
+  /* tslint:disable:unified-signatures */
+  on(event: 'terminated', listener: ({ id: string }) => void): this;
+  on(event: 'statusUpdate', listener: (session: { id: string, status: string }) => void): this;
+  on(event: 'callQualityUpdate', listener: ({ id: string }, stats: SessionStats) => void): this;
+  on(event: 'remoteIdentityUpdate', listener: ({ id: string }, remoteIdentity: IRemoteIdentity) => void): this;
+  /* tslint:enable:unified-signatures */
 }
+
+export interface Session extends ISession {}
 
 export enum SessionCause {
   BUSY = 'busy',
@@ -61,7 +81,7 @@ const CAUSE_MAPPING = {
   'Temporarily Unavailable': SessionCause.TEMPORARILY_UNAVAILABLE
 };
 
-const CAUSE_ERRORS = [
+const CAUSE_ERRORS: string[] = [
   SIPConstants.causes.CONNECTION_ERROR,
   SIPConstants.causes.INTERNAL_ERROR,
   SIPConstants.causes.REQUEST_TIMEOUT,
@@ -80,16 +100,16 @@ const CAUSE_ERRORS = [
   SIPConstants.causes.SIP_FAILURE_CODE
 ];
 
-interface ISessionAccept {
+interface SessionAccept {
   accepted: boolean;
   rejectCause?: SessionCause;
 }
 
-export class Session extends EventEmitter implements ISession {
-  public readonly id;
-  public readonly media;
-  public readonly stats;
-  public readonly audioConnected;
+export class SessionImpl extends EventEmitter implements ISession {
+  public readonly id: string;
+  public readonly media: SessionMedia;
+  public readonly stats: SessionStats;
+  public readonly audioConnected: Promise<void>;
   public readonly isIncoming: boolean;
   public saidBye: boolean;
   public holdState: boolean;
@@ -97,7 +117,7 @@ export class Session extends EventEmitter implements ISession {
 
   private session: InternalSession;
 
-  private acceptedPromise: Promise<ISessionAccept>;
+  private acceptedPromise: Promise<SessionAccept>;
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
@@ -137,7 +157,7 @@ export class Session extends EventEmitter implements ISession {
           this.emit('statusUpdate', this);
           resolve({ accepted: true });
         },
-        onRejected: (response, cause) => {
+        onRejected: (response: IncomingResponse, cause: string) => {
           this.session.removeListener('accepted', handlers.onAccepted);
           try {
             resolve({
@@ -169,7 +189,7 @@ export class Session extends EventEmitter implements ISession {
         // Asterisk specific header that signals that the VoIP account used is not
         // configured for WebRTC.
         if (cause === 'BYE' && message.getHeader('X-Asterisk-Hangupcausecode') === '58') {
-          reject(new Error('MisconfiguredAccount'));
+          reject(new Error('misconfigured_account'));
         } else {
           resolve();
         }
@@ -209,10 +229,17 @@ export class Session extends EventEmitter implements ISession {
     });
   }
 
+  /**
+   * The remote identity of this session.
+   * @returns {IRemoteIdentity}
+   */
   get remoteIdentity(): IRemoteIdentity {
     return this._remoteIdentity;
   }
 
+  /**
+   * @returns {Boolean} if auto answer is on for this session.
+   */
   get autoAnswer(): boolean {
     const callInfo = this.session.request.headers['Call-Info'];
     if (callInfo && callInfo[0]) {
@@ -222,6 +249,9 @@ export class Session extends EventEmitter implements ISession {
     return false;
   }
 
+  /**
+   * @returns {String} Phone number of the remote identity
+   */
   get phoneNumber(): string {
     if (this.isIncoming) {
       return this.remoteIdentity.phoneNumber;
@@ -230,15 +260,21 @@ export class Session extends EventEmitter implements ISession {
     }
   }
 
-  get startTime() {
+  /**
+   * @returns {Date} Starting time of the call.
+   */
+  get startTime(): Date {
     return this.session.startTime;
   }
 
-  get endTime() {
+  /**
+   * @returns {Date} End time of the call.
+   */
+  get endTime(): Date {
     return this.session.endTime;
   }
 
-  public accept(options: any = {}): Promise<void> {
+  public accept(): Promise<void> {
     if (this.rejectPromise) {
       throw new Error('invalid operation: session is rejected');
     }
@@ -253,7 +289,7 @@ export class Session extends EventEmitter implements ISession {
           this.session.removeListener('failed', handlers.onFail);
           resolve();
         },
-        onFail: (response, cause) => {
+        onFail: (response: IncomingResponse, cause: string) => {
           this.session.removeListener('accepted', handlers.onAnswered);
           try {
             reject(this.findCause(response, cause));
@@ -266,13 +302,13 @@ export class Session extends EventEmitter implements ISession {
       this.session.once('accepted', handlers.onAnswered);
       this.session.once('failed', handlers.onFail);
 
-      this.session.accept(options);
+      this.session.accept();
     });
 
     return this.acceptPromise;
   }
 
-  public reject(options: any = {}): Promise<void> {
+  public reject(): Promise<void> {
     if (this.acceptPromise) {
       throw new Error('invalid operation: session is accepted');
     }
@@ -284,13 +320,13 @@ export class Session extends EventEmitter implements ISession {
     this.rejectPromise = new Promise(resolve => {
       this.session.once('rejected', () => resolve());
       // reject is immediate, it doesn't fail.
-      this.session.reject(options);
+      this.session.reject();
     });
 
     return this.rejectPromise;
   }
 
-  public accepted(): Promise<ISessionAccept> {
+  public accepted(): Promise<SessionAccept> {
     return this.acceptedPromise;
   }
 
@@ -298,8 +334,8 @@ export class Session extends EventEmitter implements ISession {
     return this.terminatedPromise;
   }
 
-  public terminate(options = {}): Promise<void> {
-    this.session.terminate(options);
+  public terminate(): Promise<void> {
+    this.session.terminate();
     return this.terminatedPromise;
   }
 
@@ -323,7 +359,7 @@ export class Session extends EventEmitter implements ISession {
     return this.transfer(target);
   }
 
-  public async attendedTransfer(target: Session): Promise<boolean> {
+  public async attendedTransfer(target: SessionImpl): Promise<boolean> {
     return this.transfer(target.session);
   }
 
@@ -359,6 +395,43 @@ export class Session extends EventEmitter implements ISession {
     // of tone send. If one tone fails, the entire sequence is cleared. There is
     // no feedback about the failure.
     this.session.dtmf(tones);
+  }
+
+  public freeze(): ISession {
+    return createFrozenProxy(this, [
+      'id',
+      'media',
+      'stats',
+      'audioConnected',
+      'isIncoming',
+      'saidBye',
+      'holdState',
+      'status',
+      'remoteIdentity',
+      'autoAnswer',
+      'phoneNumber',
+      'startTime',
+      'endTime',
+
+      'accept',
+      'reject',
+      'accepted',
+      'terminated',
+      'terminate',
+      'reinvite',
+      'hold',
+      'unhold',
+      'blindTransfer',
+      'attendedTransfer',
+      'bye',
+      'dtmf',
+      'freeze',
+
+      'on',
+      'once',
+      'removeListener',
+      'removeAllListeners',
+    ]);
   }
 
   private getReinvitePromise(): Promise<boolean> {
@@ -466,7 +539,7 @@ export class Session extends EventEmitter implements ISession {
     });
   }
 
-  private findCause(response, cause): SessionCause {
+  private findCause(response: IncomingResponse, cause: string): SessionCause {
     if (cause === SIPConstants.causes.CANCELED) {
       const reason = parseReason(response.getHeader('Reason'));
       if (reason && reason.get('text') === 'Call completed elsewhere') {

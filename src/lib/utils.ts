@@ -1,4 +1,9 @@
-import { audioContext } from './audio-context';
+import { audioContext } from '../audio-context';
+
+/**
+ * Generic class type T. For example: `Type<Session>`
+ */
+export type Type<T> = new (...args: any[]) => T;
 
 export function eqSet<T>(a: Set<T>, b: Set<T>): boolean {
   return a.size === b.size && [...a].every(b.has.bind(b));
@@ -43,10 +48,10 @@ export function jitter(interval: number, percentage: number): number {
 
 /**
  * This doubles the retry interval in each run and adds jitter.
- * @param {object} retry - The reference retry object.
- * @returns {object} The updated retry object.
+ * @param {any} retry - The reference retry object.
+ * @returns {any & { interval: number } } The updated retry object.
  */
-export function increaseTimeout(retry) {
+export function increaseTimeout(retry: any): any & { interval: number } {
   // Make sure that interval doesn't go past the limit.
   if (retry.interval * 2 < retry.limit) {
     retry.interval = retry.interval * 2;
@@ -58,6 +63,13 @@ export function increaseTimeout(retry) {
   return retry;
 }
 
+/**
+ * Clamp a value between `min` and `max`, both inclusive.
+ * @param {number} value - Value.
+ * @param {number} min - Minimum value, inclusive.
+ * @param {number} max - Maximum value, inclusive.
+ * @returns {number} Clamped value.
+ */
 export function clamp(value: number, min: number, max: number): number {
   if (value < min) {
     return min;
