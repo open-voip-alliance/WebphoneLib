@@ -4,3 +4,6 @@ build
 dist
 demo/creds.js
 .dir-locals.el
+
+# IDE specific files
+.idea/
