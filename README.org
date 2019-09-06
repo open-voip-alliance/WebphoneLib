@@ -12,7 +12,7 @@
 
 4. Error handling is clear and where possible Promise based.
 
-5. SIPlib does not keep state.
+5. WebphoneLib does not keep state.
 
 6. Wraps SIP.js in such a way that upgrades are easy.
 
@@ -28,12 +28,13 @@
 - Hanging up a call (in or out)
 - Putting a call on hold
 - Putting a call out of hold
-- Blind transfering a call
-- Attended transfer of call
+- Blind transfer of a call
+- Attended transfer of a call
 - Getting presence updates for contacts (blf)
 - Enter DTMF keys in a call
-- Muting a call?
-- Switching audio devices during a call?
+- Muting a call
+- Switching audio devices during a call
+- To implement Quality of Service
 
 * Accidental complexity
 
@@ -51,7 +52,7 @@
 - Logging..
   - Logging all SIP traffic?
 
-* SIPlib client setup
+* WebphoneLib client setup
 
 - Which audio/video devices to use?
   - /how to switch/ a/v during a call? Is this possible?
@@ -69,12 +70,35 @@ constructor?
 ** Connecting and registering
 
 #+begin_src js
-  const client = new SipLibClient({
-    proxy: 'websocket.voipgrid.nl',
-    username: 'jos@vialerapp.com',
-    password: 'xxxx',
-    userMediaFlags
-  });
+  import { Client } from '../dist/vialer-web-calling.prod.mjs';
+
+  const account = {
+    user: 'accountId',
+    password: 'password',
+    uri: 'sip:accountId@voipgrid.nl',
+    name: 'test'
+  };
+  
+  const transport = {
+    wsServers: 'wss://websocket.voipgrid.nl',
+    iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
+  };
+
+  const media = {
+    input: {
+      id: undefined, // default audio device
+      audioProcessing: true,
+      volume: 1.0,
+      muted: false
+    },
+    output: {
+      id: undefined, // default audio device
+      volume: 1.0,
+      muted: false
+    }
+  };
+
+  const client = new Client({ account, transport, media }); 
 
   await client.register();
 #+end_src
@@ -90,16 +114,15 @@ constructor?
     // reinvite..
     try {
       ringer();
-      spawnNotification(session).then(action => session.accept());
 
-      let accepted = await session.accepted();
+      let accepted = await session.accepted(); // wait until the call is picked up)
       if (!accepted) {
         return;
       }
 
       showCallScreen();
 
-      await session.active();
+      await session.terminated();
     } catch (e) {
       showErrorMessage(e)
     } finally {
@@ -114,7 +137,8 @@ constructor?
 ** Outgoing call
 
 #+begin_src js
-  const session = client.call({number: '123', name: 'Alice'});
+  sessions = {};
+  const session = client.invite('sip:518@voipgrid.nl');
   sessions[session.id] = session;
 
   try {
@@ -127,6 +151,7 @@ constructor?
     }
 
     showCallScreen();
+
     await session.terminated();
   } catch (e) {
 
@@ -135,27 +160,31 @@ constructor?
 
     delete sessions[session.id];
   }
+#+end _src
 
+** Attended transfer of a call
 
-  if (await session.active()) { // wait until the call is picked up)
-    await session.dtmf('#123');
+#+begin_src js
+  if (await session.accepted()) { 
     await session.hold();
-    const other = client.call({number: '456', name: 'Bob'});
-    if (await other.active()) {
+
+    const other = client.invite('sip:519@voipgrid.nl');
+    if (await other.accepted()) {
+      await session.attendedTransfer(other);
+
+      await session.terminated();          
     }
-    await session.transfer(other);
   }
 #+end_src
-
 
 * Audio device selection
 
 1. Set a primary input & output device:
 
 #+begin_src js
-  import * as WebCalling from 'vialer/web-calling';
-
-  const client = new WebCalling.Client({
+  const client = new Client({
+    account,
+    transport, 
     media: {
       input: {
         id: undefined, // default input device
@@ -169,7 +198,7 @@ constructor?
         muted: false
       }
     }
-  })
+  });
 #+end_src
 
 2. Change the primary I/O devices:
