@@ -1,5 +1,3 @@
-import { ReconnectionMode } from './enums';
-
 export interface IAccount {
   user: string;
   password: string;

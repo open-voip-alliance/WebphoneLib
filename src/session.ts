@@ -5,7 +5,8 @@ import {
   C as SIPConstants,
   Grammar,
   NameAddrHeader,
-  TypeStrings as SIPTypeStrings
+  TypeStrings as SIPTypeStrings,
+  IncomingResponse
 } from 'sip.js';
 
 import { SessionStatus } from './enums';
@@ -80,7 +81,7 @@ const CAUSE_MAPPING = {
   'Temporarily Unavailable': SessionCause.TEMPORARILY_UNAVAILABLE
 };
 
-const CAUSE_ERRORS = [
+const CAUSE_ERRORS: string[] = [
   SIPConstants.causes.CONNECTION_ERROR,
   SIPConstants.causes.INTERNAL_ERROR,
   SIPConstants.causes.REQUEST_TIMEOUT,
@@ -156,7 +157,7 @@ export class SessionImpl extends EventEmitter implements ISession {
           this.emit('statusUpdate', this);
           resolve({ accepted: true });
         },
-        onRejected: (response, cause) => {
+        onRejected: (response: IncomingResponse, cause: string) => {
           this.session.removeListener('accepted', handlers.onAccepted);
           try {
             resolve({
@@ -288,7 +289,7 @@ export class SessionImpl extends EventEmitter implements ISession {
           this.session.removeListener('failed', handlers.onFail);
           resolve();
         },
-        onFail: (response, cause) => {
+        onFail: (response: IncomingResponse, cause: string) => {
           this.session.removeListener('accepted', handlers.onAnswered);
           try {
             reject(this.findCause(response, cause));
@@ -428,6 +429,8 @@ export class SessionImpl extends EventEmitter implements ISession {
 
       'on',
       'once',
+      'removeListener',
+      'removeAllListeners',
     ]);
   }
 
@@ -536,7 +539,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     });
   }
 
-  private findCause(response, cause): SessionCause {
+  private findCause(response: IncomingResponse, cause: string): SessionCause {
     if (cause === SIPConstants.causes.CANCELED) {
       const reason = parseReason(response.getHeader('Reason'));
       if (reason && reason.get('text') === 'Call completed elsewhere') {

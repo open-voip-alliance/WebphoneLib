@@ -10,6 +10,8 @@ import { second } from './time';
 import { IClientOptions, IMedia } from './types';
 import { frozenClass } from './lib/freeze';
 
+import { Core } from 'sip.js';
+
 // TODO: use EventTarget instead of EventEmitter.
 
 interface IClient {
@@ -34,6 +36,9 @@ interface IClient {
   on(event: 'sessionRemoved', listener: ({ id }) => void): this;
   /* tslint:enable:unified-signatures */
 }
+
+
+type SubscriptionNotification = { request: Core.IncomingRequestMessage };
 
 
 class ClientImpl extends EventEmitter implements IClient {
@@ -145,7 +150,7 @@ class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri] = this.transport.subscribe(uri);
 
       const handlers = {
-        onFailed: (response, cause) => {
+        onFailed: (response: Core.IncomingResponseMessage) => {
           if (!response) {
             this.removeSubscription({ uri });
             reject();
@@ -175,7 +180,7 @@ class ClientImpl extends EventEmitter implements IClient {
           this.subscriptions[uri].removeListener('failed', handlers.onFailed);
           resolve();
         },
-        onNotify: dialog => this.emit('notify', uri, statusFromDialog(dialog))
+        onNotify: (dialog: SubscriptionNotification) => this.emit('notify', uri, statusFromDialog(dialog))
       };
 
       this.subscriptions[uri].on('failed', handlers.onFailed);
@@ -323,15 +328,13 @@ class ClientImpl extends EventEmitter implements IClient {
 
   private addSession(session: SessionImpl) {
     this.sessions[session.id] = session;
-    this.emit('sessionsUpdated', this.sessions);
-    // TODO
+    this.emit('sessionAdded', { id: session.id });
     this.updatePriority();
   }
 
   private removeSession(session: SessionImpl) {
     delete this.sessions[session.id];
-    this.emit('sessionsUpdated', this.sessions);
-    // TODO
+    this.emit('sessionRemoved', { id: session.id });
     this.updatePriority();
   }
 
@@ -361,8 +364,10 @@ export const Client = frozenClass<IClient>(ClientImpl, [
   'invite',
   'subscribe',
   'unsubscribe',
-  'on',
-  'once',
   'getSessions',
   'getSession',
+  'on',
+  'once',
+  'removeAllListeners',
+  'removeListener',
 ]);

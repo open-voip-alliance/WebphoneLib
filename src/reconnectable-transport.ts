@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
-import { Core, UA as UABase, Web } from 'sip.js';
+import { Core, Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
@@ -228,7 +228,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     return this.ua.invite(phoneNumber);
   }
 
-  public subscribe(contact: string) {
+  public subscribe(contact: string): Subscription {
     // Introducing a jitter here, to avoid thundering herds.
     return this.ua.subscribe(contact, 'dialog', {
       expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
