@@ -12,7 +12,7 @@ export default {
   onwarn,
   input: 'src/index.ts',
   output: {
-    file: 'dist/vialer-web-calling.prod.mjs',
+    file: 'dist/index.mjs',
     format: 'esm',
     sourcemap: true
   },

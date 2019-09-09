@@ -1,17 +1,20 @@
 {
   "name": "@open-voip-alliance/webphone-lib",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Webphone Lib",
-  "main": "index.js",
   "author": "Open VoIP Alliance",
   "license": "MIT",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rollup -c",
-    "build-watch": "rollup -cw",
+    "clean": "rm -fR dist/* build/*",
+    "build": "npm run clean && rollup -c",
+    "build-watch": "npm run clean && rollup -cw",
     "serve": "serve -l 1235",
     "demo": "run-p build-watch serve",
     "typecheck": "tsc",
-    "lint": "tslint src/**/*.ts"
+    "lint": "tslint src/**/*.ts",
+    "prepare": "npm run lint && npm run typecheck && npm run build"
   },
   "husky": {
     "hooks": {
@@ -24,7 +27,8 @@
   },
   "files": [
     "src",
-    "dist"
+    "dist",
+    "README.md"
   ],
   "dependencies": {
     "p-retry": "^4.1.0",
