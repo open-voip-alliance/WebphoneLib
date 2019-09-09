@@ -1,6 +1,6 @@
 {
   "name": "@open-voip-alliance/webphone-lib",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Webphone Lib",
   "author": "Open VoIP Alliance",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "demo": "run-p build-watch serve",
     "typecheck": "tsc",
     "lint": "tslint src/**/*.ts",
-    "prepare": "npm run lint && npm run typecheck && npm run build"
+    "prepare": "npm run lint && npm run build"
   },
   "husky": {
     "hooks": {
@@ -48,7 +48,7 @@
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-typescript": "^1.0.1",
+    "rollup-plugin-typescript2": "^0.24.0",
     "serve": "^11.1.0",
     "tslint": "^5.19.0",
     "tslint-config-prettier": "^1.18.0",
