@@ -33,7 +33,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - name: npm publish
         run: |
-          if: startsWith('${{github.ref}}', 'refs/tags/') > 0
+          if: ${{startsWith('${{github.ref}}', 'refs/tags/')}} > 0
           run: npm publish
           env:
             NODE_AUTH_TOKEN: ${{secrets.npm_token}}
