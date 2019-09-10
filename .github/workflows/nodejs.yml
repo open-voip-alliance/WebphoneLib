@@ -15,21 +15,10 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12
-      - name: npm install, build
+      - name: npm install, ci, typecheck, build
         run: |
-          npm install
+          npm ci
           npm run build
-
-  linters:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12
-      - name: npm run typecheck, lint
-        run: |
           npm run typecheck
           npm run lint
 
