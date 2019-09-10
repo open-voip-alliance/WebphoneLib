@@ -1,18 +1,14 @@
-export interface IAccount {
-  user: string;
-  password: string;
-  uri: string;
-  name: string;
-}
-
-export interface ITransport {
-  wsServers: string;
-  iceServers: string[];
-}
-
-export interface IClientOptions {
-  account: IAccount;
-  transport: ITransport;
+export interface ClientOptions {
+  account: {
+    user: string;
+    password: string;
+    uri: string;
+    name: string;
+  };
+  transport: {
+    wsServers: string;
+    iceServers: string[];
+  };
   media: IMedia;
   userAgent?: string;
 }

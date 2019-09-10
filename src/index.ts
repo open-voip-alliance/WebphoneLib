@@ -1,8 +1,9 @@
-import { Autoplay } from './autoplay';
-import { Client } from './client'
-import * as Features from './features';
-import { log } from './logger';
-import { Media } from './media';
-import { Sound } from './sound';
+export { Autoplay } from './autoplay';
+export { Client } from './client';
+export { log } from './logger';
+export { Media } from './media';
+export { Sound } from './sound';
+export { ClientOptions } from './types';
 
-export { Autoplay, Client, Features, log, Media, Sound };
+import * as Features from './features';
+export { Features };

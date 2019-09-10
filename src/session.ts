@@ -424,7 +424,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   }
 
   public freeze(): ISession {
-    return createFrozenProxy(this, [
+    return createFrozenProxy({}, this, [
       'audioConnected',
       'autoAnswer',
       'endTime',

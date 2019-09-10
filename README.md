@@ -234,3 +234,10 @@ session.media.setInput({
 | npm run prepare           | Prepare the project for publish, this is automatically run before `npm publish` |
 | npm run lint              | Run `tslint` over the source files                                              |
 | npm run typecheck         | Verifies type constraints are met                                               |
+
+## Generate documentation
+
+[Typedoc](https://typedoc.org/guides/doccomments/) is used to generate the
+documentation from the `jsdoc` comments in the source code. See [this
+link](https://typedoc.org/guides/doccomments/) for more information on which
+`jsdoc` tags are supported.

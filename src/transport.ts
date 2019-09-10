@@ -5,20 +5,30 @@ import { Core, Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
+import { increaseTimeout, jitter } from './lib/utils';
 import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { hour, second } from './time';
-import { IClientOptions, IRetry } from './types';
-import { UA, WrappedTransport } from './ua';
-import { increaseTimeout, jitter } from './lib/utils';
+import { ClientOptions, IRetry } from './types';
+import { IUA, UA, UAFactory, WrappedInviteClientContext, WrappedTransport } from './ua';
 
-// TODO: Implement rest of the types
-interface IReconnectableTransport {
-  configure(options: IClientOptions): void;
-  connect(): void;
-  disconnect(options: { hasSocket: boolean; hasRegistered: boolean }): Promise<void>;
-  // invite(phoneNumber: string): Promise<WrappedInviteClientContext | WrappedInviteServerContext>;
+export interface ITransport extends EventEmitter {
+  transportConnectedPromise: Promise<any>;
+  registeredPromise: Promise<any>;
+  registered: boolean;
+  status: ClientStatus;
+
+  configure(options: ClientOptions): void;
+  connect(): Promise<boolean>;
+  disconnect(options?: { hasSocket: boolean; hasRegistered: boolean }): Promise<void>;
+  invite(phoneNumber: string): WrappedInviteClientContext;
+  updatePriority(flag: boolean): void;
+  getConnection(mode: ReconnectionMode): Promise<boolean>;
+  close(): void;
+  subscribe(contact: string): Subscription;
 }
+
+export type TransportFactory = (uaFactory: UAFactory, options: ClientOptions) => ITransport;
 
 const SIP_PRESENCE_EXPIRE = hour / second; // one hour in seconds
 
@@ -34,7 +44,7 @@ const connector = (level, category, label, content) => {
   log.log(convertedLevel, content, category);
 };
 
-export class ReconnectableTransport extends EventEmitter implements IReconnectableTransport {
+export class ReconnectableTransport extends EventEmitter implements ITransport {
   private get defaultOptions() {
     return {
       autostart: false,
@@ -52,13 +62,14 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     };
   }
 
-  public transportConnectedPromise?: Promise<any>;
-  public registeredPromise?: Promise<any>;
+  public transportConnectedPromise: Promise<any>;
+  public registeredPromise: Promise<any>;
   public registered: boolean = false;
   public status: ClientStatus = ClientStatus.DISCONNECTED;
   private priority: boolean = false;
-  private unregisteredPromise?: Promise<any>;
-  private ua: UA;
+  private unregisteredPromise: Promise<any>;
+  private uaFactory: UAFactory;
+  private ua: IUA;
   private uaOptions: UABase.Options;
   private dyingCounter: number = 60000;
   private dyingIntervalID: number;
@@ -67,9 +78,10 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
   private wasWindowOffline: boolean = false;
 
-  constructor(options: IClientOptions) {
+  constructor(uaFactory: UAFactory, options: ClientOptions) {
     super();
 
+    this.uaFactory = uaFactory;
     this.configure(options);
 
     this.boundOnWindowOffline = this.onWindowOffline.bind(this);
@@ -79,7 +91,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     window.addEventListener('online', this.boundOnWindowOnline);
   }
 
-  public configure(options: IClientOptions) {
+  public configure(options: ClientOptions) {
     const { account, transport, userAgent } = options;
 
     const modifiers = [Web.Modifiers.stripVideo];
@@ -121,11 +133,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   // Connect (and subsequently register) to server
   public async connect() {
     if (this.status === ClientStatus.RECOVERING) {
-      return Promise.reject(
-        new Error(
-          'Can not connect while trying to recover. (this is to avoid spamming the sip server)'
-        )
-      );
+      return Promise.reject(new Error('Can not connect while trying to recover.'));
     }
 
     if (this.status === ClientStatus.CONNECTED) {
@@ -137,7 +145,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
 
     if (!this.ua) {
       log.debug('Configuring UA.', this.constructor.name);
-      this.configureUA();
+      this.configureUA(this.uaOptions);
     }
 
     if (this.unregisteredPromise) {
@@ -169,7 +177,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   // Unregister (and subsequently disconnect) to server. When hasSocket is
   // false, a call to this function is usually handled by getConnection,
   // which then also manages status updates.
-  public async disconnect({ hasSocket = true, hasRegistered = true } = {}): Promise<void> {
+  public async disconnect({ hasSocket = true, hasRegistered = true }): Promise<void> {
     if (!this.ua) {
       log.info('Already disconnected.', this.constructor.name);
       return;
@@ -219,7 +227,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     delete this.unregisteredPromise;
   }
 
-  public invite(phoneNumber: string) {
+  public invite(phoneNumber: string): WrappedInviteClientContext {
     if (this.status !== ClientStatus.CONNECTED) {
       log.info('Could not send an invite. Not connected.', this.constructor.name);
       throw new Error('Cannot send an invite. Not connected.');
@@ -239,7 +247,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     return this.registeredPromise;
   }
 
-  public async getConnection(mode: ReconnectionMode = ReconnectionMode.ONCE) {
+  public async getConnection(mode: ReconnectionMode = ReconnectionMode.ONCE): Promise<boolean> {
     if (!this.ua) {
       return false;
     }
@@ -280,17 +288,17 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     return isOnline;
   }
 
-  public updatePriority(flag) {
+  public updatePriority(flag: boolean): void {
     this.priority = flag;
     log.debug(`Priority is ${flag}`, this.constructor.name);
   }
 
-  public close() {
+  public close(): void {
     window.removeEventListener('online', this.boundOnWindowOnline);
     window.removeEventListener('offline', this.boundOnWindowOffline);
   }
 
-  private updateStatus(status: ClientStatus) {
+  private updateStatus(status: ClientStatus): void {
     if (this.status === status) {
       return;
     }
@@ -300,7 +308,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
   }
 
   private isOnlinePromise(mode: ReconnectionMode) {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
 
       const handlers = {
@@ -311,7 +319,6 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
           // catched by pRetry.
           if (mode === ReconnectionMode.BURST) {
             throw new Error('it broke woops');
-            return;
           }
 
           resolve(false);
@@ -329,8 +336,8 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
     });
   }
 
-  private configureUA() {
-    this.ua = new UA(this.uaOptions);
+  private configureUA(options: UABase.Options) {
+    this.ua = this.uaFactory(options);
     this.ua.on('invite', uaSession => this.emit('invite', uaSession));
 
     this.transportConnectedPromise = new Promise(resolve => {
@@ -362,7 +369,6 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
         // catched by pRetry.
         if (mode === ReconnectionMode.BURST) {
           throw new Error('Cannot open socket. Probably DNS failure.');
-          return;
         }
 
         return Promise.resolve(false);
@@ -384,9 +390,7 @@ export class ReconnectableTransport extends EventEmitter implements IReconnectab
       minTimeout: 100,
       onFailedAttempt: error => {
         log.debug(
-          `Connection attempt ${error.attemptNumber} failed. There are ${
-            error.retriesLeft
-          } retries left.`,
+          `Connection attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
           this.constructor.name
         );
       }

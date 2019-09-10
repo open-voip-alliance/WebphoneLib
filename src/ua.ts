@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
 import {
   C as SIPConstants,
@@ -15,6 +16,9 @@ import {
   Web
 } from 'sip.js';
 import { log } from './logger';
+import { ITransport } from './transport';
+
+export type UAFactory = (options: UABase.Options) => IUA;
 
 export class WrappedInviteClientContext extends InviteClientContext {
   /**
@@ -125,8 +129,19 @@ export class WrappedTransport extends Web.Transport {
   }
 }
 
+export interface IUA extends EventEmitter {
+  transport: Core.Transport;
+  disconnect(): Promise<void>;
+  invite(target: string | URI, options?: InviteClientContext.Options): WrappedInviteClientContext;
+  subscribe(target: string | URI, event: string, options: any): Subscription;
+  start(): UA;
+  stop(): UA;
+  register(): UA;
+  unregister(): UA;
+}
+
 // tslint:disable-next-line: max-classes-per-file
-export class UA extends UABase {
+export class UA extends UABase implements IUA {
   private disconnectPromise: Promise<void>;
 
   constructor(configuration: UABase.Options) {
