@@ -1,0 +1,591 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Webphone Lib</title>
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.js" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="index.html" class="title">Webphone Lib</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-externals" checked />
+							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="globals.html">Globals</a>
+				</li>
+			</ul>
+			<h1> Webphone Lib</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<a href="#open-voip-alliance-webphone-lib" id="open-voip-alliance-webphone-lib" style="color: inherit; text-decoration: none;">
+					<h1>Open VoIP Alliance Webphone Lib</h1>
+				</a>
+				<a href="#goals" id="goals" style="color: inherit; text-decoration: none;">
+					<h1>Goals</h1>
+				</a>
+				<ol>
+					<li><p>Hide the complexities of SIP, SDP and WebRTC from the
+						implementation of the Webphone through an easy to use modern Javascript API.</p>
+					</li>
+					<li><p>Uses <code>Promises</code> and <code>async</code> where possible, use events only where
+						neccessary (not in request/response flows).</p>
+					</li>
+					<li><p>Export as ESM module.</p>
+					</li>
+					<li><p>Error handling is clear and where possible Promise based.</p>
+					</li>
+					<li><p>WebphoneLib does not keep state.</p>
+					</li>
+					<li><p>Wraps SIP.js in such a way that upgrades are easy.</p>
+					</li>
+					<li><p>Abstract over differences between browsers.</p>
+					</li>
+				</ol>
+				<a href="#use-cases" id="use-cases" style="color: inherit; text-decoration: none;">
+					<h1>Use cases</h1>
+				</a>
+				<ul>
+					<li>Register phone</li>
+					<li>Unregister phone</li>
+					<li>Accepting an incoming call</li>
+					<li>Denying an incoming call</li>
+					<li>Creating an outgoing call</li>
+					<li>Hanging up a call (in or out)</li>
+					<li>Putting a call on hold</li>
+					<li>Putting a call out of hold</li>
+					<li>Blind transfer of a call</li>
+					<li>Attended transfer of a call</li>
+					<li>Getting presence updates for contacts (blf)</li>
+					<li>Enter DTMF keys in a call</li>
+					<li>Muting a call</li>
+					<li>Switching audio devices during a call</li>
+					<li>To implement Quality of Service</li>
+				</ul>
+				<a href="#accidental-complexity" id="accidental-complexity" style="color: inherit; text-decoration: none;">
+					<h1>Accidental complexity</h1>
+				</a>
+				<ul>
+					<li><p>Websocket connection to the SIP proxy.</p>
+						<ul>
+							<li>Connecting/disconnecting</li>
+							<li>Handling failures</li>
+						</ul>
+					</li>
+					<li><p>Setting up the WebRTC channels (SIP.js) does this.</p>
+					</li>
+					<li><p>Requesting the audio/video devices to be used (SIP.js)</p>
+						<ul>
+							<li>Is done by the SessionDescriptionHandler, maybe the audio stream
+								handling could be decoupled from the SDH. Right now the SDH always
+							does a <code>getUserMedia</code> call to get <em>a</em> microphone.</li>
+						</ul>
+					</li>
+					<li><p>Negotiating the SDP (SIP.js).</p>
+					</li>
+					<li><p>Logging..</p>
+						<ul>
+							<li>Logging all SIP traffic?</li>
+						</ul>
+					</li>
+				</ul>
+				<a href="#webphonelib-client-setup" id="webphonelib-client-setup" style="color: inherit; text-decoration: none;">
+					<h1>WebphoneLib client setup</h1>
+				</a>
+				<ul>
+					<li>Which audio/video devices to use?<ul>
+							<li><em>how to switch</em> a/v during a call? Is this possible?</li>
+						</ul>
+					</li>
+					<li>ice servers (stun)</li>
+					<li>transport options (reconnection etc.?)</li>
+					<li>user agent</li>
+					<li>noanswertimeout?</li>
+					<li>etc.</li>
+				</ul>
+				<p>Maybe best to first just pass through the <code>options</code> to the <code>SIP.UA</code>
+				constructor?</p>
+				<a href="#example-flows" id="example-flows" style="color: inherit; text-decoration: none;">
+					<h1>Example flows</h1>
+				</a>
+				<a href="#connecting-and-registering" id="connecting-and-registering" style="color: inherit; text-decoration: none;">
+					<h2>Connecting and registering</h2>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> { Client } <span class="hljs-keyword">from</span> <span class="hljs-string">'../dist/vialer-web-calling.prod.mjs'</span>;
+
+<span class="hljs-keyword">const</span> account = {
+  <span class="hljs-attr">user</span>: <span class="hljs-string">'accountId'</span>,
+  <span class="hljs-attr">password</span>: <span class="hljs-string">'password'</span>,
+  <span class="hljs-attr">uri</span>: <span class="hljs-string">'sip:accountId@voipgrid.nl'</span>,
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'test'</span>
+};
+
+<span class="hljs-keyword">const</span> transport = {
+  <span class="hljs-attr">wsServers</span>: <span class="hljs-string">'wss://websocket.voipgrid.nl'</span>,
+  <span class="hljs-attr">iceServers</span>: [<span class="hljs-string">'stun:stun0-grq.voipgrid.nl'</span>, <span class="hljs-string">'stun:stun0-ams.voipgrid.nl'</span>]
+};
+
+<span class="hljs-keyword">const</span> media = {
+  <span class="hljs-attr">input</span>: {
+    <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default audio device</span>
+    audioProcessing: <span class="hljs-literal">true</span>,
+    <span class="hljs-attr">volume</span>: <span class="hljs-number">1.0</span>,
+    <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
+  },
+  <span class="hljs-attr">output</span>: {
+    <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default audio device</span>
+    volume: <span class="hljs-number">1.0</span>,
+    <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
+  }
+};
+
+<span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> Client({ account, transport, media });
+
+<span class="hljs-keyword">await</span> client.register();</code></pre>
+				<a href="#incoming-call" id="incoming-call" style="color: inherit; text-decoration: none;">
+					<h2>Incoming call</h2>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-comment">// incoming call below</span>
+sessions = {};
+client.on(<span class="hljs-string">'invite'</span>, (session) =&gt; {
+  <span class="hljs-comment">// If DND, session.reject()</span>
+  sessions[session.id] = session;
+  <span class="hljs-comment">// reinvite..</span>
+  <span class="hljs-keyword">try</span> {
+    ringer();
+
+    <span class="hljs-keyword">let</span> accepted = <span class="hljs-keyword">await</span> session.accepted(); <span class="hljs-comment">// wait until the call is picked up)</span>
+    <span class="hljs-keyword">if</span> (!accepted) {
+      <span class="hljs-keyword">return</span>;
+    }
+
+    showCallScreen();
+
+    <span class="hljs-keyword">await</span> session.terminated();
+  } <span class="hljs-keyword">catch</span> (e) {
+    showErrorMessage(e)
+  } <span class="hljs-keyword">finally</span> {
+    closeCallScreen();
+
+    <span class="hljs-keyword">delete</span> sessions[session.id];
+  }
+});</code></pre>
+				<a href="#outgoing-call" id="outgoing-call" style="color: inherit; text-decoration: none;">
+					<h2>Outgoing call</h2>
+				</a>
+				<pre><code class="language-javascript">sessions = {};
+<span class="hljs-keyword">const</span> session = client.invite(<span class="hljs-string">'sip:518@voipgrid.nl'</span>);
+sessions[session.id] = session;
+
+<span class="hljs-keyword">try</span> {
+  showOutgoingCallInProgress();
+
+  <span class="hljs-keyword">let</span> isAccepted = <span class="hljs-keyword">await</span> session.accepted();
+  <span class="hljs-keyword">if</span> (!isAccepted) {
+    showRejectedScreen();
+    <span class="hljs-keyword">return</span>;
+  }
+
+  showCallScreen();
+
+  <span class="hljs-keyword">await</span> session.terminated();
+} <span class="hljs-keyword">catch</span> (e) {
+} <span class="hljs-keyword">finally</span> {
+  closeCallScreen();
+
+  <span class="hljs-keyword">delete</span> sessions[session.id];
+}</code></pre>
+				<a href="#attended-transfer-of-a-call" id="attended-transfer-of-a-call" style="color: inherit; text-decoration: none;">
+					<h2>Attended transfer of a call</h2>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> session.accepted()) {
+  <span class="hljs-keyword">await</span> session.hold();
+
+  <span class="hljs-keyword">const</span> other = client.invite(<span class="hljs-string">'sip:519@voipgrid.nl'</span>);
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> other.accepted()) {
+    <span class="hljs-keyword">await</span> session.attendedTransfer(other);
+
+    <span class="hljs-keyword">await</span> session.terminated();
+  }
+}</code></pre>
+				<a href="#audio-device-selection" id="audio-device-selection" style="color: inherit; text-decoration: none;">
+					<h1>Audio device selection</h1>
+				</a>
+				<ol>
+					<li>Set a primary input &amp; output device:</li>
+				</ol>
+				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> Client({
+  account,
+  transport,
+  <span class="hljs-attr">media</span>: {
+    <span class="hljs-attr">input</span>: {
+      <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default input device</span>
+      audioProcessing: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">volume</span>: <span class="hljs-number">1.0</span>,
+      <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
+    },
+    <span class="hljs-attr">output</span>: {
+      <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default output device</span>
+      volume: <span class="hljs-number">1.0</span>,
+      <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
+    }
+  }
+});</code></pre>
+				<ol>
+					<li>Change the primary I/O devices:</li>
+				</ol>
+				<pre><code class="language-javascript">client.defaultMedia.output.id = <span class="hljs-string">'230988012091820398213'</span>;</code></pre>
+				<ol>
+					<li>Change the media of a session:</li>
+				</ol>
+				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> session = <span class="hljs-keyword">await</span> client.invite(<span class="hljs-string">'123'</span>);
+session.media.input.volume = <span class="hljs-number">50</span>;
+session.media.input.audioProcessing = <span class="hljs-literal">false</span>;
+session.media.input.muted = <span class="hljs-literal">true</span>;
+session.media.output.muted = <span class="hljs-literal">false</span>;
+session.media.setInput({
+  <span class="hljs-attr">id</span>: <span class="hljs-string">'120398120398123'</span>,
+  <span class="hljs-attr">audioProcessing</span>: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">volume</span>: <span class="hljs-number">0.5</span>,
+  <span class="hljs-attr">muted</span>: <span class="hljs-literal">true</span>
+});</code></pre>
+				<a href="#commands" id="commands" style="color: inherit; text-decoration: none;">
+					<h2>Commands</h2>
+				</a>
+				<table>
+					<thead>
+						<tr>
+							<th>Command</th>
+							<th>Help</th>
+						</tr>
+					</thead>
+					<tbody><tr>
+							<td>npm run docs</td>
+							<td>Generate the docs</td>
+						</tr>
+						<tr>
+							<td>npm run test</td>
+							<td>Run the tests</td>
+						</tr>
+						<tr>
+							<td>npm run test -- --verbose</td>
+							<td>Show output of <code>console.log</code> during tests</td>
+						</tr>
+						<tr>
+							<td>npm run test-watch</td>
+							<td>Watch the tests as you make changes</td>
+						</tr>
+						<tr>
+							<td>npm run build</td>
+							<td>Build the projects</td>
+						</tr>
+						<tr>
+							<td>npm run prepare</td>
+							<td>Prepare the project for publish, this is automatically run before <code>npm publish</code></td>
+						</tr>
+						<tr>
+							<td>npm run lint</td>
+							<td>Run <code>tslint</code> over the source files</td>
+						</tr>
+						<tr>
+							<td>npm run typecheck</td>
+							<td>Verifies type constraints are met</td>
+						</tr>
+				</tbody></table>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="globals  ">
+						<a href="globals.html"><em>Globals</em></a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-enum">
+						<a href="enums/clientstatus.html" class="tsd-kind-icon">Client<wbr>Status</a>
+					</li>
+					<li class=" tsd-kind-enum">
+						<a href="enums/reconnectionmode.html" class="tsd-kind-icon">Reconnection<wbr>Mode</a>
+					</li>
+					<li class=" tsd-kind-enum">
+						<a href="enums/sessioncause.html" class="tsd-kind-icon">Session<wbr>Cause</a>
+					</li>
+					<li class=" tsd-kind-enum">
+						<a href="enums/sessionstatus.html" class="tsd-kind-icon">Session<wbr>Status</a>
+					</li>
+					<li class=" tsd-kind-enum">
+						<a href="enums/subscriptionstatus.html" class="tsd-kind-icon">Subscription<wbr>Status</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/clientimpl.html" class="tsd-kind-icon">Client<wbr>Impl</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/reconnectabletransport.html" class="tsd-kind-icon">Reconnectable<wbr>Transport</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/sessionmedia.html" class="tsd-kind-icon">Session<wbr>Media</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/sessionstats.html" class="tsd-kind-icon">Session<wbr>Stats</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/sound.html" class="tsd-kind-icon">Sound</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/ua.html" class="tsd-kind-icon">UA</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/wrappedinviteclientcontext.html" class="tsd-kind-icon">Wrapped<wbr>Invite<wbr>Client<wbr>Context</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/wrappedinviteservercontext.html" class="tsd-kind-icon">Wrapped<wbr>Invite<wbr>Server<wbr>Context</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/wrappedtransport.html" class="tsd-kind-icon">Wrapped<wbr>Transport</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/iaccount.html" class="tsd-kind-icon">IAccount</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/iaudiodevice.html" class="tsd-kind-icon">IAudio<wbr>Device</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/iclientoptions.html" class="tsd-kind-icon">IClient<wbr>Options</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/imeasurement.html" class="tsd-kind-icon">IMeasurement</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/imedia.html" class="tsd-kind-icon">IMedia</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/imediadevice.html" class="tsd-kind-icon">IMedia<wbr>Device</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/imediainput.html" class="tsd-kind-icon">IMedia<wbr>Input</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/imediaoutput.html" class="tsd-kind-icon">IMedia<wbr>Output</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/iremoteidentity.html" class="tsd-kind-icon">IRemote<wbr>Identity</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/iretry.html" class="tsd-kind-icon">IRetry</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/itransport.html" class="tsd-kind-icon">ITransport</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/session.html" class="tsd-kind-icon">Session</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="globals.html#internalsession" class="tsd-kind-icon">Internal<wbr>Session</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="globals.html#mediadeviceid" class="tsd-kind-icon">Media<wbr>Device<wbr>Id</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
+						<a href="globals.html#type" class="tsd-kind-icon">Type</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#autoplay" class="tsd-kind-icon">Autoplay</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#client" class="tsd-kind-icon">Client</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#media" class="tsd-kind-icon">Media</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#audiocontext" class="tsd-kind-icon">audio<wbr>Context</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#hour" class="tsd-kind-icon">hour</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#ischrome" class="tsd-kind-icon">is<wbr>Chrome</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#isfirefox" class="tsd-kind-icon">is<wbr>Firefox</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#islocalhost" class="tsd-kind-icon">is<wbr>Localhost</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#issafari" class="tsd-kind-icon">is<wbr>Safari</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#log" class="tsd-kind-icon">log</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#millisecond" class="tsd-kind-icon">millisecond</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#minute" class="tsd-kind-icon">minute</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="globals.html#second" class="tsd-kind-icon">second</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#calculatemos" class="tsd-kind-icon">calculateMOS</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#checkaudioconnected" class="tsd-kind-icon">check<wbr>Audio<wbr>Connected</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#checkrequired" class="tsd-kind-icon">check<wbr>Required</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#clamp" class="tsd-kind-icon">clamp</a>
+					</li>
+					<li class=" tsd-kind-function tsd-has-type-parameter">
+						<a href="globals.html#eqset" class="tsd-kind-icon">eq<wbr>Set</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#fetchstream" class="tsd-kind-icon">fetch<wbr>Stream</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#increasetimeout" class="tsd-kind-icon">increase<wbr>Timeout</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#isprivateip" class="tsd-kind-icon">is<wbr>PrivateIP</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#jitter" class="tsd-kind-icon">jitter</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#sessiondescriptionhandlerfactory" class="tsd-kind-icon">session<wbr>Description<wbr>Handler<wbr>Factory</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#statusfromdialog" class="tsd-kind-icon">status<wbr>From<wbr>Dialog</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="globals.html#stripprivateips" class="tsd-kind-icon">strip<wbr>Private<wbr>Ips</a>
+					</li>
+					<li class=" tsd-kind-object-literal">
+						<a href="globals.html#webaudio" class="tsd-kind-icon">webaudio</a>
+					</li>
+					<li class=" tsd-kind-object-literal">
+						<a href="globals.html#webrtc" class="tsd-kind-icon">webrtc</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-module"><span class="tsd-kind-icon">Module</span></li>
+				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-index-signature"><span class="tsd-kind-icon">Index signature</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+				<li class="tsd-kind-enum-member"><span class="tsd-kind-icon">Enumeration member</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-enum"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-enum"><span class="tsd-kind-icon">Method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-interface"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
+				<li class="tsd-kind-index-signature tsd-parent-kind-interface"><span class="tsd-kind-icon">Index signature</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class"><span class="tsd-kind-icon">Accessor</span></li>
+				<li class="tsd-kind-index-signature tsd-parent-kind-class"><span class="tsd-kind-icon">Index signature</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static property</span></li>
+				<li class="tsd-kind-call-signature tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+<script>if (location.protocol == 'file:') document.write('<script src="assets/js/search.js"><' + '/script>');</script>
+</body>
+</html>
