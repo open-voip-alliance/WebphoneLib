@@ -4,6 +4,7 @@ on:
   push:
     paths:
     - '*.ts'
+    - '.github/workflows/*'
 
 jobs:
   linters:
