@@ -33,7 +33,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - name: npm publish
         if: startsWith(github.ref, 'refs/tags/')
-      - run: |
+        run: |
           npm ci
           npm publish
         env:
