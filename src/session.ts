@@ -108,6 +108,9 @@ interface SessionAccept {
   rejectCause?: SessionCause;
 }
 
+/**
+ * @hidden
+ */
 export class SessionImpl extends EventEmitter implements ISession {
   public readonly id: string;
   public readonly media: SessionMedia;

@@ -5,7 +5,11 @@
     "outDir": "build/",
     "declaration": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"],
+  "typedocOptions": {
+    "mode": "file",
+    "name": "Webphone Lib",
+    "excludeNotExported": true,
+    "excludePrivate": true
+  }
 }

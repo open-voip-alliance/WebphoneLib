@@ -52,7 +52,6 @@ test.serial('cannot create client with unsupported browser', t => {
 });
 
 test.serial('client is frozen', t => {
-  console.log(Features.checkRequired);
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const client = createClient();

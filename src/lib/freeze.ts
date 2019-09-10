@@ -1,5 +1,8 @@
 import { Type } from './utils';
 
+/**
+ * @hidden
+ */
 function getPropertyDescriptor(obj: any, name: string) {
   if (obj) {
     return (
@@ -11,6 +14,7 @@ function getPropertyDescriptor(obj: any, name: string) {
 
 /**
  * Create immutable proxies for all `properties` on `obj` proxying to `impl`.
+ * @hidden
  */
 export function createImmProxy<T>(obj: object, impl: T, properties: string[]): T {
   const missingDescriptors = properties.filter(
@@ -41,10 +45,16 @@ export function createImmProxy<T>(obj: object, impl: T, properties: string[]): T
   }, obj);
 }
 
+/**
+ * @hidden
+ */
 export function createFrozenProxy<T>(impl: T, properties: string[]): T {
   return Object.freeze(createImmProxy({}, impl, properties));
 }
 
+/**
+ * @hidden
+ */
 export function frozenClass<T>(cls: Type<T>, properties: string[]): Type<T> {
   return class {
     constructor(...args: any[]) {
