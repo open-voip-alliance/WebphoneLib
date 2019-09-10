@@ -1,4 +1,4 @@
-name: Node CI
+name: Node.js Package
 
 on:
   push:
@@ -7,24 +7,43 @@ on:
       - '.github/workflows/*'
 
 jobs:
-  linters:
+  build:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [8.x, 10.x, 12.x]
 
     steps:
       - uses: actions/checkout@v1
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+      - uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
-      - name: npm install, build, and test
+          node-version: 12
+      - name: npm install, build
         run: |
           npm install
           npm run build
+
+  linters:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: npm run typecheck, lint
+        run: |
           npm run typecheck
           npm run lint
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+      - name: npm publish
+        if: startsWith(github.ref, 'tags/')
+        run: npm publish
         env:
-          CI: true
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
