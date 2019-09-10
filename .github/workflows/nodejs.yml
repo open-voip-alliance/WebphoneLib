@@ -21,6 +21,8 @@ jobs:
           npm run build
           npm run typecheck
           npm run lint
+        env:
+          NODE_AUTH_TOKEN: ''
 
   publish:
     needs: build
