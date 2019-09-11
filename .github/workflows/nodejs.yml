@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - '*.ts'
+      - '*.js'
+      - '*.json'
       - '.github/workflows/*'
 
 jobs:
