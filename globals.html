@@ -91,10 +91,9 @@
 						<section class="tsd-index-section ">
 							<h3>Interfaces</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-interface"><a href="interfaces/iaccount.html" class="tsd-kind-icon">IAccount</a></li>
+								<li class="tsd-kind-interface"><a href="interfaces/clientoptions.html" class="tsd-kind-icon">Client<wbr>Options</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/iaudiodevice.html" class="tsd-kind-icon">IAudio<wbr>Device</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/iclient.html" class="tsd-kind-icon">IClient</a></li>
-								<li class="tsd-kind-interface"><a href="interfaces/iclientoptions.html" class="tsd-kind-icon">IClient<wbr>Options</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/imeasurement.html" class="tsd-kind-icon">IMeasurement</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/imedia.html" class="tsd-kind-icon">IMedia</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/imediadevice.html" class="tsd-kind-icon">IMedia<wbr>Device</a></li>
@@ -102,8 +101,8 @@
 								<li class="tsd-kind-interface"><a href="interfaces/imediaoutput.html" class="tsd-kind-icon">IMedia<wbr>Output</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/iremoteidentity.html" class="tsd-kind-icon">IRemote<wbr>Identity</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/iretry.html" class="tsd-kind-icon">IRetry</a></li>
-								<li class="tsd-kind-interface"><a href="interfaces/itransport.html" class="tsd-kind-icon">ITransport</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/session.html" class="tsd-kind-icon">Session</a></li>
+								<li class="tsd-kind-interface"><a href="interfaces/transport.html" class="tsd-kind-icon">Transport</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
@@ -111,6 +110,7 @@
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-type-alias"><a href="globals.html#internalsession" class="tsd-kind-icon">Internal<wbr>Session</a></li>
 								<li class="tsd-kind-type-alias"><a href="globals.html#mediadeviceid" class="tsd-kind-icon">Media<wbr>Device<wbr>Id</a></li>
+								<li class="tsd-kind-type-alias"><a href="globals.html#transportfactory" class="tsd-kind-icon">Transport<wbr>Factory</a></li>
 								<li class="tsd-kind-type-alias tsd-has-type-parameter"><a href="globals.html#type" class="tsd-kind-icon">Type</a></li>
 							</ul>
 						</section>
@@ -167,7 +167,7 @@
 					<div class="tsd-signature tsd-kind-icon">Internal<wbr>Session<span class="tsd-signature-symbol">:</span> <a href="classes/wrappedinviteclientcontext.html" class="tsd-signature-type">WrappedInviteClientContext</a><span class="tsd-signature-symbol"> &amp; </span><a href="classes/wrappedinviteservercontext.html" class="tsd-signature-type">WrappedInviteServerContext</a><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/session-media.ts#L17">session-media.ts:17</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/session-media.ts#L17">session-media.ts:17</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -177,9 +177,40 @@
 					<div class="tsd-signature tsd-kind-icon">Media<wbr>Device<wbr>Id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/types.ts#L20">types.ts:20</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/types.ts#L16">types.ts:16</a></li>
 						</ul>
 					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias">
+					<a name="transportfactory" class="tsd-anchor"></a>
+					<h3>Transport<wbr>Factory</h3>
+					<div class="tsd-signature tsd-kind-icon">Transport<wbr>Factory<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/transport.ts#L31">transport.ts:31</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-siganture">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-type-alias tsd-is-not-exported">
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>options<span class="tsd-signature-symbol">: </span><a href="interfaces/clientoptions.html" class="tsd-signature-type">ClientOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="interfaces/transport.html" class="tsd-signature-type">Transport</a></li>
+								</ul>
+								<ul class="tsd-descriptions">
+									<li class="tsd-description">
+										<h4 class="tsd-parameters-title">Parameters</h4>
+										<ul class="tsd-parameters">
+											<li>
+												<h5>options: <a href="interfaces/clientoptions.html" class="tsd-signature-type">ClientOptions</a></h5>
+											</li>
+										</ul>
+										<h4 class="tsd-returns-title">Returns <a href="interfaces/transport.html" class="tsd-signature-type">Transport</a></h4>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-has-type-parameter">
 					<a name="type" class="tsd-anchor"></a>
@@ -187,7 +218,7 @@
 					<div class="tsd-signature tsd-kind-icon">Type&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/lib/utils.ts#L6">lib/utils.ts:6</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/lib/utils.ts#L6">lib/utils.ts:6</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -216,17 +247,17 @@
 					<div class="tsd-signature tsd-kind-icon">Autoplay<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">AutoplaySingleton</span><span class="tsd-signature-symbol"> =&nbsp;new AutoplaySingleton()</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/autoplay.ts#L63">autoplay.ts:63</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/autoplay.ts#L63">autoplay.ts:63</a></li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-variable">
 					<a name="client" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> Client</h3>
-					<div class="tsd-signature tsd-kind-icon">Client<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span><span class="tsd-signature-symbol"> =&nbsp;frozenClass&lt;IClient&gt;(ClientImpl, [&#x27;attendedTransfer&#x27;,&#x27;connect&#x27;,&#x27;disconnect&#x27;,&#x27;getSession&#x27;,&#x27;getSessions&#x27;,&#x27;invite&#x27;,&#x27;isConnected&#x27;,&#x27;on&#x27;,&#x27;once&#x27;,&#x27;reconfigure&#x27;,&#x27;removeAllListeners&#x27;,&#x27;removeListener&#x27;,&#x27;subscribe&#x27;,&#x27;unsubscribe&#x27;])</span></div>
+					<div class="tsd-signature tsd-kind-icon">Client<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ClientCtor</span><span class="tsd-signature-symbol"> =&nbsp;(function(options: ClientOptions) {const transportFactory &#x3D; (options: ClientOptions) &#x3D;&gt; {return new ReconnectableTransport(options);};const impl &#x3D; new ClientImpl(transportFactory, options);createFrozenProxy(this, impl, [&#x27;attendedTransfer&#x27;,&#x27;connect&#x27;,&#x27;disconnect&#x27;,&#x27;getSession&#x27;,&#x27;getSessions&#x27;,&#x27;invite&#x27;,&#x27;isConnected&#x27;,&#x27;on&#x27;,&#x27;once&#x27;,&#x27;reconfigure&#x27;,&#x27;removeAllListeners&#x27;,&#x27;removeListener&#x27;,&#x27;subscribe&#x27;,&#x27;unsubscribe&#x27;]);} as any) as ClientCtor</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/client.ts#L437">client.ts:437</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/client.ts#L442">client.ts:442</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -239,11 +270,6 @@
 							generally prevents using private attributes. But, even in Typescript there
 						are ways around this.</p>
 					</div>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-						</ul>
-					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-variable">
 					<a name="media" class="tsd-anchor"></a>
@@ -251,7 +277,7 @@
 					<div class="tsd-signature tsd-kind-icon">Media<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">MediaSingleton</span><span class="tsd-signature-symbol"> =&nbsp;new MediaSingleton()</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/media.ts#L192">media.ts:192</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/media.ts#L192">media.ts:192</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -261,7 +287,7 @@
 					<div class="tsd-signature tsd-kind-icon">audio<wbr>Context<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">AudioContext</span><span class="tsd-signature-symbol"> =&nbsp;createAudioContext()</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/audio-context.ts#L10">audio-context.ts:10</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/audio-context.ts#L10">audio-context.ts:10</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -271,7 +297,7 @@
 					<div class="tsd-signature tsd-kind-icon">hour<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;60 * minute</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/time.ts#L4">time.ts:4</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/time.ts#L4">time.ts:4</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -281,7 +307,7 @@
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Chrome<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;browserUa.indexOf(&#x27;chrome&#x27;) !&#x3D;&#x3D; -1 &amp;&amp; !isSafari &amp;&amp; !isFirefox</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L20">features.ts:20</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L20">features.ts:20</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -291,7 +317,7 @@
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Firefox<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;browserUa.indexOf(&#x27;firefox&#x27;) !&#x3D;&#x3D; -1 &amp;&amp; browserUa.indexOf(&#x27;chrome&#x27;) &lt; 0</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L19">features.ts:19</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L19">features.ts:19</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -301,7 +327,7 @@
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Localhost<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;[&#x27;127.0.0.1&#x27;, &#x27;localhost&#x27;].includes(window.location.hostname)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L22">features.ts:22</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L22">features.ts:22</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -311,7 +337,7 @@
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Safari<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;browserUa.indexOf(&#x27;safari&#x27;) !&#x3D;&#x3D; -1 &amp;&amp; browserUa.indexOf(&#x27;chrome&#x27;) &lt; 0</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L18">features.ts:18</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L18">features.ts:18</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -321,7 +347,7 @@
 					<div class="tsd-signature tsd-kind-icon">log<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Logger</span><span class="tsd-signature-symbol"> =&nbsp;new Logger(&#x27;info&#x27;)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/logger.ts#L63">logger.ts:63</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/logger.ts#L63">logger.ts:63</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -331,7 +357,7 @@
 					<div class="tsd-signature tsd-kind-icon">millisecond<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">1</span><span class="tsd-signature-symbol"> =&nbsp;1</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/time.ts#L1">time.ts:1</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/time.ts#L1">time.ts:1</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -341,7 +367,7 @@
 					<div class="tsd-signature tsd-kind-icon">minute<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;60 * second</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/time.ts#L3">time.ts:3</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/time.ts#L3">time.ts:3</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -351,7 +377,7 @@
 					<div class="tsd-signature tsd-kind-icon">second<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;1000 * millisecond</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/time.ts#L2">time.ts:2</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/time.ts#L2">time.ts:2</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -368,7 +394,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/session-stats.ts#L164">session-stats.ts:164</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/session-stats.ts#L164">session-stats.ts:164</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -401,7 +427,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/session-health.ts#L4">session-health.ts:4</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/session-health.ts#L4">session-health.ts:4</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -429,7 +455,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L31">features.ts:31</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L31">features.ts:31</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
@@ -446,7 +472,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/lib/utils.ts#L73">lib/utils.ts:73</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/lib/utils.ts#L73">lib/utils.ts:73</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -490,7 +516,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/lib/utils.ts#L8">lib/utils.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/lib/utils.ts#L8">lib/utils.ts:8</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -522,7 +548,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/lib/utils.ts#L22">lib/utils.ts:22</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/lib/utils.ts#L22">lib/utils.ts:22</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -545,7 +571,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/lib/utils.ts#L54">lib/utils.ts:54</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/lib/utils.ts#L54">lib/utils.ts:54</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -580,7 +606,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/lib/utils.ts#L13">lib/utils.ts:13</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/lib/utils.ts#L13">lib/utils.ts:13</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -603,7 +629,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/lib/utils.ts#L43">lib/utils.ts:43</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/lib/utils.ts#L43">lib/utils.ts:43</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -641,7 +667,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/session-description-handler.ts#L19">session-description-handler.ts:19</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/session-description-handler.ts#L19">session-description-handler.ts:19</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -667,7 +693,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/subscription.ts#L11">subscription.ts:11</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/subscription.ts#L11">subscription.ts:11</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -702,7 +728,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/session-description-handler.ts#L7">session-description-handler.ts:7</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/session-description-handler.ts#L7">session-description-handler.ts:7</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -724,7 +750,7 @@
 					<div class="tsd-signature tsd-kind-icon">webaudio<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L3">features.ts:3</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L3">features.ts:3</a></li>
 						</ul>
 					</aside>
 					<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal">
@@ -733,7 +759,7 @@
 						<div class="tsd-signature tsd-kind-icon">audio<wbr>Context<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;&#x27;AudioContext&#x27; in window || &#x27;webkitAudioContext&#x27; in window</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L7">features.ts:7</a></li>
+								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L7">features.ts:7</a></li>
 							</ul>
 						</aside>
 					</section>
@@ -743,7 +769,7 @@
 						<div class="tsd-signature tsd-kind-icon">get<wbr>User<wbr>Media<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;mediaDevices &amp;&amp; &#x27;getUserMedia&#x27; in window.navigator.mediaDevices</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L6">features.ts:6</a></li>
+								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L6">features.ts:6</a></li>
 							</ul>
 						</aside>
 					</section>
@@ -753,7 +779,7 @@
 						<div class="tsd-signature tsd-kind-icon">media<wbr>Devices<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L4">features.ts:4</a></li>
+								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L4">features.ts:4</a></li>
 							</ul>
 						</aside>
 					</section>
@@ -763,7 +789,7 @@
 						<div class="tsd-signature tsd-kind-icon">set<wbr>Sink<wbr>Id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;&#x27;Audio&#x27; in global &amp;&amp; &#x27;setSinkId&#x27; in new Audio()</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L5">features.ts:5</a></li>
+								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L5">features.ts:5</a></li>
 							</ul>
 						</aside>
 					</section>
@@ -774,7 +800,7 @@
 					<div class="tsd-signature tsd-kind-icon">webrtc<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L12">features.ts:12</a></li>
+							<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L12">features.ts:12</a></li>
 						</ul>
 					</aside>
 					<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal">
@@ -783,7 +809,7 @@
 						<div class="tsd-signature tsd-kind-icon">connectionstatechange<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;peerConnection &amp;&amp; &#x27;onconnectionstatechange&#x27; in RTCPeerConnection.prototype</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L14">features.ts:14</a></li>
+								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L14">features.ts:14</a></li>
 							</ul>
 						</aside>
 					</section>
@@ -793,7 +819,7 @@
 						<div class="tsd-signature tsd-kind-icon">peer<wbr>Connection<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/3ecc3a7/src/features.ts#L13">features.ts:13</a></li>
+								<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/e03d975/src/features.ts#L13">features.ts:13</a></li>
 							</ul>
 						</aside>
 					</section>
@@ -850,16 +876,13 @@
 						<a href="classes/wrappedtransport.html" class="tsd-kind-icon">Wrapped<wbr>Transport</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="interfaces/iaccount.html" class="tsd-kind-icon">IAccount</a>
+						<a href="interfaces/clientoptions.html" class="tsd-kind-icon">Client<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface">
 						<a href="interfaces/iaudiodevice.html" class="tsd-kind-icon">IAudio<wbr>Device</a>
 					</li>
 					<li class=" tsd-kind-interface">
 						<a href="interfaces/iclient.html" class="tsd-kind-icon">IClient</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="interfaces/iclientoptions.html" class="tsd-kind-icon">IClient<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface">
 						<a href="interfaces/imeasurement.html" class="tsd-kind-icon">IMeasurement</a>
@@ -883,16 +906,19 @@
 						<a href="interfaces/iretry.html" class="tsd-kind-icon">IRetry</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="interfaces/itransport.html" class="tsd-kind-icon">ITransport</a>
+						<a href="interfaces/session.html" class="tsd-kind-icon">Session</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="interfaces/session.html" class="tsd-kind-icon">Session</a>
+						<a href="interfaces/transport.html" class="tsd-kind-icon">Transport</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="globals.html#internalsession" class="tsd-kind-icon">Internal<wbr>Session</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="globals.html#mediadeviceid" class="tsd-kind-icon">Media<wbr>Device<wbr>Id</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="globals.html#transportfactory" class="tsd-kind-icon">Transport<wbr>Factory</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
 						<a href="globals.html#type" class="tsd-kind-icon">Type</a>
