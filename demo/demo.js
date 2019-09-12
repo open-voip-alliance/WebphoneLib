@@ -1,4 +1,4 @@
-import { Client, Media, Sound, log } from '../dist/vialer-web-calling.prod.mjs';
+import { Client, Media, Sound, log } from '../dist/index.mjs';
 import * as CREDS from './creds.js';
 
 const caller = document.querySelector('#caller');
@@ -30,7 +30,7 @@ const account = {
 
 const transport = {
   wsServers: 'wss://websocket.voipgrid.nl',
-  iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
+  iceServers: []
 };
 
 const media = {
