@@ -2,7 +2,7 @@ const mediaDevices = 'mediaDevices' in window.navigator;
 
 export const webaudio = {
   mediaDevices,
-  setSinkId: 'setSinkId' in new Audio(),
+  setSinkId: 'Audio' in global && 'setSinkId' in new Audio(),
   getUserMedia: mediaDevices && 'getUserMedia' in window.navigator.mediaDevices,
   audioContext: 'AudioContext' in window || 'webkitAudioContext' in window
 };

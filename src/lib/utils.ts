@@ -1,4 +1,9 @@
-import { audioContext } from './audio-context';
+import { audioContext } from '../audio-context';
+
+/**
+ * Generic class type T. For example: `Type<Session>`
+ */
+export type Type<T> = new (...args: any[]) => T;
 
 export function eqSet<T>(a: Set<T>, b: Set<T>): boolean {
   return a.size === b.size && [...a].every(b.has.bind(b));
@@ -18,7 +23,7 @@ export async function fetchStream(url: string): Promise<() => Promise<AudioBuffe
   const response = await fetch(url);
   const data = await response.arrayBuffer();
   const buffer = await audioContext.decodeAudioData(data);
-  return () => {
+  return async () => {
     const soundSource = audioContext.createBufferSource();
     soundSource.buffer = buffer;
     soundSource.start(0, 0);
@@ -31,22 +36,22 @@ export async function fetchStream(url: string): Promise<() => Promise<AudioBuffe
 
 /**
  * Calculate a jitter from interval.
- * @param {Number} interval - The interval in ms to calculate jitter for.
- * @param {Number} percentage - The jitter range in percentage.
- * @returns {Number} The calculated jitter in ms.
+ * @param {number} interval - The interval in ms to calculate jitter for.
+ * @param {number} percentage - The jitter range in percentage.
+ * @returns {number} The calculated jitter in ms.
  */
 export function jitter(interval: number, percentage: number): number {
-  const min = 0 - Math.ceil(interval * (percentage / 100));
-  const max = Math.floor(interval * (percentage / 100));
-  return Math.floor(Math.random() * (max - min)) + min;
+  const min = Math.max(0, Math.ceil(interval * ((100 - percentage) / 100)));
+  const max = Math.floor(interval * ((100 + percentage) / 100));
+  return Math.floor(min + Math.random() * (max - min));
 }
 
 /**
  * This doubles the retry interval in each run and adds jitter.
- * @param {object} retry - The reference retry object.
- * @returns {object} The updated retry object.
+ * @param {any} retry - The reference retry object.
+ * @returns {any & { interval: number } } The updated retry object.
  */
-export function increaseTimeout(retry) {
+export function increaseTimeout(retry: any): any & { interval: number } {
   // Make sure that interval doesn't go past the limit.
   if (retry.interval * 2 < retry.limit) {
     retry.interval = retry.interval * 2;
@@ -58,6 +63,13 @@ export function increaseTimeout(retry) {
   return retry;
 }
 
+/**
+ * Clamp a value between `min` and `max`, both inclusive.
+ * @param {number} value - Value.
+ * @param {number} min - Minimum value, inclusive.
+ * @param {number} max - Maximum value, inclusive.
+ * @returns {number} Clamped value.
+ */
 export function clamp(value: number, min: number, max: number): number {
   if (value < min) {
     return min;

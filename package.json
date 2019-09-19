@@ -14,12 +14,27 @@
     "demo": "run-p build-watch serve",
     "typecheck": "tsc",
     "lint": "tslint src/**/*.ts",
-    "prepare": "npm run lint && npm run build"
+    "prepare": "npm run lint && npm run build",
+    "test": "ava",
+    "test-watch": "ava --watch",
+    "docs": "typedoc --out docs src"
   },
   "husky": {
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
+  },
+  "ava": {
+    "require": [
+      "esm",
+      "ts-node/register",
+      "./test/_setup-browser-env.js"
+    ],
+    "extensions": [
+      "ts"
+    ],
+    "babel": false,
+    "compileEnhancements": false
   },
   "repository": {
     "type": "git",
@@ -28,6 +43,7 @@
   "files": [
     "src",
     "dist",
+    "test",
     "README.md"
   ],
   "dependencies": {
@@ -36,9 +52,14 @@
     "sip.js": "0.14.4"
   },
   "devDependencies": {
+    "@types/sinon": "^7.0.13",
+    "ava": "^2.3.0",
+    "ava-fast-check": "^1.1.2",
+    "browser-env": "^3.2.6",
     "eslint": "^6.3.0",
     "eslint-config-prettier": "^6.2.0",
     "eslint-plugin-prettier": "^3.1.0",
+    "fast-check": "^1.16.3",
     "husky": "^3.0.5",
     "npm-run-all": "^4.1.5",
     "prettier": "^1.18.2",
@@ -50,9 +71,12 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-typescript2": "^0.24.0",
     "serve": "^11.1.0",
+    "sinon": "^7.4.2",
+    "ts-node": "^8.3.0",
     "tslint": "^5.19.0",
     "tslint-config-prettier": "^1.18.0",
     "tslint-plugin-prettier": "^2.0.1",
+    "typedoc": "^0.15.0",
     "typescript": "^3.6.2"
   }
 }

@@ -1,0 +1,28 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - master
+      - feature/hide-privates
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+
+      - name: build
+        run: |
+          npm ci
+          npm run docs
+
+      - name: deploy
+        uses: docker://peaceiris/gh-pages:v2.1.0
+        env:
+          ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          PUBLISH_BRANCH: gh-pages
+          PUBLISH_DIR: ./docs

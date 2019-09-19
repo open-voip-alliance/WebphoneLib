@@ -1,12 +1,14 @@
 import { SubscriptionStatus } from './enums';
 
+export { Subscription } from 'sip.js';
+
 /**
  * Parse an incoming dialog XML request body and return
  * the account state from it.
  * @param {Request} notification - A SIP.js Request object.
- * @returns {String} - The state of the account.
+ * @returns {string} - The state of the account.
  */
-export function statusFromDialog(notification) {
+export function statusFromDialog(notification: any): string {
   const parser = new DOMParser();
   const xmlDoc = parser ? parser.parseFromString(notification.request.body, 'text/xml') : null;
   const dialogNode = xmlDoc ? xmlDoc.getElementsByTagName('dialog-info')[0] : null;

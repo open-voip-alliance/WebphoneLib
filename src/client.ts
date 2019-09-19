@@ -1,68 +1,152 @@
 import { EventEmitter } from 'events';
-import pRetry from 'p-retry';
-import { Subscription, UA as UABase, Web } from 'sip.js';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
+import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
-import { ReconnectableTransport } from './reconnectable-transport';
-import { Session } from './session';
-import { InternalSession } from './session-media';
-import { statusFromDialog } from './subscription';
+import { Session, SessionImpl } from './session';
+import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
-import { IClientOptions, IMedia } from './types';
-import { UA } from './ua';
+import { ITransport, ReconnectableTransport, TransportFactory } from './transport';
+import { ClientOptions, IMedia } from './types';
 
-export interface ISessions {
-  [index: string]: Session;
-}
+import { Core, UA as UABase } from 'sip.js';
+import { UA, UAFactory } from './ua';
 
-export interface ISubscriptions {
-  [index: string]: Subscription;
-}
+// TODO: use EventTarget instead of EventEmitter.
 
 export interface IClient {
-  reconfigure(options: IClientOptions): Promise<void>;
-  connect(): Promise<void>;
+  /**
+   * To setup a different voip account, sipserver or media devices. If you want
+   * to adapt media devices it is better to do it on-the-fly by adapting the
+   * media property on client (to change it globally) or by adapting the media
+   * property on session.
+   */
+  reconfigure(options: ClientOptions): Promise<void>;
+
+  /**
+   * Connect (and subsequently register) to server.
+   */
+  connect(): Promise<boolean>;
+
+  /**
+   * Unregister (and subsequently disconnect) to server.
+   */
   disconnect(): Promise<void>;
+
+  /**
+   * Call this before you want to delete an instance of this class.
+   */
+  close(): Promise<void>;
+
   isConnected(): boolean;
 
+  /**
+   * Make an outgoing call. Right now it requires you to be registed to a sip
+   * server.
+   *
+   * Returns a promise which resolves as soon as the connected sip server
+   * emits a progress response, or rejects when something goes wrong in that
+   * process.
+   *
+   * @param uri  For example "sip:497920039@voipgrid.nl"
+   */
   invite(uri: string): Promise<Session>;
+
   subscribe(uri: string): Promise<void>;
   unsubscribe(uri: string): void;
 
+  getSession(id: string): Session;
+  getSessions(): Session[];
+
+  attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean>;
+
   /* tslint:disable:unified-signatures */
+  /**
+   * When receiving an invite, a (frozen) proxy session is returned which can be
+   * used to display what is needed in your interface.
+   *
+   * ```typescript
+   * client.on('invite', session => {
+   *   const { number, displayName } = session.remoteIdentity;
+   *
+   *   // accept the incoming session after 5 seconds.
+   *   setTimeout(() => session.accept(), 5000)
+   *
+   *   await session.accepted();
+   *
+   *   // session is accepted!
+   *
+   *   // terminate the session after 5 seconds.
+   *   setTimeout(() => session.terminate(), 5000)
+   * })
+   *
+   * ```
+   */
   on(event: 'invite', listener: (session: Session) => void): this;
-  on(event: 'subscriptionNotify', listener: (contact: string, state: string) => void): this;
-  on(event: 'sessionsUpdated', listener: (sessions: ISessions) => void): this;
+
+  /**
+   * When a notify event for a specific subscription occurs, the status is
+   * parsed from the XML request body and forwarded through the
+   * `subscriptionNotify` event.
+   *
+   * ```typescript
+   * const contact: string = 'sip:12345678@voipgrid.nl';
+   *
+   * client.on('subscriptionNotify', (contact, status) => {
+   *   console.log(`${contact}: ${notification}`);
+   * })
+   *
+   * await client.subscribe(contact);
+   * ```
+   */
+  on(event: 'subscriptionNotify', listener: (contact: string, status: string) => void): this;
+
+  /**
+   * When a session is added to the sessions by an incoming or outgoing
+   * call, a sessionAdded event is emitted.
+   */
+  on(event: 'sessionAdded', listener: ({ id }) => void): this;
+
+  /**
+   * When a session is removed because it is terminated  a sessionRemoved event
+   * is emitted.
+   */
+  on(event: 'sessionRemoved', listener: ({ id }) => void): this;
   /* tslint:enable:unified-signatures */
 }
 
-export class Client extends EventEmitter implements IClient {
-  public readonly sessions: ISessions = {};
+interface ISubscriptionNotification {
+  request: Core.IncomingRequestMessage;
+}
+
+/**
+ * @hidden
+ */
+export class ClientImpl extends EventEmitter implements IClient {
   public defaultMedia: IMedia;
 
-  private subscriptions: ISubscriptions = {};
-  private ua: UA;
-  private uaOptions: UABase.Options;
+  private readonly sessions: { [index: string]: SessionImpl } = {};
+  private subscriptions: { [index: string]: Subscription } = {};
   private connected: boolean = false;
 
-  private transport?: ReconnectableTransport;
+  private transportFactory: TransportFactory;
+  private transport?: ITransport;
 
-  constructor(options: IClientOptions) {
+  constructor(uaFactory: UAFactory, transportFactory: TransportFactory, options: ClientOptions) {
     super();
 
     if (!Features.checkRequired()) {
-      throw new Error('Your browser is not supported by this library');
+      throw new Error('unsupported_browser');
     }
 
     this.defaultMedia = options.media;
 
-    this.configureTransport(options);
+    this.transportFactory = transportFactory;
+    this.configureTransport(uaFactory, options);
   }
 
-  // In the case you want to switch to another account
-  public async reconfigure(options: IClientOptions) {
+  public async reconfigure(options: ClientOptions) {
     await this.disconnect();
 
     this.defaultMedia = options.media;
@@ -71,12 +155,10 @@ export class Client extends EventEmitter implements IClient {
     await this.connect();
   }
 
-  // Connect (and subsequently register) to server
-  public async connect() {
-    await this.transport.connect();
+  public connect(): Promise<boolean> {
+    return this.transport.connect();
   }
 
-  // Unregister (and subsequently disconnect) to server
   public async disconnect(): Promise<void> {
     // Actual unsubscribing is done in ua.stop
     await this.transport.disconnect();
@@ -94,13 +176,13 @@ export class Client extends EventEmitter implements IClient {
 
     await this.transport.registeredPromise;
 
-    let session: Session;
+    let session: SessionImpl;
     try {
       // Retrying this once if it fails. While the socket seems healthy, it
       // might in fact not be. In that case the act of sending data over the
-      // socket (the act of inviting) will cause us to detect that the
-      // socket is broken somehow. In that case getConnection will try
-      // to regain connection, to quickly re-invite over the newly created
+      // socket (the act of inviting in this case) will cause us to detect
+      // that the socket is broken. In that case getConnection will try to
+      // regain connection, to quickly re-invite over the newly created
       // socket (or not).
       session = await this.tryInvite(uri).catch(async () => {
         log.error('The WebSocket broke during the act of inviting.', this.constructor.name);
@@ -120,12 +202,9 @@ export class Client extends EventEmitter implements IClient {
 
     this.addSession(session);
 
-    return session;
+    return session.freeze();
   }
 
-  /**
-   * Call this before you want to delete an instance of this class.
-   */
   public async close() {
     await this.disconnect();
 
@@ -147,7 +226,7 @@ export class Client extends EventEmitter implements IClient {
       this.subscriptions[uri] = this.transport.subscribe(uri);
 
       const handlers = {
-        onFailed: (response, cause) => {
+        onFailed: (response: Core.IncomingResponseMessage) => {
           if (!response) {
             this.removeSubscription({ uri });
             reject();
@@ -177,7 +256,8 @@ export class Client extends EventEmitter implements IClient {
           this.subscriptions[uri].removeListener('failed', handlers.onFailed);
           resolve();
         },
-        onNotify: dialog => this.emit('notify', uri, statusFromDialog(dialog))
+        onNotify: (dialog: ISubscriptionNotification) =>
+          this.emit('subscriptionNotify', uri, statusFromDialog(dialog))
       };
 
       this.subscriptions[uri].on('failed', handlers.onFailed);
@@ -191,7 +271,6 @@ export class Client extends EventEmitter implements IClient {
   public async resubscribe(uri: string) {
     if (!this.subscriptions[uri]) {
       throw new Error('Cannot resubscribe to nonexistant subscription.');
-      return;
     }
 
     this.removeSubscription({ uri });
@@ -207,8 +286,33 @@ export class Client extends EventEmitter implements IClient {
     this.removeSubscription({ uri, unsubscribe: true });
   }
 
-  private configureTransport(options) {
-    this.transport = new ReconnectableTransport(options);
+  public getSession(id: string): Session {
+    const session = this.sessions[id];
+    if (session) {
+      return session.freeze();
+    }
+  }
+
+  public getSessions(): Session[] {
+    return Object.values(this.sessions).map(session => session.freeze());
+  }
+
+  public attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean> {
+    const sessionA = this.sessions[a.id];
+    if (!sessionA) {
+      return Promise.reject('Session A not found');
+    }
+
+    const sessionB = this.sessions[b.id];
+    if (!sessionB) {
+      return Promise.reject('Session B not found');
+    }
+
+    return sessionA.attendedTransfer(sessionB);
+  }
+
+  private configureTransport(uaFactory: UAFactory, options: ClientOptions) {
+    this.transport = this.transportFactory(uaFactory, options);
 
     this.transport.on('reviveSessions', () => {
       Object.values(this.sessions).forEach(async session => {
@@ -229,7 +333,7 @@ export class Client extends EventEmitter implements IClient {
     });
 
     this.transport.on('invite', uaSession => {
-      const session = new Session({
+      const session = new SessionImpl({
         media: this.defaultMedia,
         session: uaSession,
         onTerminated: this.onSessionTerminated.bind(this),
@@ -238,7 +342,7 @@ export class Client extends EventEmitter implements IClient {
 
       this.addSession(session);
 
-      this.emit('invite', session);
+      this.emit('invite', session.freeze());
     });
 
     this.transport.on('statusUpdate', status => {
@@ -254,19 +358,19 @@ export class Client extends EventEmitter implements IClient {
     });
   }
 
-  private onSessionTerminated(sessionId: number) {
+  private onSessionTerminated(sessionId: string) {
     const session = this.sessions[sessionId];
     log.info(`Incoming session ${sessionId} is terminated.`, this.constructor.name);
     this.removeSession(session);
   }
 
-  private async tryInvite(phoneNumber: string): Promise<Session> {
+  private async tryInvite(phoneNumber: string): Promise<SessionImpl> {
     return new Promise((resolve, reject) => {
       // Transport invite just creates a ClientContext, it doesn't send the
       // actual invite. We need to bind the event handlers below before we can
       // send out the actual invite. Otherwise we might miss the events.
       const uaSession = this.transport.invite(phoneNumber);
-      const session = new Session({
+      const session = new SessionImpl({
         media: this.defaultMedia,
         session: uaSession,
         onTerminated: this.onSessionTerminated.bind(this),
@@ -305,15 +409,15 @@ export class Client extends EventEmitter implements IClient {
     delete this.subscriptions[uri];
   }
 
-  private addSession(session: Session) {
+  private addSession(session: SessionImpl) {
     this.sessions[session.id] = session;
-    this.emit('sessionsUpdated', this.sessions);
+    this.emit('sessionAdded', { id: session.id });
     this.updatePriority();
   }
 
-  private removeSession(session: Session) {
+  private removeSession(session: SessionImpl) {
     delete this.sessions[session.id];
-    this.emit('sessionsUpdated', this.sessions);
+    this.emit('sessionRemoved', { id: session.id });
     this.updatePriority();
   }
 
@@ -325,3 +429,43 @@ export class Client extends EventEmitter implements IClient {
     this.transport.updatePriority(Object.entries(this.sessions).length !== 0);
   }
 }
+
+type ClientCtor = new (options: ClientOptions) => IClient;
+
+/**
+ * A proxy object for ClientImpl which is frozen.
+ * Only the properties listed here are exposed on the proxy.
+ *
+ * See [[IClient]] interface for more details on these properties.
+ *
+ * Typescript users of this library don't strictly need this, as Typescript
+ * generally prevents using private attributes. But, even in Typescript there
+ * are ways around this.
+ */
+export const Client: ClientCtor = (function(clientOptions: ClientOptions) {
+  const uaFactory = (options: UABase.Options) => {
+    return new UA(options);
+  };
+
+  const transportFactory = (factory: UAFactory, options: ClientOptions) => {
+    return new ReconnectableTransport(factory, options);
+  };
+
+  const impl = new ClientImpl(uaFactory, transportFactory, clientOptions);
+  createFrozenProxy(this, impl, [
+    'attendedTransfer',
+    'connect',
+    'disconnect',
+    'getSession',
+    'getSessions',
+    'invite',
+    'isConnected',
+    'on',
+    'once',
+    'reconfigure',
+    'removeAllListeners',
+    'removeListener',
+    'subscribe',
+    'unsubscribe'
+  ]);
+} as any) as ClientCtor;

@@ -10,3 +10,9 @@ before_script:
 
 lint:
   script: npm run lint
+
+typecheck:
+  script: npm run typecheck
+
+test:
+  script: npm run test

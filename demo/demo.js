@@ -73,7 +73,7 @@ outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error))
 const contact = 'sip:497920039@voipgrid.nl';
 
 client.on('invite', incomingCall);
-client.on('notify', (notifiedContact, notification) => {
+client.on('subscriptionNotify', (notifiedContact, notification) => {
   console.log(`${notifiedContact}: ${notification}`);
 });
 

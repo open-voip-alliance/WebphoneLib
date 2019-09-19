@@ -2,6 +2,7 @@ node_modules
 .cache
 build
 dist
+docs
 demo/creds.js
 .dir-locals.el
 

@@ -7,7 +7,7 @@ import { log } from './logger';
 import { Media } from './media';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
-import { clamp } from './utils';
+import { clamp } from './lib/utils';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
