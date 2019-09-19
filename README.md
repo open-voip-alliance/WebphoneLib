@@ -1,77 +1,31 @@
 # Open VoIP Alliance Webphone Lib
+![npm](https://img.shields.io/npm/v/webphone-lib?style=flat-square)
 
-# Goals
+Makes calling easier by providing a layer of abstraction around SIP.js. To figure out why we did this, [read our blog](https://openvoipalliance.org/link-to-blog).
 
-1.  Hide the complexities of SIP, SDP and WebRTC from the
-    implementation of the Webphone through an easy to use modern Javascript API.
+## Cool stuff
 
-2.  Uses `Promises` and `async` where possible, use events only where
-    neccessary (not in request/response flows).
+- Allows you to switch audio devices mid-call.
+- Automatically recover calls on connectivity loss.
+- Offers an easy-to-use modern javascript api.
 
-3.  Export as ESM module.
+## Getting started
 
-4.  Error handling is clear and where possible Promise based.
+```
+$ git clone git@github.com:open-voip-alliance/WebphoneLib.git
+$ cd WebphoneLib
+$ echo 'export const authorizationUser = <your-voip-account-id>; export const password = '<your-voip-password>'; export const uri = `sip:${authorizationUser}@voipgrid.nl`;' > demo/creds.js
+$ npm i && npm run demo
+```
 
-5.  WebphoneLib does not keep state.
+And then open up http://localhost:1235/demo/ in your browser. 
 
-6.  Wraps SIP.js in such a way that upgrades are easy.
+## Examples
 
-7.  Abstract over differences between browsers.
-
-# Use cases
-
-- Register phone
-- Unregister phone
-- Accepting an incoming call
-- Denying an incoming call
-- Creating an outgoing call
-- Hanging up a call (in or out)
-- Putting a call on hold
-- Putting a call out of hold
-- Blind transfer of a call
-- Attended transfer of a call
-- Getting presence updates for contacts (blf)
-- Enter DTMF keys in a call
-- Muting a call
-- Switching audio devices during a call
-- To implement Quality of Service
-
-# Accidental complexity
-
-- Websocket connection to the SIP proxy.
-
-  - Connecting/disconnecting
-  - Handling failures
-
-- Setting up the WebRTC channels (SIP.js) does this.
-- Requesting the audio/video devices to be used (SIP.js)
-  - Is done by the SessionDescriptionHandler, maybe the audio stream
-    handling could be decoupled from the SDH. Right now the SDH always
-    does a `getUserMedia` call to get _a_ microphone.
-- Negotiating the SDP (SIP.js).
-
-- Logging..
-  - Logging all SIP traffic?
-
-# WebphoneLib client setup
-
-- Which audio/video devices to use?
-  - _how to switch_ a/v during a call? Is this possible?
-- ice servers (stun)
-- transport options (reconnection etc.?)
-- user agent
-- noanswertimeout?
-- etc.
-
-Maybe best to first just pass through the `options` to the `SIP.UA`
-constructor?
-
-# Example flows
-
-## Connecting and registering
+### Connecting and registering
 
 ```javascript
-import { Client } from '../dist/vialer-web-calling.prod.mjs';
+import { Client } from 'webphone-lib';
 
 const account = {
   user: 'accountId',
@@ -82,7 +36,7 @@ const account = {
 
 const transport = {
   wsServers: 'wss://websocket.voipgrid.nl',
-  iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
+  iceServers: []
 };
 
 const media = {
@@ -104,19 +58,15 @@ const client = new Client({ account, transport, media });
 await client.register();
 ```
 
-## Incoming call
+### Incoming call
 
 ```javascript
 // incoming call below
-sessions = {};
 client.on('invite', (session) => {
-  // If DND, session.reject()
-  sessions[session.id] = session;
-  // reinvite..
   try {
     ringer();
 
-    let accepted = await session.accepted(); // wait until the call is picked up)
+    let accepted = await session.accepted(); // wait until the call is picked up
     if (!accepted) {
       return;
     }
@@ -128,23 +78,19 @@ client.on('invite', (session) => {
     showErrorMessage(e)
   } finally {
     closeCallScreen();
-
-    delete sessions[session.id];
   }
 });
 ```
 
-## Outgoing call
+### Outgoing call
 
 ```javascript
-sessions = {};
 const session = client.invite('sip:518@voipgrid.nl');
-sessions[session.id] = session;
 
 try {
   showOutgoingCallInProgress();
 
-  let isAccepted = await session.accepted();
+  let isAccepted = await session.accepted(); // wait until the call is picked up
   if (!isAccepted) {
     showRejectedScreen();
     return;
@@ -156,8 +102,6 @@ try {
 } catch (e) {
 } finally {
   closeCallScreen();
-
-  delete sessions[session.id];
 }
 ```
 
@@ -169,16 +113,16 @@ if (await session.accepted()) {
 
   const other = client.invite('sip:519@voipgrid.nl');
   if (await other.accepted()) {
-    await session.attendedTransfer(other);
+    await session.attendedTransfer(other); // immediately transfer after the other party picked up :p 
 
     await session.terminated();
   }
 }
 ```
 
-# Audio device selection
+## Audio device selection
 
-1.  Set a primary input & output device:
+#### Set a primary input & output device:
 
 ```javascript
 const client = new Client({
@@ -200,13 +144,13 @@ const client = new Client({
 });
 ```
 
-1.  Change the primary I/O devices:
+#### Change the primary I/O devices:
 
 ```javascript
 client.defaultMedia.output.id = '230988012091820398213';
 ```
 
-1.  Change the media of a session:
+#### Change the media of a session:
 
 ```javascript
 const session = await client.invite('123');
@@ -221,6 +165,10 @@ session.media.setInput({
   muted: true
 });
 ```
+
+## Join us!
+
+Feel free to tell us what you need. Create an issue, create a pull request for an issue, or if you're not really sure, ask us. We're often hanging around in the [XMPP open-voip-alliance chat](https://xmpp.openvoipalliance.org/).
 
 ## Commands
 
