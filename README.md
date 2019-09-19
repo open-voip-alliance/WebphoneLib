@@ -1,4 +1,5 @@
 # Open VoIP Alliance Webphone Lib
+
 ![npm](https://img.shields.io/npm/v/webphone-lib?style=flat-square)
 
 Makes calling easier by providing a layer of abstraction around SIP.js. To figure out why we did this, [read our blog](https://openvoipalliance.org/link-to-blog).
@@ -14,11 +15,14 @@ Makes calling easier by providing a layer of abstraction around SIP.js. To figur
 ```
 $ git clone git@github.com:open-voip-alliance/WebphoneLib.git
 $ cd WebphoneLib
-$ echo 'export const authorizationUser = <your-voip-account-id>; export const password = '<your-voip-password>'; export const uri = `sip:${authorizationUser}@voipgrid.nl`;' > demo/creds.js
+$ echo '
+export const authorizationUser = <your-voip-account-id>;
+export const password = '<your-voip-password>';
+export const uri = `sip:${authorizationUser}@voipgrid.nl`;' > demo/creds.js
 $ npm i && npm run demo
 ```
 
-And then open up http://localhost:1235/demo/ in your browser. 
+And then play around at http://localhost:1235/demo/.
 
 ## Examples
 
@@ -113,7 +117,7 @@ if (await session.accepted()) {
 
   const other = client.invite('sip:519@voipgrid.nl');
   if (await other.accepted()) {
-    await session.attendedTransfer(other); // immediately transfer after the other party picked up :p 
+    await session.attendedTransfer(other); // immediately transfer after the other party picked up :p
 
     await session.terminated();
   }
