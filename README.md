@@ -18,7 +18,7 @@ $ cd WebphoneLib
 $ echo '
 export const authorizationUser = <your-voip-account-id>;
 export const password = '<your-voip-password>';
-export const uri = `sip:${authorizationUser}@voipgrid.nl`;' > demo/creds.js
+export const uri = `sip:${authorizationUser}@<your-platform-url>`;' > demo/creds.js
 $ npm i && npm run demo
 ```
 
@@ -39,8 +39,8 @@ const account = {
 };
 
 const transport = {
-  wsServers: 'wss://websocket.voipgrid.nl',
-  iceServers: []
+  wsServers: 'wss://websocket.voipgrid.nl', // or replace with your
+  iceServers: [] // voipgrid doesn't need STUN/TURN, so explicitly set [].
 };
 
 const media = {
@@ -70,7 +70,7 @@ client.on('invite', (session) => {
   try {
     ringer();
 
-    let accepted = await session.accepted(); // wait until the call is picked up
+    let { accepted, rejectCause } = await session.accepted(); // wait until the call is picked up
     if (!accepted) {
       return;
     }
@@ -94,8 +94,8 @@ const session = client.invite('sip:518@voipgrid.nl');
 try {
   showOutgoingCallInProgress();
 
-  let isAccepted = await session.accepted(); // wait until the call is picked up
-  if (!isAccepted) {
+  let { accepted, rejectCause } = await session.accepted(); // wait until the call is picked up
+  if (!accepted) {
     showRejectedScreen();
     return;
   }
@@ -112,14 +112,15 @@ try {
 ## Attended transfer of a call
 
 ```javascript
-if (await session.accepted()) {
-  await session.hold();
+if (await sessionA.accepted()) {
+  await sessionA.hold();
 
-  const other = client.invite('sip:519@voipgrid.nl');
-  if (await other.accepted()) {
-    await session.attendedTransfer(other); // immediately transfer after the other party picked up :p
+  const sessionB = client.invite('sip:519@voipgrid.nl');
+  if (await sessionB.accepted()) {
+    // immediately transfer after the other party picked up :p
+    await client.attendedTransfer(sessionA, sessionB);
 
-    await session.terminated();
+    await sessionB.terminated();
   }
 }
 ```

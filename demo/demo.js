@@ -231,7 +231,7 @@ async function attendedTransfer(session) {
 
     // Giving 10 seconds to talk between session & toSession
     setTimeout(async () => {
-      toSession.attendedTransfer(session);
+      client.attendedTransfer(session, toSession);
     }, 10000);
 
     await toSession.terminated();
