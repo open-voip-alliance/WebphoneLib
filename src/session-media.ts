@@ -3,11 +3,11 @@ import { EventEmitter } from 'events';
 import { IncomingInviteRequest } from 'sip.js/lib/core';
 import { audioContext } from './audio-context';
 import * as Features from './features';
+import { clamp } from './lib/utils';
 import { log } from './logger';
 import { Media } from './media';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
-import { clamp } from './lib/utils';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -27,7 +27,10 @@ export type InternalSession = WrappedInviteClientContext &
 
     __media: SessionMedia;
 
-    on(event: 'reinvite', listener: (session: InternalSession, request: IncomingInviteRequest) => void): InternalSession
+    on(
+      event: 'reinvite',
+      listener: (session: InternalSession, request: IncomingInviteRequest) => void
+    ): InternalSession;
   };
 
 interface ISessionMedia extends IMedia {
@@ -143,7 +146,6 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
     // This can fail if autoplay is not yet allowed.
     await audio.play();
   }
-
 
   private setInputDevice(id: string | undefined) {
     this.setInput(Object.assign({}, this.media.input, { id }));

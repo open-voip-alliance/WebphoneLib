@@ -4,7 +4,7 @@ import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
-import { Session, SessionImpl } from './session';
+import { ISession, SessionImpl } from './session';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
 import { ITransport, ReconnectableTransport, TransportFactory } from './transport';
@@ -51,13 +51,13 @@ export interface IClient {
    *
    * @param uri  For example "sip:497920039@voipgrid.nl"
    */
-  invite(uri: string): Promise<Session>;
+  invite(uri: string): Promise<ISession>;
 
   subscribe(uri: string): Promise<void>;
   unsubscribe(uri: string): void;
 
-  getSession(id: string): Session;
-  getSessions(): Session[];
+  getSession(id: string): ISession;
+  getSessions(): ISession[];
 
   attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean>;
 
@@ -83,7 +83,7 @@ export interface IClient {
    *
    * ```
    */
-  on(event: 'invite', listener: (session: Session) => void): this;
+  on(event: 'invite', listener: (session: ISession) => void): this;
 
   /**
    * When a notify event for a specific subscription occurs, the status is
@@ -169,7 +169,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     return this.connected;
   }
 
-  public async invite(uri: string): Promise<Session> {
+  public async invite(uri: string): Promise<ISession> {
     if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
@@ -286,14 +286,14 @@ export class ClientImpl extends EventEmitter implements IClient {
     this.removeSubscription({ uri, unsubscribe: true });
   }
 
-  public getSession(id: string): Session {
+  public getSession(id: string): ISession {
     const session = this.sessions[id];
     if (session) {
       return session.freeze();
     }
   }
 
-  public getSessions(): Session[] {
+  public getSessions(): ISession[] {
     return Object.values(this.sessions).map(session => session.freeze());
   }
 
@@ -433,7 +433,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 type ClientCtor = new (options: ClientOptions) => IClient;
 
 /**
- * A proxy object for ClientImpl which is frozen.
+ * A (frozen) proxy object for ClientImpl.
  * Only the properties listed here are exposed on the proxy.
  *
  * See [[IClient]] interface for more details on these properties.

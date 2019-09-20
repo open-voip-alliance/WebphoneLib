@@ -1,88 +1,55 @@
 # Open VoIP Alliance Webphone Lib
 
-# Goals
+![npm](https://img.shields.io/npm/v/webphone-lib?style=flat-square)
 
-1.  Hide the complexities of SIP, SDP and WebRTC from the
-    implementation of the Webphone through an easy to use modern Javascript API.
+Makes calling easier by providing a layer of abstraction around SIP.js. To figure out why we did this, [read our blog](https://openvoipalliance.org/link-to-blog).
 
-2.  Uses `Promises` and `async` where possible, use events only where
-    neccessary (not in request/response flows).
+## Documentation
 
-3.  Export as ESM module.
+Check the documentation [here](https://open-voip-alliance.github.io/WebphoneLib/).
 
-4.  Error handling is clear and where possible Promise based.
+## Cool stuff
 
-5.  WebphoneLib does not keep state.
+- Allows you to switch audio devices mid-call.
+- Automatically recover calls on connectivity loss.
+- Offers an easy-to-use modern javascript api.
 
-6.  Wraps SIP.js in such a way that upgrades are easy.
+## Getting started
 
-7.  Abstract over differences between browsers.
+```
+$ git clone git@github.com:open-voip-alliance/WebphoneLib.git
+$ cd WebphoneLib
+$ echo '
+export const authorizationUserId = <your-voip-account-id>;
+export const password = '<your-voip-password>';
+export const yourPlatformURL = '<your-platform-url>'
+export const accountUri = `sip:${authorizationUserId}@${yourPlatformURL}`;
+export const subscribeTo = `sip:<account-id>@${yourPlatformURL}`;
+export const outgoingCallTo = `sip:<account-id>@${yourPlatformURL}`;
+export const blindTransferTo = `sip:<account-id>@${yourPlatformURL}`;
+export const attendedTransferTo = `sip:<account-id>@${yourPlatformURL}`;' > demo/config.js
+$ npm i && npm run demo
+```
 
-# Use cases
+And then play around at http://localhost:1235/demo/.
 
-- Register phone
-- Unregister phone
-- Accepting an incoming call
-- Denying an incoming call
-- Creating an outgoing call
-- Hanging up a call (in or out)
-- Putting a call on hold
-- Putting a call out of hold
-- Blind transfer of a call
-- Attended transfer of a call
-- Getting presence updates for contacts (blf)
-- Enter DTMF keys in a call
-- Muting a call
-- Switching audio devices during a call
-- To implement Quality of Service
+## Examples
 
-# Accidental complexity
-
-- Websocket connection to the SIP proxy.
-
-  - Connecting/disconnecting
-  - Handling failures
-
-- Setting up the WebRTC channels (SIP.js) does this.
-- Requesting the audio/video devices to be used (SIP.js)
-  - Is done by the SessionDescriptionHandler, maybe the audio stream
-    handling could be decoupled from the SDH. Right now the SDH always
-    does a `getUserMedia` call to get _a_ microphone.
-- Negotiating the SDP (SIP.js).
-
-- Logging..
-  - Logging all SIP traffic?
-
-# WebphoneLib client setup
-
-- Which audio/video devices to use?
-  - _how to switch_ a/v during a call? Is this possible?
-- ice servers (stun)
-- transport options (reconnection etc.?)
-- user agent
-- noanswertimeout?
-- etc.
-
-Maybe best to first just pass through the `options` to the `SIP.UA`
-constructor?
-
-# Example flows
-
-## Connecting and registering
+### Connecting and registering
 
 ```javascript
-import { Client } from '../dist/vialer-web-calling.prod.mjs';
+import { Client } from 'webphone-lib';
 
 const account = {
   user: 'accountId',
   password: 'password',
-  uri: 'sip:accountId@voipgrid.nl',
+  uri: 'sip:accountId@<your-platform-url>',
   name: 'test'
 };
 
 const transport = {
-  wsServers: 'wss://websocket.voipgrid.nl',
-  iceServers: ['stun:stun0-grq.voipgrid.nl', 'stun:stun0-ams.voipgrid.nl']
+  wsServers: 'wss://websocket.<your-platform-url>', // or replace with your
+  iceServers: [] // depending on if your provider needs STUN/TURN.
 };
 
 const media = {
@@ -104,19 +71,15 @@ const client = new Client({ account, transport, media });
 await client.register();
 ```
 
-## Incoming call
+### Incoming call
 
 ```javascript
 // incoming call below
-sessions = {};
 client.on('invite', (session) => {
-  // If DND, session.reject()
-  sessions[session.id] = session;
-  // reinvite..
   try {
     ringer();
 
-    let accepted = await session.accepted(); // wait until the call is picked up)
+    let { accepted, rejectCause } = await session.accepted(); // wait until the call is picked up
     if (!accepted) {
       return;
     }
@@ -128,24 +91,20 @@ client.on('invite', (session) => {
     showErrorMessage(e)
   } finally {
     closeCallScreen();
-
-    delete sessions[session.id];
   }
 });
 ```
 
-## Outgoing call
+### Outgoing call
 
 ```javascript
-sessions = {};
-const session = client.invite('sip:518@voipgrid.nl');
-sessions[session.id] = session;
+const session = client.invite('sip:518@<your-platform-url>');
 
 try {
   showOutgoingCallInProgress();
 
-  let isAccepted = await session.accepted();
-  if (!isAccepted) {
+  let { accepted, rejectCause } = await session.accepted(); // wait until the call is picked up
+  if (!accepted) {
     showRejectedScreen();
     return;
   }
@@ -156,29 +115,28 @@ try {
 } catch (e) {
 } finally {
   closeCallScreen();
-
-  delete sessions[session.id];
 }
 ```
 
 ## Attended transfer of a call
 
 ```javascript
-if (await session.accepted()) {
-  await session.hold();
+if (await sessionA.accepted()) {
+  await sessionA.hold();
 
-  const other = client.invite('sip:519@voipgrid.nl');
-  if (await other.accepted()) {
-    await session.attendedTransfer(other);
+  const sessionB = client.invite('sip:519@<your-platform-url>');
+  if (await sessionB.accepted()) {
+    // immediately transfer after the other party picked up :p
+    await client.attendedTransfer(sessionA, sessionB);
 
-    await session.terminated();
+    await sessionB.terminated();
   }
 }
 ```
 
-# Audio device selection
+## Audio device selection
 
-1.  Set a primary input & output device:
+#### Set a primary input & output device:
 
 ```javascript
 const client = new Client({
@@ -200,13 +158,13 @@ const client = new Client({
 });
 ```
 
-1.  Change the primary I/O devices:
+#### Change the primary I/O devices:
 
 ```javascript
 client.defaultMedia.output.id = '230988012091820398213';
 ```
 
-1.  Change the media of a session:
+#### Change the media of a session:
 
 ```javascript
 const session = await client.invite('123');
@@ -221,6 +179,10 @@ session.media.setInput({
   muted: true
 });
 ```
+
+## Join us!
+
+Feel free to tell us what you need. Create an issue, create a pull request for an issue, or if you're not really sure, ask us. We're often hanging around on [discourse](https://discourse.openvoipalliance.org/).
 
 ## Commands
 
