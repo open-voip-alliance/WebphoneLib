@@ -1,5 +1,5 @@
 import { Client, Media, Sound, log } from '../dist/index.mjs';
-import * as CREDS from './creds.js';
+import * as CONF from './conf.js';
 
 const caller = document.querySelector('#caller');
 const ringerBtn = document.querySelector('#ring');
@@ -22,14 +22,14 @@ const resubscribeBtn = document.querySelector('#resubscribe');
 const sessionsCount = document.querySelector('#sessions-count');
 
 const account = {
-  user: CREDS.authorizationUser,
-  password: CREDS.password,
-  uri: CREDS.uri,
+  user: CONF.authorizationUserId,
+  password: CONF.password,
+  uri: CONF.accountUri,
   name: 'test'
 };
 
 const transport = {
-  wsServers: 'wss://websocket.voipgrid.nl',
+  wsServers: `wss://websocket.${CONF.yourPlatformURL}`,
   iceServers: []
 };
 
@@ -70,7 +70,7 @@ client.on('sessionsUpdate', sessions => {
 
 outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
 
-const contact = 'sip:497920039@voipgrid.nl';
+const subscribeTo = CONF.subscribeTo;
 
 client.on('invite', incomingCall);
 client.on('subscriptionNotify', (notifiedContact, notification) => {
@@ -84,14 +84,14 @@ registerBtn.addEventListener('click', () =>
   client
     .connect()
     .then(async () => {
-      await client.subscribe(contact);
+      await client.subscribe(subscribeTo);
       console.log('subscribed!');
     })
     .catch(console.error)
 );
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 resubscribeBtn.addEventListener('click', async () => {
-  await client.resubscribe(contact).catch(console.error);
+  await client.resubscribe(subscribeTo).catch(console.error);
   console.log('resubscribed!');
 });
 
@@ -224,7 +224,7 @@ async function attendedTransfer(session) {
   // Holding the first session
   session.hold();
 
-  const toSession = await client.invite('sip:318@voipgrid.nl');
+  const toSession = await client.invite(CONF.attendedTransferTo);
 
   if (await toSession.accepted()) {
     console.log('Second session got accepted');
@@ -247,7 +247,7 @@ async function runSession(session) {
   const bye = () => session.bye();
   const hold = async () => await session.hold();
   const unhold = async () => await session.unhold();
-  const blindTransfer = async () => await session.blindTransfer('sip:318@voipgrid.nl');
+  const blindTransfer = async () => await session.blindTransfer(CONF.blindTransferTo);
   const attTransfer = async () => await attendedTransfer(session);
 
   session.on('statusUpdate', s => {
@@ -287,7 +287,7 @@ async function runSession(session) {
 }
 
 async function outgoingCall(number) {
-  const session = await client.invite(`sip:${number}@voipgrid.nl`);
+  const session = await client.invite(CONF.outgoingCallTo);
   if (!session) {
     return;
   }

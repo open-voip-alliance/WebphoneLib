@@ -16,9 +16,14 @@ Makes calling easier by providing a layer of abstraction around SIP.js. To figur
 $ git clone git@github.com:open-voip-alliance/WebphoneLib.git
 $ cd WebphoneLib
 $ echo '
-export const authorizationUser = <your-voip-account-id>;
+export const authorizationUserId = <your-voip-account-id>;
 export const password = '<your-voip-password>';
-export const uri = `sip:${authorizationUser}@<your-platform-url>`;' > demo/creds.js
+export const yourPlatformURL = '<your-platform-url>'
+export const accountUri = `sip:${authorizationUserId}@${yourPlatformURL}`;
+export const subscribeTo = `sip:<account-id>@${yourPlatformURL}`;
+export const outgoingCallTo = `sip:<account-id>@${yourPlatformURL}`;
+export const blindTransferTo = `sip:<account-id>@${yourPlatformURL}`;
+export const attendedTransferTo = `sip:<account-id>@${yourPlatformURL}`;' > demo/config.js
 $ npm i && npm run demo
 ```
 
@@ -34,13 +39,13 @@ import { Client } from 'webphone-lib';
 const account = {
   user: 'accountId',
   password: 'password',
-  uri: 'sip:accountId@voipgrid.nl',
+  uri: 'sip:accountId@<your-platform-url>',
   name: 'test'
 };
 
 const transport = {
-  wsServers: 'wss://websocket.voipgrid.nl', // or replace with your
-  iceServers: [] // voipgrid doesn't need STUN/TURN, so explicitly set [].
+  wsServers: 'wss://websocket.<your-platform-url>', // or replace with your
+  iceServers: [] // depending on if your provider needs STUN/TURN.
 };
 
 const media = {
@@ -89,7 +94,7 @@ client.on('invite', (session) => {
 ### Outgoing call
 
 ```javascript
-const session = client.invite('sip:518@voipgrid.nl');
+const session = client.invite('sip:518@<your-platform-url>');
 
 try {
   showOutgoingCallInProgress();
@@ -115,7 +120,7 @@ try {
 if (await sessionA.accepted()) {
   await sessionA.hold();
 
-  const sessionB = client.invite('sip:519@voipgrid.nl');
+  const sessionB = client.invite('sip:519@<your-platform-url>');
   if (await sessionB.accepted()) {
     // immediately transfer after the other party picked up :p
     await client.attendedTransfer(sessionA, sessionB);
@@ -173,7 +178,7 @@ session.media.setInput({
 
 ## Join us!
 
-Feel free to tell us what you need. Create an issue, create a pull request for an issue, or if you're not really sure, ask us. We're often hanging around in the [XMPP open-voip-alliance chat](https://xmpp.openvoipalliance.org/).
+Feel free to tell us what you need. Create an issue, create a pull request for an issue, or if you're not really sure, ask us. We're often hanging around on [discourse](https://discourse.openvoipalliance.org/).
 
 ## Commands
 

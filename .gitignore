@@ -3,7 +3,7 @@ node_modules
 build
 dist
 docs
-demo/creds.js
+demo/config.js
 .dir-locals.el
 
 # IDE specific files
