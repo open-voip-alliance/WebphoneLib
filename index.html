@@ -65,108 +65,53 @@
 				<a href="#open-voip-alliance-webphone-lib" id="open-voip-alliance-webphone-lib" style="color: inherit; text-decoration: none;">
 					<h1>Open VoIP Alliance Webphone Lib</h1>
 				</a>
-				<a href="#goals" id="goals" style="color: inherit; text-decoration: none;">
-					<h1>Goals</h1>
+				<p><img src="https://img.shields.io/npm/v/webphone-lib?style=flat-square" alt="npm"></p>
+				<p>Makes calling easier by providing a layer of abstraction around SIP.js. To figure out why we did this, <a href="https://openvoipalliance.org/link-to-blog">read our blog</a>.</p>
+				<a href="#documentation" id="documentation" style="color: inherit; text-decoration: none;">
+					<h2>Documentation</h2>
 				</a>
-				<ol>
-					<li><p>Hide the complexities of SIP, SDP and WebRTC from the
-						implementation of the Webphone through an easy to use modern Javascript API.</p>
-					</li>
-					<li><p>Uses <code>Promises</code> and <code>async</code> where possible, use events only where
-						neccessary (not in request/response flows).</p>
-					</li>
-					<li><p>Export as ESM module.</p>
-					</li>
-					<li><p>Error handling is clear and where possible Promise based.</p>
-					</li>
-					<li><p>WebphoneLib does not keep state.</p>
-					</li>
-					<li><p>Wraps SIP.js in such a way that upgrades are easy.</p>
-					</li>
-					<li><p>Abstract over differences between browsers.</p>
-					</li>
-				</ol>
-				<a href="#use-cases" id="use-cases" style="color: inherit; text-decoration: none;">
-					<h1>Use cases</h1>
+				<p>Check the documentation <a href="https://open-voip-alliance.github.io/WebphoneLib/">here</a>.</p>
+				<a href="#cool-stuff" id="cool-stuff" style="color: inherit; text-decoration: none;">
+					<h2>Cool stuff</h2>
 				</a>
 				<ul>
-					<li>Register phone</li>
-					<li>Unregister phone</li>
-					<li>Accepting an incoming call</li>
-					<li>Denying an incoming call</li>
-					<li>Creating an outgoing call</li>
-					<li>Hanging up a call (in or out)</li>
-					<li>Putting a call on hold</li>
-					<li>Putting a call out of hold</li>
-					<li>Blind transfer of a call</li>
-					<li>Attended transfer of a call</li>
-					<li>Getting presence updates for contacts (blf)</li>
-					<li>Enter DTMF keys in a call</li>
-					<li>Muting a call</li>
-					<li>Switching audio devices during a call</li>
-					<li>To implement Quality of Service</li>
+					<li>Allows you to switch audio devices mid-call.</li>
+					<li>Automatically recover calls on connectivity loss.</li>
+					<li>Offers an easy-to-use modern javascript api.</li>
 				</ul>
-				<a href="#accidental-complexity" id="accidental-complexity" style="color: inherit; text-decoration: none;">
-					<h1>Accidental complexity</h1>
+				<a href="#getting-started" id="getting-started" style="color: inherit; text-decoration: none;">
+					<h2>Getting started</h2>
 				</a>
-				<ul>
-					<li><p>Websocket connection to the SIP proxy.</p>
-						<ul>
-							<li>Connecting/disconnecting</li>
-							<li>Handling failures</li>
-						</ul>
-					</li>
-					<li><p>Setting up the WebRTC channels (SIP.js) does this.</p>
-					</li>
-					<li><p>Requesting the audio/video devices to be used (SIP.js)</p>
-						<ul>
-							<li>Is done by the SessionDescriptionHandler, maybe the audio stream
-								handling could be decoupled from the SDH. Right now the SDH always
-							does a <code>getUserMedia</code> call to get <em>a</em> microphone.</li>
-						</ul>
-					</li>
-					<li><p>Negotiating the SDP (SIP.js).</p>
-					</li>
-					<li><p>Logging..</p>
-						<ul>
-							<li>Logging all SIP traffic?</li>
-						</ul>
-					</li>
-				</ul>
-				<a href="#webphonelib-client-setup" id="webphonelib-client-setup" style="color: inherit; text-decoration: none;">
-					<h1>WebphoneLib client setup</h1>
-				</a>
-				<ul>
-					<li>Which audio/video devices to use?<ul>
-							<li><em>how to switch</em> a/v during a call? Is this possible?</li>
-						</ul>
-					</li>
-					<li>ice servers (stun)</li>
-					<li>transport options (reconnection etc.?)</li>
-					<li>user agent</li>
-					<li>noanswertimeout?</li>
-					<li>etc.</li>
-				</ul>
-				<p>Maybe best to first just pass through the <code>options</code> to the <code>SIP.UA</code>
-				constructor?</p>
-				<a href="#example-flows" id="example-flows" style="color: inherit; text-decoration: none;">
-					<h1>Example flows</h1>
+				<pre><code>$ git clone git<span class="hljs-meta">@github</span>.com:open-voip-alliance/WebphoneLib.git
+$ cd WebphoneLib
+$ echo '
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> authorizationUserId = &lt;your-voip-account-id&gt;;
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> password = '&lt;your-voip-password&gt;';
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> yourPlatformURL = '&lt;your-platform-url&gt;'
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> accountUri = <span class="hljs-string">`sip:${authorizationUserId}@${yourPlatformURL}`</span>;
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> subscribeTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> outgoingCallTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> blindTransferTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> attendedTransferTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;' &gt; demo/config.js
+$ npm i &amp;&amp; npm run demo</code></pre><p>And then play around at <a href="http://localhost:1235/demo/">http://localhost:1235/demo/</a>.</p>
+				<a href="#examples" id="examples" style="color: inherit; text-decoration: none;">
+					<h2>Examples</h2>
 				</a>
 				<a href="#connecting-and-registering" id="connecting-and-registering" style="color: inherit; text-decoration: none;">
-					<h2>Connecting and registering</h2>
+					<h3>Connecting and registering</h3>
 				</a>
-				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> { Client } <span class="hljs-keyword">from</span> <span class="hljs-string">'../dist/vialer-web-calling.prod.mjs'</span>;
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> { Client } <span class="hljs-keyword">from</span> <span class="hljs-string">'webphone-lib'</span>;
 
 <span class="hljs-keyword">const</span> account = {
   <span class="hljs-attr">user</span>: <span class="hljs-string">'accountId'</span>,
   <span class="hljs-attr">password</span>: <span class="hljs-string">'password'</span>,
-  <span class="hljs-attr">uri</span>: <span class="hljs-string">'sip:accountId@voipgrid.nl'</span>,
+  <span class="hljs-attr">uri</span>: <span class="hljs-string">'sip:accountId@&lt;your-platform-url&gt;'</span>,
   <span class="hljs-attr">name</span>: <span class="hljs-string">'test'</span>
 };
 
 <span class="hljs-keyword">const</span> transport = {
-  <span class="hljs-attr">wsServers</span>: <span class="hljs-string">'wss://websocket.voipgrid.nl'</span>,
-  <span class="hljs-attr">iceServers</span>: [<span class="hljs-string">'stun:stun0-grq.voipgrid.nl'</span>, <span class="hljs-string">'stun:stun0-ams.voipgrid.nl'</span>]
+  <span class="hljs-attr">wsServers</span>: <span class="hljs-string">'wss://websocket.&lt;your-platform-url&gt;'</span>, <span class="hljs-comment">// or replace with your</span>
+  iceServers: [] <span class="hljs-comment">// depending on if your provider needs STUN/TURN.</span>
 };
 
 <span class="hljs-keyword">const</span> media = {
@@ -187,18 +132,14 @@
 
 <span class="hljs-keyword">await</span> client.register();</code></pre>
 				<a href="#incoming-call" id="incoming-call" style="color: inherit; text-decoration: none;">
-					<h2>Incoming call</h2>
+					<h3>Incoming call</h3>
 				</a>
 				<pre><code class="language-javascript"><span class="hljs-comment">// incoming call below</span>
-sessions = {};
 client.on(<span class="hljs-string">'invite'</span>, (session) =&gt; {
-  <span class="hljs-comment">// If DND, session.reject()</span>
-  sessions[session.id] = session;
-  <span class="hljs-comment">// reinvite..</span>
   <span class="hljs-keyword">try</span> {
     ringer();
 
-    <span class="hljs-keyword">let</span> accepted = <span class="hljs-keyword">await</span> session.accepted(); <span class="hljs-comment">// wait until the call is picked up)</span>
+    <span class="hljs-keyword">let</span> { accepted, rejectCause } = <span class="hljs-keyword">await</span> session.accepted(); <span class="hljs-comment">// wait until the call is picked up</span>
     <span class="hljs-keyword">if</span> (!accepted) {
       <span class="hljs-keyword">return</span>;
     }
@@ -210,22 +151,18 @@ client.on(<span class="hljs-string">'invite'</span>, (session) =&gt; {
     showErrorMessage(e)
   } <span class="hljs-keyword">finally</span> {
     closeCallScreen();
-
-    <span class="hljs-keyword">delete</span> sessions[session.id];
   }
 });</code></pre>
 				<a href="#outgoing-call" id="outgoing-call" style="color: inherit; text-decoration: none;">
-					<h2>Outgoing call</h2>
+					<h3>Outgoing call</h3>
 				</a>
-				<pre><code class="language-javascript">sessions = {};
-<span class="hljs-keyword">const</span> session = client.invite(<span class="hljs-string">'sip:518@voipgrid.nl'</span>);
-sessions[session.id] = session;
+				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> session = client.invite(<span class="hljs-string">'sip:518@&lt;your-platform-url&gt;'</span>);
 
 <span class="hljs-keyword">try</span> {
   showOutgoingCallInProgress();
 
-  <span class="hljs-keyword">let</span> isAccepted = <span class="hljs-keyword">await</span> session.accepted();
-  <span class="hljs-keyword">if</span> (!isAccepted) {
+  <span class="hljs-keyword">let</span> { accepted, rejectCause } = <span class="hljs-keyword">await</span> session.accepted(); <span class="hljs-comment">// wait until the call is picked up</span>
+  <span class="hljs-keyword">if</span> (!accepted) {
     showRejectedScreen();
     <span class="hljs-keyword">return</span>;
   }
@@ -236,28 +173,27 @@ sessions[session.id] = session;
 } <span class="hljs-keyword">catch</span> (e) {
 } <span class="hljs-keyword">finally</span> {
   closeCallScreen();
-
-  <span class="hljs-keyword">delete</span> sessions[session.id];
 }</code></pre>
 				<a href="#attended-transfer-of-a-call" id="attended-transfer-of-a-call" style="color: inherit; text-decoration: none;">
 					<h2>Attended transfer of a call</h2>
 				</a>
-				<pre><code class="language-javascript"><span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> session.accepted()) {
-  <span class="hljs-keyword">await</span> session.hold();
+				<pre><code class="language-javascript"><span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> sessionA.accepted()) {
+  <span class="hljs-keyword">await</span> sessionA.hold();
 
-  <span class="hljs-keyword">const</span> other = client.invite(<span class="hljs-string">'sip:519@voipgrid.nl'</span>);
-  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> other.accepted()) {
-    <span class="hljs-keyword">await</span> session.attendedTransfer(other);
+  <span class="hljs-keyword">const</span> sessionB = client.invite(<span class="hljs-string">'sip:519@&lt;your-platform-url&gt;'</span>);
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> sessionB.accepted()) {
+    <span class="hljs-comment">// immediately transfer after the other party picked up :p</span>
+    <span class="hljs-keyword">await</span> client.attendedTransfer(sessionA, sessionB);
 
-    <span class="hljs-keyword">await</span> session.terminated();
+    <span class="hljs-keyword">await</span> sessionB.terminated();
   }
 }</code></pre>
 				<a href="#audio-device-selection" id="audio-device-selection" style="color: inherit; text-decoration: none;">
-					<h1>Audio device selection</h1>
+					<h2>Audio device selection</h2>
 				</a>
-				<ol>
-					<li>Set a primary input &amp; output device:</li>
-				</ol>
+				<a href="#set-a-primary-input-amp-output-device" id="set-a-primary-input-amp-output-device" style="color: inherit; text-decoration: none;">
+					<h4>Set a primary input &amp; output device:</h4>
+				</a>
 				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> Client({
   account,
   transport,
@@ -275,13 +211,13 @@ sessions[session.id] = session;
     }
   }
 });</code></pre>
-				<ol>
-					<li>Change the primary I/O devices:</li>
-				</ol>
+				<a href="#change-the-primary-io-devices" id="change-the-primary-io-devices" style="color: inherit; text-decoration: none;">
+					<h4>Change the primary I/O devices:</h4>
+				</a>
 				<pre><code class="language-javascript">client.defaultMedia.output.id = <span class="hljs-string">'230988012091820398213'</span>;</code></pre>
-				<ol>
-					<li>Change the media of a session:</li>
-				</ol>
+				<a href="#change-the-media-of-a-session" id="change-the-media-of-a-session" style="color: inherit; text-decoration: none;">
+					<h4>Change the media of a session:</h4>
+				</a>
 				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> session = <span class="hljs-keyword">await</span> client.invite(<span class="hljs-string">'123'</span>);
 session.media.input.volume = <span class="hljs-number">50</span>;
 session.media.input.audioProcessing = <span class="hljs-literal">false</span>;
@@ -293,6 +229,10 @@ session.media.setInput({
   <span class="hljs-attr">volume</span>: <span class="hljs-number">0.5</span>,
   <span class="hljs-attr">muted</span>: <span class="hljs-literal">true</span>
 });</code></pre>
+				<a href="#join-us" id="join-us" style="color: inherit; text-decoration: none;">
+					<h2>Join us!</h2>
+				</a>
+				<p>Feel free to tell us what you need. Create an issue, create a pull request for an issue, or if you&#39;re not really sure, ask us. We&#39;re often hanging around on <a href="https://discourse.openvoipalliance.org/">discourse</a>.</p>
 				<a href="#commands" id="commands" style="color: inherit; text-decoration: none;">
 					<h2>Commands</h2>
 				</a>
@@ -425,13 +365,13 @@ session.media.setInput({
 						<a href="interfaces/iretry.html" class="tsd-kind-icon">IRetry</a>
 					</li>
 					<li class=" tsd-kind-interface">
+						<a href="interfaces/isession.html" class="tsd-kind-icon">ISession</a>
+					</li>
+					<li class=" tsd-kind-interface">
 						<a href="interfaces/itransport.html" class="tsd-kind-icon">ITransport</a>
 					</li>
 					<li class=" tsd-kind-interface">
 						<a href="interfaces/iua.html" class="tsd-kind-icon">IUA</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="interfaces/session.html" class="tsd-kind-icon">Session</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="globals.html#internalsession" class="tsd-kind-icon">Internal<wbr>Session</a>
