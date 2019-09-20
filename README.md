@@ -4,6 +4,10 @@
 
 Makes calling easier by providing a layer of abstraction around SIP.js. To figure out why we did this, [read our blog](https://openvoipalliance.org/link-to-blog).
 
+## Documentation
+
+Check the documentation [here](https://open-voip-alliance.github.io/WebphoneLib/).
+
 ## Cool stuff
 
 - Allows you to switch audio devices mid-call.

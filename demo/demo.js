@@ -1,5 +1,5 @@
 import { Client, Media, Sound, log } from '../dist/index.mjs';
-import * as CONF from './conf.js';
+import * as CONF from './config.js';
 
 const caller = document.querySelector('#caller');
 const ringerBtn = document.querySelector('#ring');
@@ -178,7 +178,7 @@ Media.requestPermission();
 
 window.Media = Media;
 
-inVol.addEventListener('input', function(e) {
+inVol.addEventListener('input', function() {
   const vol = this.value / 10;
   if (activeSession) {
     activeSession.media.input.volume = vol;
@@ -187,7 +187,7 @@ inVol.addEventListener('input', function(e) {
   }
 });
 
-inMute.addEventListener('change', function(e) {
+inMute.addEventListener('change', function() {
   if (activeSession) {
     activeSession.media.input.muted = this.checked;
   } else {
@@ -195,7 +195,7 @@ inMute.addEventListener('change', function(e) {
   }
 });
 
-outVol.addEventListener('input', function(e) {
+outVol.addEventListener('input', function() {
   const vol = this.value / 10;
   if (activeSession) {
     activeSession.media.output.volume = vol;
@@ -204,7 +204,7 @@ outVol.addEventListener('input', function(e) {
   }
 });
 
-outMute.addEventListener('change', function(e) {
+outMute.addEventListener('change', function() {
   if (activeSession) {
     activeSession.media.output.muted = this.checked;
   } else {

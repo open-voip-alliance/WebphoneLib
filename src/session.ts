@@ -4,12 +4,13 @@ import pTimeout from 'p-timeout';
 import {
   C as SIPConstants,
   Grammar,
+  IncomingResponse,
   NameAddrHeader,
-  TypeStrings as SIPTypeStrings,
-  IncomingResponse
+  TypeStrings as SIPTypeStrings
 } from 'sip.js';
 
 import { SessionStatus } from './enums';
+import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
 import { checkAudioConnected } from './session-health';
 import { InternalSession, SessionMedia } from './session-media';
@@ -17,9 +18,8 @@ import { SessionStats } from './session-stats';
 import * as Time from './time';
 import { IMedia, IRemoteIdentity } from './types';
 import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
-import { createFrozenProxy } from './lib/freeze';
 
-interface ISession {
+export interface ISession {
   readonly id: string;
   readonly media: SessionMedia;
   readonly stats: SessionStats;
@@ -57,8 +57,6 @@ interface ISession {
   ): this;
   /* tslint:enable:unified-signatures */
 }
-
-export interface Session extends ISession {}
 
 export enum SessionCause {
   BUSY = 'busy',
