@@ -72,6 +72,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private ua: IUA;
   private uaOptions: UABase.Options;
   private dyingCounter: number = 60000;
+  private wsTimeout: number = 10000;
   private dyingIntervalID: number;
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
@@ -165,8 +166,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     this.ua.start();
 
-    await pTimeout(this.transportConnectedPromise, 10000, () =>
-      Promise.reject(new Error('Could not connect the websocket in time.'))
+    await pTimeout(this.transportConnectedPromise, this.wsTimeout, () =>
+      Promise.reject(new Error('Could not connect to the websocket in time.'))
     );
 
     this.ua.register();
@@ -480,7 +481,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       };
 
       this.ua.once('registered', handlers.onRegistered);
-      // TODO: find a way to simulate this
       this.ua.once('registrationFailed', handlers.onRegistrationFailed);
     });
   }
