@@ -161,7 +161,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   public async disconnect(): Promise<void> {
     // Actual unsubscribing is done in ua.stop
-    await this.transport.disconnect();
+    await this.transport.disconnect({ hasSocket: true, hasRegistered: true });
     this.subscriptions = {};
   }
 
