@@ -1,6 +1,7 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import { Subscription, UA as UABase } from 'sip.js';
+import pTimeout from 'p-timeout';
 
 import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
@@ -71,8 +72,109 @@ test.serial('status updates in order: DISCONNECTING > DISCONNECTED', async t => 
 
   await client.disconnect();
 
-  t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
-  t.log(status);
+  t.is(status.length, 2);
   t.is(status[0], ClientStatus.DISCONNECTING);
   t.is(status[1], ClientStatus.DISCONNECTED);
+  t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
+});
+
+test.serial('disconnected does not resolve until unregistered', async t => {
+  sinon.stub(Features, 'checkRequired').returns(true);
+
+  const ua = (options: UABase.Options) => {
+    const userAgent = new UA(options);
+    userAgent.disconnect = sinon.fake();
+    return userAgent;
+  };
+
+  const client = createClientImpl(ua, defaultTransportFactory());
+
+  const status = [];
+  client.on('statusUpdate', clientStatus => status.push(clientStatus));
+
+  (client as any).transport.configureUA((client as any).transport.uaOptions);
+  (client as any).transport.status = ClientStatus.CONNECTED;
+
+  // Wait for 100 ms and catch the error thrown because it never resolves.
+  await t.throwsAsync(pTimeout(client.disconnect(), 100));
+
+  t.is(status.length, 1);
+  t.is(status[0], ClientStatus.DISCONNECTING);
+  t.is((client as any).transport.status, ClientStatus.DISCONNECTING);
+});
+
+test.serial('ua.disconnect is not called before unregistered', async t => {
+  sinon.stub(Features, 'checkRequired').returns(true);
+
+  const ua = (options: UABase.Options) => {
+    const userAgent = new UA(options);
+    userAgent.disconnect = sinon.fake();
+    return userAgent;
+  };
+
+  const client = createClientImpl(ua, defaultTransportFactory());
+
+  const status = [];
+  client.on('statusUpdate', clientStatus => status.push(clientStatus));
+
+  (client as any).transport.configureUA((client as any).transport.uaOptions);
+  (client as any).transport.status = ClientStatus.CONNECTED;
+
+  // Wait for 100 ms and catch the error thrown because it never resolves.
+  await t.throwsAsync(pTimeout(client.disconnect(), 100));
+
+  t.false((client as any).transport.ua.disconnect.called);
+});
+
+test.serial('ua is removed after ua.disconnect', async t => {
+  sinon.stub(Features, 'checkRequired').returns(true);
+
+  const ua = (options: UABase.Options) => {
+    const userAgent = new UA(options);
+    userAgent.disconnect = sinon.fake();
+    userAgent.unregister = () => userAgent.emit('unregistered') as any;
+    return userAgent;
+  };
+
+  const client = createClientImpl(ua, defaultTransportFactory());
+
+  (client as any).transport.configureUA((client as any).transport.uaOptions);
+  (client as any).transport.status = ClientStatus.CONNECTED;
+
+  t.false((client as any).transport.ua === undefined);
+
+  await client.disconnect();
+
+  t.true((client as any).transport.ua === undefined);
+});
+
+// This test needs to be fixed
+test.serial.failing('not waiting for unregistered if hasRegistered = false', async t => {
+  sinon.stub(Features, 'checkRequired').returns(true);
+  const ua = (options: UABase.Options) => {
+    const userAgent = new UA(options);
+    userAgent.disconnect = sinon.fake();
+    return userAgent;
+  };
+
+  const client = createClientImpl(ua, defaultTransportFactory());
+  client.disconnect = async () => {
+    await this.transport.disconnect({ hasRegistered: false });
+    this.subscriptions = {};
+  };
+
+  client.disconnect.bind(client);
+
+  const status = [];
+  client.on('statusUpdate', clientStatus => status.push(clientStatus));
+
+  (client as any).transport.configureUA((client as any).transport.uaOptions);
+  (client as any).transport.status = ClientStatus.CONNECTED;
+
+  await client.disconnect();
+
+  t.is(status.length, 2);
+  t.is(status[0], ClientStatus.DISCONNECTING);
+  t.is(status[1], ClientStatus.DISCONNECTED);
+  t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 });
