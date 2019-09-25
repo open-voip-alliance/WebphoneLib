@@ -20,7 +20,7 @@ export interface ITransport extends EventEmitter {
 
   configure(options: ClientOptions): void;
   connect(): Promise<boolean>;
-  disconnect(options?: { hasSocket: boolean; hasRegistered: boolean }): Promise<void>;
+  disconnect(options?: { hasRegistered: boolean }): Promise<void>;
   invite(phoneNumber: string): WrappedInviteClientContext;
   updatePriority(flag: boolean): void;
   getConnection(mode: ReconnectionMode): Promise<boolean>;
@@ -178,15 +178,13 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   // Unregister (and subsequently disconnect) to server. When hasSocket is
   // false, a call to this function is usually handled by getConnection,
   // which then also manages status updates.
-  public async disconnect({ hasSocket = true, hasRegistered = true }): Promise<void> {
-    if (!this.ua) {
+  public async disconnect({ hasRegistered = true }): Promise<void> {
+    if (!this.ua || this.status === ClientStatus.DISCONNECTED) {
       log.info('Already disconnected.', this.constructor.name);
       return;
     }
 
-    if (hasSocket) {
-      this.updateStatus(ClientStatus.DISCONNECTING);
-    }
+    this.updateStatus(ClientStatus.DISCONNECTING);
 
     delete this.registeredPromise;
 
@@ -194,7 +192,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // - by the server during a call
     // - by a network node during a call
     // - by the client during a call (browser accidentally killing ws)
-    if (hasSocket && hasRegistered) {
+    if (hasRegistered) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
           this.registered = false;
@@ -215,9 +213,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     await this.ua.disconnect();
 
-    if (hasSocket) {
-      this.updateStatus(ClientStatus.DISCONNECTED);
-    }
+    this.updateStatus(ClientStatus.DISCONNECTED);
 
     log.debug('Disconnected.', this.constructor.name);
 
@@ -431,8 +427,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
    *  - Clients that are not in a call (priority === false)
    *
    *  Clients that are in a call can recover as soon as possible, where
-   *  clients that are not in a call have to wait between 1~3 minutes
-   *  before reconnecting to the server.
+   *  clients that are not in a call have to wait an amount of time which
+   *  increments every failure, before reconnecting to the server.
    */
   private async tryUntilConnected({ skipCheck }: { skipCheck: boolean } = { skipCheck: false }) {
     // To avoid triggering multiple times, return if status is recovering.

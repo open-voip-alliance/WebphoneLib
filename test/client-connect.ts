@@ -60,10 +60,7 @@ test.serial('emits connecting status after connect is called', async t => {
   (client as any).transport.transportConnectedPromise = Promise.resolve(true);
 
   let status = '';
-  client.on('statusUpdate', clientStatus => {
-    t.log(clientStatus);
-    status = clientStatus;
-  });
+  client.on('statusUpdate', clientStatus => (status = clientStatus));
 
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
   client.connect();
@@ -99,10 +96,7 @@ test.serial('emits connected status after register is emitted', async t => {
   (client as any).transport.transportConnectedPromise = Promise.resolve(true);
 
   let status = '';
-  client.on('statusUpdate', clientStatus => {
-    t.log(clientStatus);
-    status = clientStatus;
-  });
+  client.on('statusUpdate', clientStatus => (status = clientStatus));
 
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
   await client.connect();
@@ -143,10 +137,7 @@ test.serial('emits disconnected status after registrationFailed is emitted', asy
   (client as any).transport.transportConnectedPromise = Promise.resolve(true);
 
   let status = '';
-  client.on('statusUpdate', clientStatus => {
-    t.log(clientStatus);
-    status = clientStatus;
-  });
+  client.on('statusUpdate', clientStatus => (status = clientStatus));
 
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 
