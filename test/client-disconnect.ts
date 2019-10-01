@@ -17,9 +17,9 @@ test.serial('remove subscriptions', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const transport = sinon.createStubInstance(ReconnectableTransport);
   const client = createClientImpl(defaultUAFactory(), () => transport);
-  const uaSession = sinon.createStubInstance(Subscription);
+  const subscription = sinon.createStubInstance(Subscription);
 
-  (client as any).subscriptions = { '1337@someprovider': uaSession };
+  (client as any).subscriptions = { '1337@someprovider': subscription };
   await client.disconnect();
 
   t.deepEqual((client as any).subscriptions, {});
@@ -31,6 +31,7 @@ test.serial('do not try to disconnect when already disconnected (no ua)', async 
 
   const client = createClientImpl(defaultUAFactory(), defaultTransportFactory());
 
+  // UA is not configured here.
   (client as any).transport.status = ClientStatus.CONNECTED;
 
   await client.disconnect();
@@ -64,17 +65,20 @@ test.serial('status updates in order: DISCONNECTING > DISCONNECTED', async t => 
 
   const client = createClientImpl(ua, defaultTransportFactory());
 
-  const status = [];
-  client.on('statusUpdate', clientStatus => status.push(clientStatus));
+  t.plan(3);
+  client.on('statusUpdate', status => {
+    if (status === ClientStatus.DISCONNECTING) {
+      t.is(status, ClientStatus.DISCONNECTING);
+    } else if (status === ClientStatus.DISCONNECTED) {
+      t.is(status, ClientStatus.DISCONNECTED);
+    }
+  });
 
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
   await client.disconnect();
 
-  t.is(status.length, 2);
-  t.is(status[0], ClientStatus.DISCONNECTING);
-  t.is(status[1], ClientStatus.DISCONNECTED);
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 });
 
@@ -89,8 +93,10 @@ test.serial('disconnected does not resolve until unregistered', async t => {
 
   const client = createClientImpl(ua, defaultTransportFactory());
 
-  const status = [];
-  client.on('statusUpdate', clientStatus => status.push(clientStatus));
+  t.plan(3);
+  client.on('statusUpdate', status => {
+    t.is(status, ClientStatus.DISCONNECTING);
+  });
 
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
@@ -98,29 +104,27 @@ test.serial('disconnected does not resolve until unregistered', async t => {
   // Wait for 100 ms and catch the error thrown because it never resolves.
   await t.throwsAsync(pTimeout(client.disconnect(), 100));
 
-  t.is(status.length, 1);
-  t.is(status[0], ClientStatus.DISCONNECTING);
   t.is((client as any).transport.status, ClientStatus.DISCONNECTING);
 });
 
-test.serial('ua.disconnect is not called before unregistered', async t => {
+test.serial('ua.disconnect is not called without unregistered event', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const ua = (options: UABase.Options) => {
     const userAgent = new UA(options);
     userAgent.disconnect = sinon.fake();
+    userAgent.unregister = sinon.fake();
     return userAgent;
   };
 
   const client = createClientImpl(ua, defaultTransportFactory());
 
-  const status = [];
-  client.on('statusUpdate', clientStatus => status.push(clientStatus));
-
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
-  // Wait for 100 ms and catch the error thrown because it never resolves.
+  // calling ua.unregister will not cause ua to emit an unregistered event.
+  // ua.disconnected will never be called as it waits for the unregistered
+  // event.
   await t.throwsAsync(pTimeout(client.disconnect(), 100));
 
   t.false((client as any).transport.ua.disconnect.called);
@@ -148,8 +152,7 @@ test.serial('ua is removed after ua.disconnect', async t => {
   t.true((client as any).transport.ua === undefined);
 });
 
-// This test needs to be fixed
-test.serial.failing('not waiting for unregistered if hasRegistered = false', async t => {
+test.serial('not waiting for unregistered if hasRegistered = false', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const ua = (options: UABase.Options) => {
     const userAgent = new UA(options);
@@ -159,22 +162,22 @@ test.serial.failing('not waiting for unregistered if hasRegistered = false', asy
 
   const client = createClientImpl(ua, defaultTransportFactory());
   client.disconnect = async () => {
-    await this.transport.disconnect({ hasRegistered: false });
-    this.subscriptions = {};
+    await (client as any).transport.disconnect({ hasRegistered: false });
   };
 
-  client.disconnect.bind(client);
-
-  const status = [];
-  client.on('statusUpdate', clientStatus => status.push(clientStatus));
+  t.plan(3);
+  client.on('statusUpdate', status => {
+    if (status === ClientStatus.DISCONNECTING) {
+      t.is(status, ClientStatus.DISCONNECTING);
+    } else if (status === ClientStatus.DISCONNECTED) {
+      t.is(status, ClientStatus.DISCONNECTED);
+    }
+  });
 
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
   await client.disconnect();
 
-  t.is(status.length, 2);
-  t.is(status[0], ClientStatus.DISCONNECTING);
-  t.is(status[1], ClientStatus.DISCONNECTED);
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 });

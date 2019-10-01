@@ -175,9 +175,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     return this.registeredPromise;
   }
 
-  // Unregister (and subsequently disconnect) to server. When hasSocket is
-  // false, a call to this function is usually handled by getConnection,
-  // which then also manages status updates.
+  // Unregister (and subsequently disconnect) to server.
   public async disconnect({ hasRegistered = true }): Promise<void> {
     if (!this.ua || this.status === ClientStatus.DISCONNECTED) {
       log.info('Already disconnected.', this.constructor.name);
