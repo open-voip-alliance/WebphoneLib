@@ -434,7 +434,7 @@ type ClientCtor = new (options: ClientOptions) => IClient;
 
 /**
  * A (frozen) proxy object for ClientImpl.
- * Only the properties listed here are exposed on the proxy.
+ * Only the properties listed here are exposed to the proxy.
  *
  * See [[IClient]] interface for more details on these properties.
  *
