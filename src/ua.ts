@@ -18,8 +18,14 @@ import {
 import { log } from './logger';
 import { ITransport } from './transport';
 
+/**
+ * @hidden
+ */
 export type UAFactory = (options: UABase.Options) => IUA;
 
+/**
+ * @hidden
+ */
 export class WrappedInviteClientContext extends InviteClientContext {
   /**
    * Reconfigure the WebRTC peerconnection.
@@ -65,6 +71,9 @@ export class WrappedInviteClientContext extends InviteClientContext {
   }
 }
 
+/**
+ * @hidden
+ */
 // tslint:disable-next-line: max-classes-per-file
 export class WrappedInviteServerContext extends InviteServerContext {
   /**
@@ -111,6 +120,9 @@ export class WrappedInviteServerContext extends InviteServerContext {
   }
 }
 
+/**
+ * @hidden
+ */
 // tslint:disable-next-line: max-classes-per-file
 export class WrappedTransport extends Web.Transport {
   /**
@@ -129,6 +141,9 @@ export class WrappedTransport extends Web.Transport {
   }
 }
 
+/**
+ * @hidden
+ */
 export interface IUA extends EventEmitter {
   transport: Core.Transport;
   disconnect(): Promise<void>;
@@ -140,6 +155,9 @@ export interface IUA extends EventEmitter {
   unregister(): UA;
 }
 
+/**
+ * @hidden
+ */
 // tslint:disable-next-line: max-classes-per-file
 export class UA extends UABase implements IUA {
   private disconnectPromise: Promise<void>;

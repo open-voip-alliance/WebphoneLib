@@ -12,6 +12,9 @@ import { hour, second } from './time';
 import { IClientOptions, IRetry } from './types';
 import { IUA, UA, UAFactory, WrappedInviteClientContext, WrappedTransport } from './ua';
 
+/**
+ * @hidden
+ */
 export interface ITransport extends EventEmitter {
   transportConnectedPromise: Promise<any>;
   registeredPromise: Promise<any>;
@@ -28,6 +31,9 @@ export interface ITransport extends EventEmitter {
   subscribe(contact: string): Subscription;
 }
 
+/**
+ * @hidden
+ */
 export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) => ITransport;
 
 const SIP_PRESENCE_EXPIRE = hour / second; // one hour in seconds
@@ -44,6 +50,9 @@ const connector = (level, category, label, content) => {
   log.log(convertedLevel, content, category);
 };
 
+/**
+ * @hidden
+ */
 export class ReconnectableTransport extends EventEmitter implements ITransport {
   private get defaultOptions() {
     return {

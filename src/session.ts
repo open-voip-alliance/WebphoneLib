@@ -29,22 +29,73 @@ export interface ISession {
   holdState: boolean;
   status: SessionStatus;
 
+  /**
+   * The remote identity of this session.
+   * @returns {IRemoteIdentity}
+   */
   remoteIdentity: IRemoteIdentity;
+
+  /**
+   * @returns {boolean} if auto answer is on for this session.
+   */
   autoAnswer: boolean;
+
+  /**
+   * @returns {string} Phone number of the remote identity.
+   */
   phoneNumber: string;
+
+  /**
+   * @returns {Date} Starting time of the call.
+   */
   startTime: any;
+
+  /**
+   * @returns {Date} End time of the call.
+   */
   endTime: any;
 
   accept(): Promise<void>;
   reject(): Promise<void>;
+
+  /**
+   * Promise that resolves when the session is accepted or rejected.
+   * @returns Promise<ISessionAccept>
+   */
   accepted(): Promise<ISessionAccept>;
+
+  /**
+   * Promise that resolves when the session is terminated.
+   */
   terminated(): Promise<void>;
+
+  /**
+   * Terminate the session.
+   */
   terminate(): Promise<void>;
   reinvite(): Promise<void>;
+
+  /**
+   * Put the session on hold.
+   */
   hold(): Promise<boolean>;
+
+  /**
+   * Take the session out of hold.
+   */
   unhold(): Promise<boolean>;
+
+  /**
+   * Blind transfer the current session to a target number.
+   * @param {string} target - Number to transfer to.
+   */
   blindTransfer(target: string): Promise<boolean>;
   bye(): void;
+
+  /**
+   * Send one or more DTMF tones.
+   * @param tones May only contain the characters `0-9A-D#*,`
+   */
   dtmf(tones: string): void;
 
   /* tslint:disable:unified-signatures */
@@ -233,17 +284,10 @@ export class SessionImpl extends EventEmitter implements ISession {
     });
   }
 
-  /**
-   * The remote identity of this session.
-   * @returns {IRemoteIdentity}
-   */
   get remoteIdentity(): IRemoteIdentity {
     return this._remoteIdentity;
   }
 
-  /**
-   * @returns {boolean} if auto answer is on for this session.
-   */
   get autoAnswer(): boolean {
     const callInfo = this.session.request.headers['Call-Info'];
     if (callInfo && callInfo[0]) {
@@ -253,9 +297,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     return false;
   }
 
-  /**
-   * @returns {string} Phone number of the remote identity.
-   */
   get phoneNumber(): string {
     if (this.isIncoming) {
       return this.remoteIdentity.phoneNumber;
@@ -264,16 +305,10 @@ export class SessionImpl extends EventEmitter implements ISession {
     }
   }
 
-  /**
-   * @returns {Date} Starting time of the call.
-   */
   get startTime(): Date {
     return this.session.startTime;
   }
 
-  /**
-   * @returns {Date} End time of the call.
-   */
   get endTime(): Date {
     return this.session.endTime;
   }
@@ -330,24 +365,14 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.rejectPromise;
   }
 
-  /**
-   * Promise that resolves when the session is accepted or rejected.
-   * @returns Promise<ISessionAccept>
-   */
   public accepted(): Promise<ISessionAccept> {
     return this.acceptedPromise;
   }
 
-  /**
-   * Promise that resolves when the session is terminated.
-   */
   public terminated(): Promise<void> {
     return this.terminatedPromise;
   }
 
-  /**
-   * Terminate the session.
-   */
   public terminate(): Promise<void> {
     this.session.terminate();
     return this.terminatedPromise;
@@ -361,24 +386,14 @@ export class SessionImpl extends EventEmitter implements ISession {
     await reinvitePromise;
   }
 
-  /**
-   * Put the session on hold.
-   */
   public hold(): Promise<boolean> {
     return this.setHoldState(true);
   }
 
-  /**
-   * Take the session out of hold.
-   */
   public unhold(): Promise<boolean> {
     return this.setHoldState(false);
   }
 
-  /**
-   * Blind transfer the current session to a target number.
-   * @param {string} target - Number to transfer to.
-   */
   public async blindTransfer(target: string): Promise<boolean> {
     return this.transfer(target);
   }
@@ -402,10 +417,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     this.session.bye();
   }
 
-  /**
-   * Send one or more DTMF tones.
-   * @param tones May only contain the characters `0-9A-D#*,`
-   */
   public dtmf(tones: string): void {
     // Unfortunately there is no easy way to give feedback about the DTMF
     // tones. SIP.js uses one of two methods for sending the DTMF:
