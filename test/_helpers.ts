@@ -5,7 +5,7 @@ import { UA as UABase } from 'sip.js';
 import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
-import { Client, ClientOptions } from '../src/index';
+import { Client, IClientOptions } from '../src/index';
 import { ReconnectableTransport, TransportFactory } from '../src/transport';
 import { IUA, UA, UAFactory } from '../src/ua';
 
@@ -14,7 +14,7 @@ export function defaultUAFactory() {
 }
 
 export function defaultTransportFactory() {
-  return (uaFactory: UAFactory, options: ClientOptions) =>
+  return (uaFactory: UAFactory, options: IClientOptions) =>
     new ReconnectableTransport(uaFactory, options);
 }
 

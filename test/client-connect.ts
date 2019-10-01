@@ -5,7 +5,7 @@ import { UA as UABase } from 'sip.js';
 import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
-import { Client, ClientOptions } from '../src/index';
+import { Client, IClientOptions } from '../src/index';
 import { ReconnectableTransport, TransportFactory } from '../src/transport';
 import { IUA, UA, UAFactory } from '../src/ua';
 
@@ -119,7 +119,7 @@ test.serial('emits disconnected status after registrationFailed is emitted', asy
     return userAgent;
   };
 
-  const transport = (ua: UAFactory, options: ClientOptions) => {
+  const transport = (ua: UAFactory, options: IClientOptions) => {
     const reconnectableTransport = new ReconnectableTransport(ua, options);
 
     reconnectableTransport.disconnect = sinon.fake();

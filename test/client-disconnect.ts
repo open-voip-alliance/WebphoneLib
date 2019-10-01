@@ -1,12 +1,12 @@
 import test from 'ava';
+import pTimeout from 'p-timeout';
 import * as sinon from 'sinon';
 import { Subscription, UA as UABase } from 'sip.js';
-import pTimeout from 'p-timeout';
 
 import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
-import { Client, ClientOptions } from '../src/index';
+import { Client, IClientOptions } from '../src/index';
 import { log } from '../src/logger';
 import { ReconnectableTransport, TransportFactory } from '../src/transport';
 import { IUA, UA, UAFactory } from '../src/ua';

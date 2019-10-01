@@ -1,4 +1,4 @@
-export interface ClientOptions {
+export interface IClientOptions {
   account: {
     user: string;
     password: string;

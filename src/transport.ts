@@ -9,7 +9,7 @@ import { increaseTimeout, jitter } from './lib/utils';
 import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { hour, second } from './time';
-import { ClientOptions, IRetry } from './types';
+import { IClientOptions, IRetry } from './types';
 import { IUA, UA, UAFactory, WrappedInviteClientContext, WrappedTransport } from './ua';
 
 export interface ITransport extends EventEmitter {
@@ -18,7 +18,7 @@ export interface ITransport extends EventEmitter {
   registered: boolean;
   status: ClientStatus;
 
-  configure(options: ClientOptions): void;
+  configure(options: IClientOptions): void;
   connect(): Promise<boolean>;
   disconnect(options?: { hasRegistered: boolean }): Promise<void>;
   invite(phoneNumber: string): WrappedInviteClientContext;
@@ -28,7 +28,7 @@ export interface ITransport extends EventEmitter {
   subscribe(contact: string): Subscription;
 }
 
-export type TransportFactory = (uaFactory: UAFactory, options: ClientOptions) => ITransport;
+export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) => ITransport;
 
 const SIP_PRESENCE_EXPIRE = hour / second; // one hour in seconds
 
@@ -79,7 +79,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
   private wasWindowOffline: boolean = false;
 
-  constructor(uaFactory: UAFactory, options: ClientOptions) {
+  constructor(uaFactory: UAFactory, options: IClientOptions) {
     super();
 
     this.uaFactory = uaFactory;
@@ -92,7 +92,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     window.addEventListener('online', this.boundOnWindowOnline);
   }
 
-  public configure(options: ClientOptions) {
+  public configure(options: IClientOptions) {
     const { account, transport, userAgent } = options;
 
     const modifiers = [Web.Modifiers.stripVideo];

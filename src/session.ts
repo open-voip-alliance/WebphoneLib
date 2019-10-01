@@ -37,7 +37,7 @@ export interface ISession {
 
   accept(): Promise<void>;
   reject(): Promise<void>;
-  accepted(): Promise<SessionAccept>;
+  accepted(): Promise<ISessionAccept>;
   terminated(): Promise<void>;
   terminate(): Promise<void>;
   reinvite(): Promise<void>;
@@ -101,7 +101,7 @@ const CAUSE_ERRORS: string[] = [
   SIPConstants.causes.SIP_FAILURE_CODE
 ];
 
-interface SessionAccept {
+interface ISessionAccept {
   accepted: boolean;
   rejectCause?: SessionCause;
 }
@@ -121,7 +121,7 @@ export class SessionImpl extends EventEmitter implements ISession {
 
   private session: InternalSession;
 
-  private acceptedPromise: Promise<SessionAccept>;
+  private acceptedPromise: Promise<ISessionAccept>;
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
@@ -332,9 +332,9 @@ export class SessionImpl extends EventEmitter implements ISession {
 
   /**
    * Promise that resolves when the session is accepted or rejected.
-   * @returns Promise<SessionAccept>
+   * @returns Promise<ISessionAccept>
    */
-  public accepted(): Promise<SessionAccept> {
+  public accepted(): Promise<ISessionAccept> {
     return this.acceptedPromise;
   }
 
