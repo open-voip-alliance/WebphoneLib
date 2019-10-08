@@ -360,7 +360,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   private onSessionTerminated(sessionId: string) {
     const session = this.sessions[sessionId];
-    log.info(`Incoming session ${sessionId} is terminated.`, this.constructor.name);
+    log.info(`Session ${sessionId} is terminated.`, this.constructor.name);
     this.removeSession(session);
   }
 
