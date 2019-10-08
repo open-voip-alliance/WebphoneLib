@@ -182,7 +182,7 @@
 								<p>Inherited from Transport.onMessage</p>
 								<p>Overrides Transport.onMessage</p>
 								<ul>
-									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/Web/Transport.d.ts:76</li>
+									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/Web/Transport.d.ts:75</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -239,7 +239,7 @@
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited">
 					<a name="ws" class="tsd-anchor"></a>
 					<h3>ws</h3>
-					<div class="tsd-signature tsd-kind-icon">ws<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
+					<div class="tsd-signature tsd-kind-icon">ws<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">WebSocket</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></div>
 					<aside class="tsd-sources">
 						<p>Inherited from Transport.ws</p>
 						<ul>
@@ -329,7 +329,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from Transport.afterConnected</p>
 								<ul>
-									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:46</li>
+									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:47</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -400,7 +400,7 @@
 								<p>Inherited from Transport.connectPromise</p>
 								<p>Overrides Transport.connectPromise</p>
 								<ul>
-									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/Web/Transport.d.ts:71</li>
+									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/Web/Transport.d.ts:70</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -429,7 +429,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from Transport.disconnect</p>
 								<ul>
-									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:45</li>
+									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:46</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -464,7 +464,7 @@
 							<aside class="tsd-sources">
 								<p>Overrides Transport.disconnectPromise</p>
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d10240b/src/ua.ts#L124">ua.ts:124</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/ua.ts#L124">ua.ts:124</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -954,27 +954,28 @@
 					<a name="send" class="tsd-anchor"></a>
 					<h3>send</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">send<span class="tsd-signature-symbol">(</span>msg<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">send<span class="tsd-signature-symbol">(</span>message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Inherited from Transport.send</p>
 								<ul>
-									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:37</li>
+									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:38</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Sends a message then emits a &#39;messageSent&#39; event. Automatically emits an
 										event upon resolution, unless data.overrideEvent is set. If you override
-									the event in this fashion, you should emit it in your implementation of sendPromise</p>
+										the event in this fashion, you should emit it in your implementation of sendPromise
+									Rejects with an Error if message fails to send.</p>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>msg: <span class="tsd-signature-type">string</span></h5>
+									<h5>message: <span class="tsd-signature-type">string</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>Message.</p>
 									</div>
@@ -994,7 +995,7 @@
 					<a name="sendpromise" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagProtected">Protected</span> send<wbr>Promise</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite tsd-is-inherited tsd-is-protected">
-						<li class="tsd-signature tsd-kind-icon">send<wbr>Promise<span class="tsd-signature-symbol">(</span>msg<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">OutgoingRequestMessage</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">send<wbr>Promise<span class="tsd-signature-symbol">(</span>message<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -1002,7 +1003,7 @@
 								<p>Inherited from Transport.sendPromise</p>
 								<p>Overrides Transport.sendPromise</p>
 								<ul>
-									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/Web/Transport.d.ts:61</li>
+									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/Web/Transport.d.ts:60</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1013,10 +1014,16 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>msg: <span class="tsd-signature-type">OutgoingRequestMessage</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></h5>
+									<h5>message: <span class="tsd-signature-type">string</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Outgoing message.</p>
+									</div>
 								</li>
 								<li>
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> options: <span class="tsd-signature-type">any</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Options bucket.</p>
+									</div>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -1059,7 +1066,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from Transport.waitForConnected</p>
 								<ul>
-									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:50</li>
+									<li>Defined in /home/runner/work/WebphoneLib/WebphoneLib/node_modules/sip.js/lib/core/transport.d.ts:51</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
