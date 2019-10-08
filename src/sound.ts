@@ -64,8 +64,8 @@ export class Sound {
     }
 
     if (!this.options.overlap && this.playing) {
-      // Sound is already playing.
-      return;
+      log.warn('sound is already playing.', this.constructor.name);
+      throw new Error('sound is already playing.');
     }
 
     const sample = new Audio();
