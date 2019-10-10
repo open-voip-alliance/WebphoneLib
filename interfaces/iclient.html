@@ -108,9 +108,20 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L62">client.ts:62</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L73">client.ts:73</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Do an attended transfer from session a to session b.</p>
+								</div>
+								<pre><code class="language-typescript"><span class="hljs-keyword">const</span> sessionA = <span class="hljs-keyword">await</span> client.invite(uri);
+<span class="hljs-keyword">const</span> sessionB = <span class="hljs-keyword">await</span> client.invite(uri);
+
+<span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> sessionA.accepted()) {
+  <span class="hljs-keyword">await</span> client.attendedTransfer(sessionA, sessionB);
+}</code></pre>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -138,7 +149,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L40">client.ts:40</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L40">client.ts:40</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -160,7 +171,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L30">client.ts:30</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L30">client.ts:30</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -182,7 +193,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L35">client.ts:35</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L35">client.ts:35</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -204,7 +215,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L59">client.ts:59</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L58">client.ts:58</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -227,7 +238,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L60">client.ts:60</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L59">client.ts:59</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <a href="isession.html" class="tsd-signature-type">ISession</a><span class="tsd-signature-symbol">[]</span></h4>
@@ -244,13 +255,12 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L54">client.ts:54</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L53">client.ts:53</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Make an outgoing call. Right now it requires you to be registed to a sip
-									server.</p>
+									<p>Make an outgoing call. Requires you to be registered to a sip server.</p>
 								</div>
 								<p>Returns a promise which resolves as soon as the connected sip server
 									emits a progress response, or rejects when something goes wrong in that
@@ -279,7 +289,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L42">client.ts:42</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L42">client.ts:42</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
@@ -299,7 +309,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L86">client.ts:86</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L97">client.ts:97</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -354,7 +364,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L103">client.ts:103</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L114">client.ts:114</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -406,7 +416,7 @@ client.on(<span class="hljs-string">'subscriptionNotify'</span>, <span class="hl
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L109">client.ts:109</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L120">client.ts:120</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -449,7 +459,7 @@ client.on(<span class="hljs-string">'subscriptionNotify'</span>, <span class="hl
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L115">client.ts:115</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L126">client.ts:126</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -495,13 +505,13 @@ client.on(<span class="hljs-string">'subscriptionNotify'</span>, <span class="hl
 					<a name="reconfigure" class="tsd-anchor"></a>
 					<h3>reconfigure</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">reconfigure<span class="tsd-signature-symbol">(</span>options<span class="tsd-signature-symbol">: </span><a href="clientoptions.html" class="tsd-signature-type">ClientOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">reconfigure<span class="tsd-signature-symbol">(</span>options<span class="tsd-signature-symbol">: </span><a href="iclientoptions.html" class="tsd-signature-type">IClientOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L25">client.ts:25</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L25">client.ts:25</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -515,7 +525,7 @@ client.on(<span class="hljs-string">'subscriptionNotify'</span>, <span class="hl
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>options: <a href="clientoptions.html" class="tsd-signature-type">ClientOptions</a></h5>
+									<h5>options: <a href="iclientoptions.html" class="tsd-signature-type">IClientOptions</a></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -532,7 +542,7 @@ client.on(<span class="hljs-string">'subscriptionNotify'</span>, <span class="hl
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L56">client.ts:56</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L55">client.ts:55</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -555,7 +565,7 @@ client.on(<span class="hljs-string">'subscriptionNotify'</span>, <span class="hl
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/300a244/src/client.ts#L57">client.ts:57</a></li>
+									<li>Defined in <a href="https://github.com/open-voip-alliance/WebphoneLib/blob/d7764ec/src/client.ts#L56">client.ts:56</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
