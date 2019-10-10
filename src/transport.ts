@@ -9,18 +9,21 @@ import { increaseTimeout, jitter } from './lib/utils';
 import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { hour, second } from './time';
-import { ClientOptions, IRetry } from './types';
+import { IClientOptions, IRetry } from './types';
 import { IUA, UA, UAFactory, WrappedInviteClientContext, WrappedTransport } from './ua';
 
+/**
+ * @hidden
+ */
 export interface ITransport extends EventEmitter {
   transportConnectedPromise: Promise<any>;
   registeredPromise: Promise<any>;
   registered: boolean;
   status: ClientStatus;
 
-  configure(options: ClientOptions): void;
+  configure(options: IClientOptions): void;
   connect(): Promise<boolean>;
-  disconnect(options?: { hasSocket: boolean; hasRegistered: boolean }): Promise<void>;
+  disconnect(options?: { hasRegistered: boolean }): Promise<void>;
   invite(phoneNumber: string): WrappedInviteClientContext;
   updatePriority(flag: boolean): void;
   getConnection(mode: ReconnectionMode): Promise<boolean>;
@@ -28,7 +31,10 @@ export interface ITransport extends EventEmitter {
   subscribe(contact: string): Subscription;
 }
 
-export type TransportFactory = (uaFactory: UAFactory, options: ClientOptions) => ITransport;
+/**
+ * @hidden
+ */
+export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) => ITransport;
 
 const SIP_PRESENCE_EXPIRE = hour / second; // one hour in seconds
 
@@ -44,6 +50,9 @@ const connector = (level, category, label, content) => {
   log.log(convertedLevel, content, category);
 };
 
+/**
+ * @hidden
+ */
 export class ReconnectableTransport extends EventEmitter implements ITransport {
   private get defaultOptions() {
     return {
@@ -72,13 +81,14 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private ua: IUA;
   private uaOptions: UABase.Options;
   private dyingCounter: number = 60000;
+  private wsTimeout: number = 10000;
   private dyingIntervalID: number;
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
   private wasWindowOffline: boolean = false;
 
-  constructor(uaFactory: UAFactory, options: ClientOptions) {
+  constructor(uaFactory: UAFactory, options: IClientOptions) {
     super();
 
     this.uaFactory = uaFactory;
@@ -91,7 +101,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     window.addEventListener('online', this.boundOnWindowOnline);
   }
 
-  public configure(options: ClientOptions) {
+  public configure(options: IClientOptions) {
     const { account, transport, userAgent } = options;
 
     const modifiers = [Web.Modifiers.stripVideo];
@@ -165,8 +175,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     this.ua.start();
 
-    await pTimeout(this.transportConnectedPromise, 10000, () =>
-      Promise.reject(new Error('Could not connect the websocket in time.'))
+    await pTimeout(this.transportConnectedPromise, this.wsTimeout, () =>
+      Promise.reject(new Error('Could not connect to the websocket in time.'))
     );
 
     this.ua.register();
@@ -174,18 +184,14 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     return this.registeredPromise;
   }
 
-  // Unregister (and subsequently disconnect) to server. When hasSocket is
-  // false, a call to this function is usually handled by getConnection,
-  // which then also manages status updates.
-  public async disconnect({ hasSocket = true, hasRegistered = true }): Promise<void> {
-    if (!this.ua) {
+  // Unregister (and subsequently disconnect) to server.
+  public async disconnect({ hasRegistered = true }): Promise<void> {
+    if (!this.ua || this.status === ClientStatus.DISCONNECTED) {
       log.info('Already disconnected.', this.constructor.name);
       return;
     }
 
-    if (hasSocket) {
-      this.updateStatus(ClientStatus.DISCONNECTING);
-    }
+    this.updateStatus(ClientStatus.DISCONNECTING);
 
     delete this.registeredPromise;
 
@@ -193,7 +199,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // - by the server during a call
     // - by a network node during a call
     // - by the client during a call (browser accidentally killing ws)
-    if (hasSocket && hasRegistered) {
+    if (hasRegistered) {
       this.unregisteredPromise = new Promise(resolve =>
         this.ua.once('unregistered', () => {
           this.registered = false;
@@ -214,9 +220,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     await this.ua.disconnect();
 
-    if (hasSocket) {
-      this.updateStatus(ClientStatus.DISCONNECTED);
-    }
+    this.updateStatus(ClientStatus.DISCONNECTED);
 
     log.debug('Disconnected.', this.constructor.name);
 
@@ -430,8 +434,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
    *  - Clients that are not in a call (priority === false)
    *
    *  Clients that are in a call can recover as soon as possible, where
-   *  clients that are not in a call have to wait between 1~3 minutes
-   *  before reconnecting to the server.
+   *  clients that are not in a call have to wait an amount of time which
+   *  increments every failure, before reconnecting to the server.
    */
   private async tryUntilConnected({ skipCheck }: { skipCheck: boolean } = { skipCheck: false }) {
     // To avoid triggering multiple times, return if status is recovering.
@@ -480,7 +484,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       };
 
       this.ua.once('registered', handlers.onRegistered);
-      // TODO: find a way to simulate this
       this.ua.once('registrationFailed', handlers.onRegistrationFailed);
     });
   }

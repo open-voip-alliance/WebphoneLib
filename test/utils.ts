@@ -1,7 +1,7 @@
 import test from 'ava';
-import { testProp, fc } from 'ava-fast-check';
+import { fc, testProp } from 'ava-fast-check';
 
-import { eqSet, jitter, increaseTimeout } from '../src/lib/utils';
+import { eqSet, increaseTimeout, jitter } from '../src/lib/utils';
 
 test('eqSet', t => {
   t.true(eqSet(new Set(), new Set()));

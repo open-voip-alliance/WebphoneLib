@@ -8,7 +8,7 @@ import { ISession, SessionImpl } from './session';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
 import { ITransport, ReconnectableTransport, TransportFactory } from './transport';
-import { ClientOptions, IMedia } from './types';
+import { IClientOptions, IMedia } from './types';
 
 import { Core, UA as UABase } from 'sip.js';
 import { UA, UAFactory } from './ua';
@@ -22,7 +22,7 @@ export interface IClient {
    * media property on client (to change it globally) or by adapting the media
    * property on session.
    */
-  reconfigure(options: ClientOptions): Promise<void>;
+  reconfigure(options: IClientOptions): Promise<void>;
 
   /**
    * Connect (and subsequently register) to server.
@@ -42,8 +42,7 @@ export interface IClient {
   isConnected(): boolean;
 
   /**
-   * Make an outgoing call. Right now it requires you to be registed to a sip
-   * server.
+   * Make an outgoing call. Requires you to be registered to a sip server.
    *
    * Returns a promise which resolves as soon as the connected sip server
    * emits a progress response, or rejects when something goes wrong in that
@@ -59,6 +58,18 @@ export interface IClient {
   getSession(id: string): ISession;
   getSessions(): ISession[];
 
+  /**
+   * Do an attended transfer from session a to session b.
+   *
+   * ```typescript
+   * const sessionA = await client.invite(uri);
+   * const sessionB = await client.invite(uri);
+   *
+   * if (await sessionA.accepted()) {
+   *   await client.attendedTransfer(sessionA, sessionB);
+   * }
+   * ```
+   */
   attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean>;
 
   /* tslint:disable:unified-signatures */
@@ -133,7 +144,7 @@ export class ClientImpl extends EventEmitter implements IClient {
   private transportFactory: TransportFactory;
   private transport?: ITransport;
 
-  constructor(uaFactory: UAFactory, transportFactory: TransportFactory, options: ClientOptions) {
+  constructor(uaFactory: UAFactory, transportFactory: TransportFactory, options: IClientOptions) {
     super();
 
     if (!Features.checkRequired()) {
@@ -146,7 +157,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     this.configureTransport(uaFactory, options);
   }
 
-  public async reconfigure(options: ClientOptions) {
+  public async reconfigure(options: IClientOptions) {
     await this.disconnect();
 
     this.defaultMedia = options.media;
@@ -161,7 +172,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   public async disconnect(): Promise<void> {
     // Actual unsubscribing is done in ua.stop
-    await this.transport.disconnect();
+    await this.transport.disconnect({ hasRegistered: true });
     this.subscriptions = {};
   }
 
@@ -297,7 +308,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     return Object.values(this.sessions).map(session => session.freeze());
   }
 
-  public attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean> {
+  public attendedTransfer(a: ISession, b: ISession): Promise<boolean> {
     const sessionA = this.sessions[a.id];
     if (!sessionA) {
       return Promise.reject('Session A not found');
@@ -311,7 +322,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     return sessionA.attendedTransfer(sessionB);
   }
 
-  private configureTransport(uaFactory: UAFactory, options: ClientOptions) {
+  private configureTransport(uaFactory: UAFactory, options: IClientOptions) {
     this.transport = this.transportFactory(uaFactory, options);
 
     this.transport.on('reviveSessions', () => {
@@ -430,11 +441,11 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 }
 
-type ClientCtor = new (options: ClientOptions) => IClient;
+type ClientCtor = new (options: IClientOptions) => IClient;
 
 /**
  * A (frozen) proxy object for ClientImpl.
- * Only the properties listed here are exposed on the proxy.
+ * Only the properties listed here are exposed to the proxy.
  *
  * See [[IClient]] interface for more details on these properties.
  *
@@ -442,12 +453,12 @@ type ClientCtor = new (options: ClientOptions) => IClient;
  * generally prevents using private attributes. But, even in Typescript there
  * are ways around this.
  */
-export const Client: ClientCtor = (function(clientOptions: ClientOptions) {
+export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
   const uaFactory = (options: UABase.Options) => {
     return new UA(options);
   };
 
-  const transportFactory = (factory: UAFactory, options: ClientOptions) => {
+  const transportFactory = (factory: UAFactory, options: IClientOptions) => {
     return new ReconnectableTransport(factory, options);
   };
 
