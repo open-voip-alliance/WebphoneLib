@@ -1,8 +1,8 @@
 import { audioContext } from './audio-context';
 import * as Features from './features';
+import { clamp } from './lib/utils';
 import { log } from './logger';
 import { MediaDeviceId } from './types';
-import { clamp } from './lib/utils';
 
 interface ISoundOptions {
   volume?: number;

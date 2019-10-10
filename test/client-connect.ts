@@ -137,7 +137,6 @@ test.serial('emits disconnected status after registrationFailed is emitted', asy
 
   t.plan(4);
   client.on('statusUpdate', status => {
-    t.log(status);
     if (status === ClientStatus.DISCONNECTED) {
       t.is(status, ClientStatus.DISCONNECTED);
     }

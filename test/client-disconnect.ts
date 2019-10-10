@@ -65,20 +65,17 @@ test.serial('status updates in order: DISCONNECTING > DISCONNECTED', async t => 
 
   const client = createClientImpl(ua, defaultTransportFactory());
 
-  t.plan(3);
-  client.on('statusUpdate', status => {
-    if (status === ClientStatus.DISCONNECTING) {
-      t.is(status, ClientStatus.DISCONNECTING);
-    } else if (status === ClientStatus.DISCONNECTED) {
-      t.is(status, ClientStatus.DISCONNECTED);
-    }
-  });
+  const status = [];
+  client.on('statusUpdate', clientStatus => status.push(clientStatus));
 
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
   await client.disconnect();
 
+  t.is(status.length, 2);
+  t.is(status[0], ClientStatus.DISCONNECTING);
+  t.is(status[1], ClientStatus.DISCONNECTED);
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 });
 
@@ -93,10 +90,8 @@ test.serial('disconnected does not resolve until unregistered', async t => {
 
   const client = createClientImpl(ua, defaultTransportFactory());
 
-  t.plan(3);
-  client.on('statusUpdate', status => {
-    t.is(status, ClientStatus.DISCONNECTING);
-  });
+  const status = [];
+  client.on('statusUpdate', clientStatus => status.push(clientStatus));
 
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
@@ -104,6 +99,8 @@ test.serial('disconnected does not resolve until unregistered', async t => {
   // Wait for 100 ms and catch the error thrown because it never resolves.
   await t.throwsAsync(pTimeout(client.disconnect(), 100));
 
+  t.is(status.length, 1);
+  t.is(status[0], ClientStatus.DISCONNECTING);
   t.is((client as any).transport.status, ClientStatus.DISCONNECTING);
 });
 
@@ -165,19 +162,16 @@ test.serial('not waiting for unregistered if hasRegistered = false', async t => 
     await (client as any).transport.disconnect({ hasRegistered: false });
   };
 
-  t.plan(3);
-  client.on('statusUpdate', status => {
-    if (status === ClientStatus.DISCONNECTING) {
-      t.is(status, ClientStatus.DISCONNECTING);
-    } else if (status === ClientStatus.DISCONNECTED) {
-      t.is(status, ClientStatus.DISCONNECTED);
-    }
-  });
+  const status = [];
+  client.on('statusUpdate', clientStatus => status.push(clientStatus));
 
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
   await client.disconnect();
 
+  t.is(status.length, 2);
+  t.is(status[0], ClientStatus.DISCONNECTING);
+  t.is(status[1], ClientStatus.DISCONNECTED);
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 });
