@@ -6,13 +6,17 @@ Makes calling easier by providing a layer of abstraction around SIP.js. A blog p
 
 ## Documentation
 
-Check the documentation [here](https://open-voip-alliance.github.io/WebphoneLib/).
+Check out the documentation [here](https://open-voip-alliance.github.io/WebphoneLib/).
 
 ## Cool stuff
 
 - Allows you to switch audio devices mid-call.
-- Automatically recover calls on connectivity loss.
+- Automatically recovers calls on connectivity loss.
 - Offers an easy-to-use modern javascript api.
+
+## Join us!
+
+We would love more input for this project. Create an issue, create a pull request for an issue, or if you're not really sure, ask us. We're often hanging around on [discourse](https://discourse.openvoipalliance.org/). We would also love to hear your thoughts and feedback on our project and answer any questions you might have!
 
 ## Getting started
 
@@ -179,10 +183,6 @@ session.media.setInput({
   muted: true
 });
 ```
-
-## Join us!
-
-Feel free to tell us what you need. Create an issue, create a pull request for an issue, or if you're not really sure, ask us. We're often hanging around on [discourse](https://discourse.openvoipalliance.org/).
 
 ## Commands
 
