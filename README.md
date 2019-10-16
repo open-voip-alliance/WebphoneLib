@@ -2,7 +2,7 @@
 
 ![npm](https://img.shields.io/npm/v/webphone-lib?style=flat-square)
 
-Makes calling easier by providing a layer of abstraction around SIP.js. To figure out why we did this, [read our blog](https://openvoipalliance.org/link-to-blog).
+Makes calling easier by providing a layer of abstraction around SIP.js. A blog post about why we built this is coming soon!
 
 ## Documentation
 
