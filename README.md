@@ -26,7 +26,7 @@ $ cd WebphoneLib
 $ touch demo/config.js
 ```
 
-Add the following to that file:
+Add the following to `demo/config.js`:
 
 ```javascript
 export const authorizationUserId = <your-voip-account-id>;
