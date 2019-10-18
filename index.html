@@ -86,18 +86,21 @@
 				<a href="#getting-started" id="getting-started" style="color: inherit; text-decoration: none;">
 					<h2>Getting started</h2>
 				</a>
-				<pre><code>$ git clone git<span class="hljs-meta">@github</span>.com:open-voip-alliance/WebphoneLib.git
-$ cd WebphoneLib
-$ echo '
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> authorizationUserId = &lt;your-voip-account-id&gt;;
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> password = '&lt;your-voip-password&gt;';
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> yourPlatformURL = '&lt;your-platform-url&gt;'
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> accountUri = <span class="hljs-string">`sip:${authorizationUserId}@${yourPlatformURL}`</span>;
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> subscribeTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> outgoingCallTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> blindTransferTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> attendedTransferTo = <span class="hljs-string">`sip:&lt;account-id&gt;@${yourPlatformURL}`</span>;' &gt; demo/config.js
-$ npm i &amp;&amp; npm run demo</code></pre><p>And then play around at <a href="http://localhost:1235/demo/">http://localhost:1235/demo/</a>.</p>
+				<pre><code class="language-bash">$ git <span class="hljs-built_in">clone</span> git@github.com:open-voip-alliance/WebphoneLib.git
+$ <span class="hljs-built_in">cd</span> WebphoneLib
+$ touch demo/config.js</code></pre>
+				<p>Add the following to that file:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> authorizationUserId = &lt;your-voip-account-id&gt;;
+export const password = '&lt;your-voip-password&gt;';
+export const yourPlatformURL = '&lt;your-platform-url&gt;'
+export const accountUri = `sip:${authorizationUserId}@${yourPlatformURL}`;
+export const subscribeTo = `sip:&lt;account-id&gt;@${yourPlatformURL}`;
+export const outgoingCallTo = `sip:&lt;account-id&gt;@${yourPlatformURL}`;
+export const blindTransferTo = `sip:&lt;account-id&gt;@${yourPlatformURL}`;
+export const attendedTransferTo = `sip:&lt;account-id&gt;@${yourPlatformURL}`;</code></pre>
+				<p>Run the demo-server:</p>
+				<pre><code class="language-bash">$ npm i &amp;&amp; npm run demo</code></pre>
+				<p>And then play around at <a href="http://localhost:1235/demo/">http://localhost:1235/demo/</a>.</p>
 				<a href="#examples" id="examples" style="color: inherit; text-decoration: none;">
 					<h2>Examples</h2>
 				</a>
