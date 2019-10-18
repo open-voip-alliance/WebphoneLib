@@ -20,10 +20,15 @@ We would love more input for this project. Create an issue, create a pull reques
 
 ## Getting started
 
-```
+```bash
 $ git clone git@github.com:open-voip-alliance/WebphoneLib.git
 $ cd WebphoneLib
-$ echo '
+$ touch demo/config.js
+```
+
+Add the following to that file:
+
+```javascript
 export const authorizationUserId = <your-voip-account-id>;
 export const password = '<your-voip-password>';
 export const yourPlatformURL = '<your-platform-url>'
@@ -31,7 +36,12 @@ export const accountUri = `sip:${authorizationUserId}@${yourPlatformURL}`;
 export const subscribeTo = `sip:<account-id>@${yourPlatformURL}`;
 export const outgoingCallTo = `sip:<account-id>@${yourPlatformURL}`;
 export const blindTransferTo = `sip:<account-id>@${yourPlatformURL}`;
-export const attendedTransferTo = `sip:<account-id>@${yourPlatformURL}`;' > demo/config.js
+export const attendedTransferTo = `sip:<account-id>@${yourPlatformURL}`;
+```
+
+Run the demo-server:
+
+```bash
 $ npm i && npm run demo
 ```
 
