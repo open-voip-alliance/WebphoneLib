@@ -38,9 +38,15 @@
     "compileEnhancements": false
   },
   "nyc": {
+    "require": [
+      "ts-node/register"
+    ],
     "extends": "@istanbuljs/nyc-config-typescript",
     "all": true,
-    "check-coverage": true
+    "check-coverage": true,
+    "include": [
+      "src/**/*.ts"
+    ]
   },
   "repository": {
     "type": "git",
