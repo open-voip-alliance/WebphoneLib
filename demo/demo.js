@@ -89,10 +89,13 @@ registerBtn.addEventListener('click', () =>
   client
     .connect()
     .then(async () => {
+      console.log('connected!');
       await client.subscribe(subscribeTo);
       console.log('subscribed!');
     })
-    .catch(console.error)
+    .catch(e => {
+      console.error(e);
+    })
 );
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 subscribeBtn.addEventListener('click', () => client.subscribe(subscribeTo).catch(console.error));

@@ -2,6 +2,12 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Subscription, UA as UABase, Web } from 'sip.js';
+import { Registerer } from 'sip.js/lib/api/registerer';
+import { RegistererState } from 'sip.js/lib/api/registerer-state'; // not available in pre-combiled bundles just yet
+import { Session } from 'sip.js/lib/api/session';
+import { Subscriber } from 'sip.js/lib/api/subscriber'; // not available in pre-combiled bundles just yet
+import { UserAgent } from 'sip.js/lib/api/user-agent'; // not available in pre-combiled bundles just yet
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options'; // not available in pre-combiled bundles just yet
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
@@ -28,7 +34,7 @@ export interface ITransport extends EventEmitter {
   updatePriority(flag: boolean): void;
   getConnection(mode: ReconnectionMode): Promise<boolean>;
   close(): void;
-  subscribe(contact: string): Subscription;
+  subscribe(contact: string): Subscriber;
 }
 
 /**
@@ -80,10 +86,13 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private uaFactory: UAFactory;
   private ua: IUA;
   private uaOptions: UABase.Options;
+  private uaOptionsNew: UserAgentOptions;
+  private userAgent: UserAgent;
   private dyingCounter: number = 60000;
   private wsTimeout: number = 10000;
   private dyingIntervalID: number;
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
+  private registerer: any;
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
   private wasWindowOffline: boolean = false;
@@ -103,11 +112,39 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
   public configure(options: IClientOptions) {
     const { account, transport, userAgent } = options;
+    const uri = UserAgent.makeURI(account.uri);
+    const userAgentOptions: UserAgentOptions = { uri };
 
     const modifiers = [Web.Modifiers.stripVideo];
     if (Features.isSafari) {
       modifiers.push(Web.Modifiers.stripG722);
     }
+
+    this.uaOptionsNew = {
+      authorizationUsername: account.user,
+      authorizationPassword: account.password,
+      displayName: userAgent || 'vialer-calling-lib',
+      logConnector: connector,
+      logLevel: 'warn',
+      sessionDescriptionHandlerFactory,
+      sessionDescriptionHandlerFactoryOptions: {
+        alwaysAcquireMediaFirst: Features.isFirefox,
+        constraints: { audio: true, video: false },
+        modifiers,
+        peerConnectionOptions: {
+          rtcConfiguration: {
+            iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
+          }
+        }
+      },
+      transportConstructor: WrappedTransport,
+      transportOptions: {
+        maxReconnectionAttempts: 0,
+        traceSip: true,
+        wsServers: transport.wsServers
+      },
+      uri
+    };
 
     this.uaOptions = {
       ...this.defaultOptions,
@@ -153,7 +190,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     this.updateStatus(ClientStatus.CONNECTING);
 
-    if (!this.ua) {
+    if (!this.userAgent) {
       log.debug('Configuring UA.', this.constructor.name);
       this.configureUA(this.uaOptions);
     }
@@ -171,15 +208,24 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return this.registeredPromise;
     }
 
-    this.registeredPromise = this.createRegisteredPromise();
+    //this.ua.start();
 
-    this.ua.start();
-
-    await pTimeout(this.transportConnectedPromise, this.wsTimeout, () =>
+    const started = await pTimeout(this.userAgent.start(), this.wsTimeout, () =>
       Promise.reject(new Error('Could not connect to the websocket in time.'))
     );
+    console.log(`Started: ${started}`);
 
-    this.ua.register();
+    if (!this.registerer) {
+      this.registerer = new Registerer(this.userAgent);
+    } else {
+      console.log('registerer already exists');
+    }
+
+    this.registeredPromise = this.createRegisteredPromise();
+
+    this.registerer.register();
+
+    //this.ua.register();
 
     return this.registeredPromise;
   }
@@ -240,11 +286,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     return this.ua.invite(phoneNumber);
   }
 
-  public subscribe(contact: string): Subscription {
-    // Introducing a jitter here, to avoid thundering herds.
-    return this.ua.subscribe(contact, 'dialog', {
+  public subscribe(contact: string): Subscriber {
+    return new Subscriber(this.userAgent, UserAgent.makeURI(contact), 'dialog', {
       expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
     });
+
+    // Introducing a jitter here, to avoid thundering herds.
+    //return this.ua.subscribe(contact, 'dialog', {
+    //  expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
+    //});
   }
 
   public isRegistered() {
@@ -341,20 +391,33 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   }
 
   private configureUA(options: UABase.Options) {
-    this.ua = this.uaFactory(options);
-    this.ua.on('invite', uaSession => this.emit('invite', uaSession));
+    this.userAgent = new UserAgent(this.uaOptionsNew);
+    this.userAgent.delegate = {
+      onInvite(incomingSession: Session): void {
+        this.emit('newInvite', incomingSession);
+      }
+    };
 
-    this.transportConnectedPromise = new Promise(resolve => {
-      this.ua.once('transportCreated', () => {
-        log.debug('Transport created.', this.constructor.name);
-        this.ua.transport.once('connected', () => {
-          log.debug('Transport connected.', this.constructor.name);
-          resolve();
-        });
+    this.userAgent.transport.on('disconnected', this.onTransportDisconnected.bind(this));
 
-        this.ua.transport.on('disconnected', this.onTransportDisconnected.bind(this));
-      });
-    });
+    //this.transportConnectedPromise = new Promise(resolve => {
+    //
+    //});
+
+    //this.ua = this.uaFactory(options);
+    //this.ua.on('invite', uaSession => this.emit('invite', uaSession));
+
+    //this.transportConnectedPromise = new Promise(resolve => {
+    //  this.ua.once('transportCreated', () => {
+    //    log.debug('Transport created.', this.constructor.name);
+    //    this.ua.transport.once('connected', () => {
+    //      log.debug('Transport connected.', this.constructor.name);
+    //      resolve();
+    //    });
+
+    //    this.ua.transport.on('disconnected', this.onTransportDisconnected.bind(this));
+    //  });
+    //});
   }
 
   private isOnline(mode: ReconnectionMode): Promise<any> {
@@ -467,25 +530,47 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
   private createRegisteredPromise() {
     return new Promise((resolve, reject) => {
-      const handlers = {
-        onRegistered: () => {
-          this.ua.removeListener('registrationFailed', handlers.onRegistrationFailed);
-          this.updateStatus(ClientStatus.CONNECTED);
-          resolve(true);
-        },
-        onRegistrationFailed: async e => {
-          this.ua.removeListener('registered', handlers.onRegistered);
+      // Handle outgoing session state changes.
+      this.registerer.stateChange.once(async (newState: RegistererState) => {
+        console.log('neww state:');
+        console.log(newState);
 
-          await this.disconnect({ hasRegistered: false });
-
-          this.updateStatus(ClientStatus.DISCONNECTED);
-          reject(e);
+        switch (newState) {
+          case RegistererState.Registered:
+            this.updateStatus(ClientStatus.CONNECTED);
+            resolve(true);
+            break;
+          case RegistererState.Unregistered:
+            await this.disconnect({ hasRegistered: false });
+            this.updateStatus(ClientStatus.DISCONNECTED);
+            reject(new Error('Could not register.'));
+            break;
+          default:
+            break;
         }
-      };
-
-      this.ua.once('registered', handlers.onRegistered);
-      this.ua.once('registrationFailed', handlers.onRegistrationFailed);
+      });
     });
+
+    //return new Promise((resolve, reject) => {
+    //  const handlers = {
+    //    onRegistered: () => {
+    //      this.ua.removeListener('registrationFailed', handlers.onRegistrationFailed);
+    //      this.updateStatus(ClientStatus.CONNECTED);
+    //      resolve(true);
+    //    },
+    //    onRegistrationFailed: async e => {
+    //      this.ua.removeListener('registered', handlers.onRegistered);
+
+    //      await this.disconnect({ hasRegistered: false });
+
+    //      this.updateStatus(ClientStatus.DISCONNECTED);
+    //      reject(e);
+    //    }
+    //  };
+
+    //  this.ua.once('registered', handlers.onRegistered);
+    //  this.ua.once('registrationFailed', handlers.onRegistrationFailed);
+    //});
   }
 
   private onWindowOffline() {

@@ -4,6 +4,7 @@ import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
+//import { ISession as INewSession, SessionImpl as NewSessionImpl } from './new-session';
 import { ISession, SessionImpl } from './session';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
@@ -11,6 +12,7 @@ import { ITransport, ReconnectableTransport, TransportFactory } from './transpor
 import { IClientOptions, IMedia } from './types';
 
 import { Core, UA as UABase } from 'sip.js';
+import { Subscriber } from 'sip.js/lib/api/subscriber'; // not available in pre-combiled bundles just yet
 import { UA, UAFactory } from './ua';
 
 // TODO: use EventTarget instead of EventEmitter.
@@ -138,7 +140,7 @@ export class ClientImpl extends EventEmitter implements IClient {
   public defaultMedia: IMedia;
 
   private readonly sessions: { [index: string]: SessionImpl } = {};
-  private subscriptions: { [index: string]: Subscription } = {};
+  private subscriptions: { [index: string]: Subscriber } = {};
   private connected: boolean = false;
 
   private transportFactory: TransportFactory;
@@ -351,6 +353,19 @@ export class ClientImpl extends EventEmitter implements IClient {
       const session = new SessionImpl({
         media: this.defaultMedia,
         session: uaSession,
+        onTerminated: this.onSessionTerminated.bind(this),
+        isIncoming: true
+      });
+
+      this.addSession(session);
+
+      this.emit('invite', session.freeze());
+    });
+
+    this.transport.on('newInvite', incomingSession => {
+      const session = new SessionImpl({
+        media: this.defaultMedia,
+        session: incomingSession,
         onTerminated: this.onSessionTerminated.bind(this),
         isIncoming: true
       });
