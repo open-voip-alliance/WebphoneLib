@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 
+import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
 import { IncomingInviteRequest } from 'sip.js/lib/core';
 import { audioContext } from './audio-context';
 import * as Features from './features';
@@ -41,20 +42,20 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
   public readonly input: IMediaInput;
   public readonly output: IMediaOutput;
 
-  private session: InternalSession;
+  private session: Inviter;
 
   private media: IMedia;
   private audioOutput: HTMLAudioElement;
   private inputStream: MediaStream;
   private inputNode: GainNode;
 
-  public constructor(session: InternalSession, media: IMedia) {
+  public constructor(session: Inviter, media: IMedia) {
     super();
 
     this.session = session;
 
     // This link is for the custom SessionDescriptionHandler.
-    session.__media = this;
+    (session as any).__media = this;
 
     // Make a copy of media.
     this.media = {

@@ -12,6 +12,7 @@ import { ITransport, ReconnectableTransport, TransportFactory } from './transpor
 import { IClientOptions, IMedia } from './types';
 
 import { Core, UA as UABase } from 'sip.js';
+import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
 import { Subscriber } from 'sip.js/lib/api/subscriber'; // not available in pre-combiled bundles just yet
 import { UA, UAFactory } from './ua';
 
@@ -403,22 +404,24 @@ export class ClientImpl extends EventEmitter implements IClient {
         isIncoming: false
       });
 
-      const handlers = {
-        onFailed: () => {
-          log.error('Session emitted failed after an invite.', this.constructor.name);
-          uaSession.removeListener('progress', handlers.onProgress);
-          reject(new Error('Could not send an invite. Socket could be broken.'));
-        },
-        onProgress: () => {
-          log.debug('Session emitted progress after an invite.', this.constructor.name);
-          uaSession.removeListener('failed', handlers.onFailed);
-          resolve(session);
+      const sessionStateChange = (newState: SessionState) => {
+        switch (newState) {
+          case SessionState.Established:
+            // Session has been established.
+            uaSession.stateChange.off(sessionStateChange);
+            resolve(session);
+            break;
+          case SessionState.Terminated:
+            uaSession.stateChange.off(sessionStateChange);
+            log.error('Could not send an invite. Socket could be broken.', this.constructor.name);
+            reject(new Error('Could not send an invite. Socket could be broken.'));
+            break;
+          default:
+            break;
         }
       };
 
-      uaSession.once('failed', handlers.onFailed);
-      uaSession.once('progress', handlers.onProgress);
-
+      uaSession.stateChange.on(sessionStateChange);
       uaSession.invite();
     });
   }

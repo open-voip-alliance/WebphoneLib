@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Subscription, UA as UABase, Web } from 'sip.js';
+import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state'; // not available in pre-combiled bundles just yet
 import { Session } from 'sip.js/lib/api/session';
@@ -30,7 +31,7 @@ export interface ITransport extends EventEmitter {
   configure(options: IClientOptions): void;
   connect(): Promise<boolean>;
   disconnect(options?: { hasRegistered: boolean }): Promise<void>;
-  invite(phoneNumber: string): WrappedInviteClientContext;
+  invite(phoneNumber: string): Inviter;
   updatePriority(flag: boolean): void;
   getConnection(mode: ReconnectionMode): Promise<boolean>;
   close(): void;
@@ -210,16 +211,9 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     //this.ua.start();
 
-    const started = await pTimeout(this.userAgent.start(), this.wsTimeout, () =>
+    await pTimeout(this.userAgent.start(), this.wsTimeout, () =>
       Promise.reject(new Error('Could not connect to the websocket in time.'))
     );
-    console.log(`Started: ${started}`);
-
-    if (!this.registerer) {
-      this.registerer = new Registerer(this.userAgent);
-    } else {
-      console.log('registerer already exists');
-    }
 
     this.registeredPromise = this.createRegisteredPromise();
 
@@ -277,13 +271,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     delete this.unregisteredPromise;
   }
 
-  public invite(phoneNumber: string): WrappedInviteClientContext {
+  public invite(phoneNumber: string): Inviter {
     if (this.status !== ClientStatus.CONNECTED) {
       log.info('Could not send an invite. Not connected.', this.constructor.name);
       throw new Error('Cannot send an invite. Not connected.');
     }
 
-    return this.ua.invite(phoneNumber);
+    return new Inviter(this.userAgent, UserAgent.makeURI(phoneNumber));
+
+    //return this.ua.invite(phoneNumber);
   }
 
   public subscribe(contact: string): Subscriber {
@@ -302,7 +298,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   }
 
   public async getConnection(mode: ReconnectionMode = ReconnectionMode.ONCE): Promise<boolean> {
-    if (!this.ua) {
+    if (!this.userAgent) {
       return false;
     }
 
@@ -314,10 +310,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     log.debug(`isOnline: ${isOnline}`, this.constructor.name);
     if (isOnline) {
-      await this.ua.transport.disconnect();
+      await this.userAgent.transport.disconnect();
       log.debug('Socket closed', this.constructor.name);
 
-      await this.ua.transport.connect();
+      await this.userAgent.transport.connect();
       log.debug('Socket opened', this.constructor.name);
 
       // Before the dyingCounter reached 0, there is a decent chance our
@@ -330,7 +326,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
       this.registeredPromise = this.createRegisteredPromise();
 
-      this.ua.register();
+      this.registerer.register();
 
       await this.registeredPromise;
       log.debug('Reregistered!', this.constructor.name);
@@ -515,6 +511,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return;
     }
 
+    log.debug(
+      `Reconnecting in ${this.retry.timeout / second}s to avoid thundering herd`,
+      this.constructor.name
+    );
     setTimeout(async () => {
       // Only trigger this function if we haven't reconnected in the same time.
       if (this.status !== ClientStatus.CONNECTED) {
@@ -525,16 +525,20 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }, this.retry.timeout);
 
     this.retry = increaseTimeout(this.retry);
-    log.debug('Delaying reconnecting to avoid thundering herd.', this.constructor.name);
   }
 
   private createRegisteredPromise() {
+    if (this.registerer) {
+      // Remove from UA's collection, not using this.registerer.dispose to
+      // avoid unregistering.
+      delete this.userAgent.registerers[this.registerer.id];
+    }
+
+    this.registerer = new Registerer(this.userAgent);
+
     return new Promise((resolve, reject) => {
       // Handle outgoing session state changes.
       this.registerer.stateChange.once(async (newState: RegistererState) => {
-        console.log('neww state:');
-        console.log(newState);
-
         switch (newState) {
           case RegistererState.Registered:
             this.updateStatus(ClientStatus.CONNECTED);
@@ -543,6 +547,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
           case RegistererState.Unregistered:
             await this.disconnect({ hasRegistered: false });
             this.updateStatus(ClientStatus.DISCONNECTED);
+            log.error('Could not register.', this.constructor.name);
             reject(new Error('Could not register.'));
             break;
           default:
