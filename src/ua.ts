@@ -30,13 +30,14 @@ export class WrappedInviteClientContext extends InviteClientContext {
   /**
    * Reconfigure the WebRTC peerconnection.
    */
-  public rebuildSessionDescriptionHandler() {
-    log.debug('Session Description Handler is rebuild!', this.constructor.name);
-    this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
-      this,
-      this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
-    );
-  }
+  //public rebuildSessionDescriptionHandler() {
+  //  log.debug('Session Description Handler is rebuild!', this.constructor.name);
+  //  this.sessionDescriptionHandler = this.sessionDescriptionHandlerFactory(
+  //    this,
+  //    this.ua.configuration.sessionDescriptionHandlerFactoryOptions || {}
+  //  );
+  //}
+  // appears we can use setupSessionDescriptionHandler instead.
 
   /**
    * Refer a call to someone, this can be either a blind or an attended

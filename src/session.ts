@@ -9,6 +9,9 @@ import {
   TypeStrings as SIPTypeStrings
 } from 'sip.js';
 
+import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
+import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
+import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
 import { SessionStatus } from './enums';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
@@ -170,7 +173,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   public holdState: boolean;
   public status: SessionStatus = SessionStatus.RINGING;
 
-  private session: InternalSession;
+  private session: Inviter;
 
   private acceptedPromise: Promise<ISessionAccept>;
   private acceptPromise: Promise<void>;
@@ -188,18 +191,18 @@ export class SessionImpl extends EventEmitter implements ISession {
     onTerminated,
     isIncoming
   }: {
-    session: WrappedInviteClientContext | WrappedInviteServerContext;
+    session: Inviter;
     media: IMedia;
     onTerminated: (sessionId: string) => void;
     isIncoming: boolean;
   }) {
     super();
-    this.session = session as InternalSession;
+    this.session = session;
     this.id = session.request.callId;
     this.media = new SessionMedia(this.session, media);
     this.media.on('mediaFailure', () => {
       // TODO: fix this so it doesn't `reject` the `terminatedPromise`?
-      this.session.terminate();
+      //this.session.terminate();
     });
     this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
@@ -235,20 +238,29 @@ export class SessionImpl extends EventEmitter implements ISession {
     // be rejected when there is some fault is detected with the session after it
     // has been accepted.
     this.terminatedPromise = new Promise((resolve, reject) => {
-      this.session.once('terminated', (message, cause) => {
-        this.onTerminated(this.id);
-        this.emit('terminated', { id: this.id });
-        this.status = SessionStatus.TERMINATED;
-        this.emit('statusUpdate', { id: this.id, status: this.status });
-
-        // Asterisk specific header that signals that the VoIP account used is not
-        // configured for WebRTC.
-        if (cause === 'BYE' && message.getHeader('X-Asterisk-Hangupcausecode') === '58') {
-          reject(new Error('misconfigured_account'));
-        } else {
-          resolve();
+      this.session.stateChange.once((newState: SessionState) => {
+        if (newState === SessionState.Terminated) {
+          this.onTerminated(this.id);
+          this.emit('terminated', { id: this.id });
+          this.status = SessionStatus.TERMINATED;
+          this.emit('statusUpdate', { id: this.id, status: this.status });
         }
       });
+
+      //this.session.once('terminated', (message, cause) => {
+      //  this.onTerminated(this.id);
+      //  this.emit('terminated', { id: this.id });
+      //  this.status = SessionStatus.TERMINATED;
+      //  this.emit('statusUpdate', { id: this.id, status: this.status });
+
+      //  // Asterisk specific header that signals that the VoIP account used is not
+      //  // configured for WebRTC.
+      //  if (cause === 'BYE' && message.getHeader('X-Asterisk-Hangupcausecode') === '58') {
+      //    reject(new Error('misconfigured_account'));
+      //  } else {
+      //    resolve();
+      //  }
+      //});
     });
 
     this._remoteIdentity = this.getRemoteIdentity(this.session.request);

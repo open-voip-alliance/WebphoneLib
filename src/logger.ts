@@ -20,7 +20,7 @@ class Logger {
     return idx === undefined ? 0 : idx;
   }
 
-  public level: string = 'verbose';
+  public level: string = 'debug';
   public connector?: LoggerConnector;
 
   constructor(level: string, connector?: LoggerConnector) {

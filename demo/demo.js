@@ -70,6 +70,10 @@ client.on('sessionsUpdate', sessions => {
   sessionsCount.innerHTML = Object.keys(sessions).length;
 });
 
+client.on('statusUpdate', newStatus => {
+  console.log(`Status update to ${newStatus}`);
+});
+
 outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
 
 const subscribeTo = CONF.subscribeTo;
