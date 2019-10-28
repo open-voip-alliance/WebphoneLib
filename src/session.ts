@@ -3,6 +3,7 @@ import pTimeout from 'p-timeout';
 
 import {
   C as SIPConstants,
+  Core,
   Grammar,
   IncomingResponse,
   NameAddrHeader,
@@ -10,6 +11,7 @@ import {
 } from 'sip.js';
 
 import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
+import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options'; // not available in pre-combiled bundles just yet
 import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
 import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
 import { SessionStatus } from './enums';
@@ -388,6 +390,25 @@ export class SessionImpl extends EventEmitter implements ISession {
   public terminate(): Promise<void> {
     this.session.terminate();
     return this.terminatedPromise;
+  }
+
+  public invite(): Promise<void> {
+    const inviteOptions: InviterInviteOptions = {
+      requestDelegate: {
+        onAccept: response => {},
+        onReject: response => {}
+      },
+      sessionDescriptionHandlerOptions: {
+        constraints: {
+          audio: true,
+          video: false
+        }
+      }
+    };
+
+    return new Promise((resolve, reject) => {
+      this.session.invite();
+    });
   }
 
   public async reinvite(): Promise<void> {
