@@ -396,10 +396,10 @@ export class ClientImpl extends EventEmitter implements IClient {
       // Transport invite just creates a ClientContext, it doesn't send the
       // actual invite. We need to bind the event handlers below before we can
       // send out the actual invite. Otherwise we might miss the events.
-      const uaSession = this.transport.invite(phoneNumber);
+      const outgoingSession = this.transport.invite(phoneNumber);
       const session = new SessionImpl({
         media: this.defaultMedia,
-        session: uaSession,
+        session: outgoingSession,
         onTerminated: this.onSessionTerminated.bind(this),
         isIncoming: false
       });
@@ -408,11 +408,11 @@ export class ClientImpl extends EventEmitter implements IClient {
         switch (newState) {
           case SessionState.Established:
             // Session has been established.
-            uaSession.stateChange.off(sessionStateChange);
+            outgoingSession.stateChange.off(sessionStateChange);
             resolve(session);
             break;
           case SessionState.Terminated:
-            uaSession.stateChange.off(sessionStateChange);
+            outgoingSession.stateChange.off(sessionStateChange);
             log.error('Could not send an invite. Socket could be broken.', this.constructor.name);
             reject(new Error('Could not send an invite. Socket could be broken.'));
             break;
@@ -421,8 +421,10 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
       };
 
-      uaSession.stateChange.on(sessionStateChange);
-      uaSession.invite();
+      outgoingSession.stateChange.on(sessionStateChange);
+
+      session.invite();
+      //outgoingSession.invite();
     });
   }
 
