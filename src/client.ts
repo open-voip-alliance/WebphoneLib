@@ -346,20 +346,20 @@ export class ClientImpl extends EventEmitter implements IClient {
       });
     });
 
-    this.transport.on('invite', uaSession => {
-      const session = new SessionImpl({
-        media: this.defaultMedia,
-        session: uaSession,
-        onTerminated: this.onSessionTerminated.bind(this),
-        isIncoming: true
-      });
+    //this.transport.on('invite', uaSession => {
+    //  const session = new SessionImpl({
+    //    media: this.defaultMedia,
+    //    session: uaSession,
+    //    onTerminated: this.onSessionTerminated.bind(this),
+    //    isIncoming: true
+    //  });
 
-      this.addSession(session);
+    //  this.addSession(session);
 
-      this.emit('invite', session.freeze());
-    });
+    //  this.emit('invite', session.freeze());
+    //});
 
-    this.transport.on('newInvite', incomingSession => {
+    this.transport.on('invite', incomingSession => {
       const session = new SessionImpl({
         media: this.defaultMedia,
         session: incomingSession,
