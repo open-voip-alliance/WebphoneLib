@@ -7,7 +7,8 @@ import {
   Grammar,
   IncomingResponse,
   NameAddrHeader,
-  TypeStrings as SIPTypeStrings
+  TypeStrings as SIPTypeStrings,
+  Utils
 } from 'sip.js';
 
 import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
@@ -176,8 +177,11 @@ export class SessionImpl extends EventEmitter implements ISession {
   public status: SessionStatus = SessionStatus.RINGING;
 
   private session: Inviter;
+  private inviteOptions: InviterInviteOptions;
 
-  private acceptedPromise: Promise<ISessionAccept>;
+  private acceptedPromise: Promise<ISessionAccept> = Promise.reject(
+    new Error('Cannot accept an outgoing session.')
+  );
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
@@ -209,32 +213,50 @@ export class SessionImpl extends EventEmitter implements ISession {
     this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
 
-    this.acceptedPromise = new Promise((resolve, reject) => {
-      const handlers = {
-        onAccepted: () => {
-          this.session.removeListener('rejected', handlers.onRejected);
-          this.status = SessionStatus.ACTIVE;
-          this.emit('statusUpdate', { id: this.id, status: this.status });
-          resolve({ accepted: true });
-        },
-        onRejected: (response: IncomingResponse, cause: string) => {
-          this.session.removeListener('accepted', handlers.onAccepted);
-          try {
-            resolve({
-              accepted: false,
-              rejectCause: this.findCause(response, cause)
-            });
-          } catch (e) {
-            console.log(response);
-            log.error(`Session failed: ${e}`, this.constructor.name);
-            reject(e);
+    if (!this.isIncoming) {
+      this.acceptedPromise = new Promise((resolve, reject) => {
+        this.inviteOptions = {
+          requestDelegate: {
+            onAccept: response => {
+              this.status = SessionStatus.ACTIVE;
+              this.emit('statusUpdate', { id: this.id, status: this.status });
+              resolve({ accepted: true });
+            },
+            onReject: ({ message }: Core.IncomingResponse) => {
+              try {
+                const cause = Utils.getReasonPhrase(message.statusCode);
+                resolve({
+                  accepted: false,
+                  rejectCause: this.findCause(message, cause)
+                });
+              } catch (e) {
+                console.log(message);
+                log.error(`Session failed: ${e}`, this.constructor.name);
+                reject(e);
+              }
+            }
+          },
+          sessionDescriptionHandlerOptions: {
+            constraints: {
+              audio: true,
+              video: false
+            }
           }
-        }
-      };
+        };
 
-      this.session.once('accepted', handlers.onAccepted);
-      this.session.once('rejected', handlers.onRejected);
-    });
+        //const handlers = {
+        //  onAccepted: () => {
+        //    this.session.removeListener('rejected', handlers.onRejected);
+        //  },
+        //  onRejected: (response: IncomingResponse, cause: string) => {
+        //    this.session.removeListener('accepted', handlers.onAccepted);
+        //  }
+        //};
+
+        //this.session.once('accepted', handlers.onAccepted);
+        //this.session.once('rejected', handlers.onRejected);
+      });
+    }
 
     // Terminated promise will resolve when the session is terminated. It will
     // be rejected when there is some fault is detected with the session after it
@@ -267,10 +289,11 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     this._remoteIdentity = this.getRemoteIdentity(this.session.request);
 
-    this.session.on('reinvite', (_, request) => {
-      this._remoteIdentity = this.getRemoteIdentity(request);
-      this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
-    });
+    // TODO
+    //this.session.on('reinvite', (_, request) => {
+    //  this._remoteIdentity = this.getRemoteIdentity(request);
+    //  this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
+    //});
 
     // Track if the other side said bye before terminating.
     this.saidBye = false;
@@ -393,21 +416,8 @@ export class SessionImpl extends EventEmitter implements ISession {
   }
 
   public invite(): Promise<void> {
-    const inviteOptions: InviterInviteOptions = {
-      requestDelegate: {
-        onAccept: response => {},
-        onReject: response => {}
-      },
-      sessionDescriptionHandlerOptions: {
-        constraints: {
-          audio: true,
-          video: false
-        }
-      }
-    };
-
     return new Promise((resolve, reject) => {
-      this.session.invite();
+      this.session.invite(this.inviteOptions);
     });
   }
 

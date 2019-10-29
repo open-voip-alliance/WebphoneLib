@@ -390,7 +390,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.userAgent = new UserAgent(this.uaOptionsNew);
     this.userAgent.delegate = {
       onInvite(incomingSession: Session): void {
-        this.emit('newInvite', incomingSession);
+        this.emit('invite', incomingSession);
       }
     };
 
