@@ -370,6 +370,14 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 
   private onSessionTerminated(sessionId: string) {
+    if (!(sessionId in this.sessions)) {
+      log.info(
+        `Broken session (probably due to failed invite) ${sessionId} is terminated.`,
+        this.constructor.name
+      );
+      return;
+    }
+
     const session = this.sessions[sessionId];
     log.info(`Session ${sessionId} is terminated.`, this.constructor.name);
     this.removeSession(session);
