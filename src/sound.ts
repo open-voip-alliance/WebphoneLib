@@ -111,21 +111,21 @@ export class Sound {
             this.stopTimer = window.setTimeout(() => this.stop(), timeout);
           }
 
+          sample.addEventListener('pause', () => {
+            cleanup();
+            resolve();
+          });
+
+          sample.addEventListener('ended', () => {
+            cleanup();
+            resolve();
+          });
+
           await sample.play();
         } catch (e) {
           cleanup();
           reject(e);
         }
-      });
-
-      sample.addEventListener('pause', () => {
-        cleanup();
-        resolve();
-      });
-
-      sample.addEventListener('ended', () => {
-        cleanup();
-        resolve();
       });
     });
 
