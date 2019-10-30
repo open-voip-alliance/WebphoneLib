@@ -4,7 +4,6 @@ import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
-//import { ISession as INewSession, SessionImpl as NewSessionImpl } from './new-session';
 import { ISession, SessionImpl } from './session';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
@@ -330,7 +329,8 @@ export class ClientImpl extends EventEmitter implements IClient {
 
     this.transport.on('reviveSessions', () => {
       Object.values(this.sessions).forEach(async session => {
-        session.rebuildSessionDescriptionHandler();
+        //TODO
+        //session.rebuildSessionDescriptionHandler();
         await session.reinvite();
       });
     });
@@ -346,10 +346,10 @@ export class ClientImpl extends EventEmitter implements IClient {
       });
     });
 
-    //this.transport.on('invite', uaSession => {
+    //this.transport.on('invite', outgoingSession => {
     //  const session = new SessionImpl({
     //    media: this.defaultMedia,
-    //    session: uaSession,
+    //    session: outgoingSession,
     //    onTerminated: this.onSessionTerminated.bind(this),
     //    isIncoming: true
     //  });
@@ -392,40 +392,23 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 
   private async tryInvite(phoneNumber: string): Promise<SessionImpl> {
-    return new Promise((resolve, reject) => {
-      // Transport invite just creates a ClientContext, it doesn't send the
-      // actual invite. We need to bind the event handlers below before we can
-      // send out the actual invite. Otherwise we might miss the events.
-      const outgoingSession = this.transport.invite(phoneNumber);
-      const session = new SessionImpl({
-        media: this.defaultMedia,
-        session: outgoingSession,
-        onTerminated: this.onSessionTerminated.bind(this),
-        isIncoming: false
-      });
-
-      const sessionStateChange = (newState: SessionState) => {
-        switch (newState) {
-          case SessionState.Established:
-            // Session has been established.
-            outgoingSession.stateChange.off(sessionStateChange);
-            resolve(session);
-            break;
-          case SessionState.Terminated:
-            outgoingSession.stateChange.off(sessionStateChange);
-            log.error('Could not send an invite. Socket could be broken.', this.constructor.name);
-            reject(new Error('Could not send an invite. Socket could be broken.'));
-            break;
-          default:
-            break;
-        }
-      };
-
-      outgoingSession.stateChange.on(sessionStateChange);
-
-      session.invite();
-      //outgoingSession.invite();
+    const outgoingSession = this.transport.invite(phoneNumber);
+    const session = new SessionImpl({
+      media: this.defaultMedia,
+      session: outgoingSession,
+      onTerminated: this.onSessionTerminated.bind(this),
+      isIncoming: false
     });
+
+    try {
+      await session.invite();
+      await session.progressed();
+    } catch (e) {
+      log.error('Could not send an invite. Socket could be broken.', this.constructor.name);
+      return Promise.reject(new Error('Could not send an invite. Socket could be broken.'));
+    }
+
+    return session;
   }
 
   private removeSubscription({ uri, unsubscribe = false }) {

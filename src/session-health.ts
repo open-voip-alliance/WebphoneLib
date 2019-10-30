@@ -1,8 +1,8 @@
+import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
 import * as Features from './features';
-import { InternalSession } from './session-media';
 
 export function checkAudioConnected(
-  session: InternalSession,
+  session: UserAgentSession,
   {
     checkInterval,
     noAudioTimeout
@@ -15,7 +15,8 @@ export function checkAudioConnected(
 
   return new Promise((resolve, reject) => {
     session.once('SessionDescriptionHandler-created', () => {
-      const pc = session.sessionDescriptionHandler.peerConnection;
+      // We patched the sdh with peerConnection ourselves.
+      const pc = (session.sessionDescriptionHandler as any).peerConnection;
 
       // onconnectionstatechange is only supported on Chromium. For all other
       // browsers we look at the outbound-rtp stats to detect potentially broken
