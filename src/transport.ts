@@ -629,7 +629,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // internet. In that case, the 'window' events won't help us. That is why
     // we can call tryUntilConnected in that case, because the
     // 'wasWindowOffline' will be false.
-    log.debug('Transport disconnected..', this.constructor.name);
+    log.info('Transport disconnected..', this.constructor.name);
+    this.emit('transportDisconnected');
 
     if (!this.wasWindowOffline) {
       log.debug(

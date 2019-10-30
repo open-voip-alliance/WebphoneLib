@@ -400,12 +400,22 @@ export class ClientImpl extends EventEmitter implements IClient {
       isIncoming: false
     });
 
+    let rejectWithError;
+    const disconnectedPromise = new Promise((resolve, reject) => {
+      rejectWithError = () => reject(new Error('Socket broke during inviting'));
+      this.transport.once('transportDisconnected', rejectWithError);
+    });
+
     try {
-      await session.invite();
-      await session.progressed();
+      await Promise.race([
+        Promise.all([session.invite(), session.progressed()]),
+        disconnectedPromise
+      ]);
     } catch (e) {
       log.error('Could not send an invite. Socket could be broken.', this.constructor.name);
       return Promise.reject(new Error('Could not send an invite. Socket could be broken.'));
+    } finally {
+      this.transport.removeListener('transportDisconnected', rejectWithError);
     }
 
     return session;
