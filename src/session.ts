@@ -11,6 +11,7 @@ import {
   Utils
 } from 'sip.js';
 
+import { Invitation } from 'sip.js/lib/api/invitation'; // not available in pre-combiled bundles just yet
 import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
 import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options'; // not available in pre-combiled bundles just yet
 import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
@@ -61,8 +62,13 @@ export interface ISession {
    */
   endTime: any;
 
-  accept(): Promise<void>;
-  reject(): Promise<void>;
+  // TODO
+  //accept(): Promise<void>;
+  //reject(): Promise<void>;
+  /**
+   * Terminate the session.
+   */
+  //terminate(): Promise<void>;
 
   /**
    * Promise that resolves when the session is accepted or rejected.
@@ -75,16 +81,12 @@ export interface ISession {
    */
   terminated(): Promise<void>;
 
-  /**
-   * Terminate the session.
-   */
-  terminate(): Promise<void>;
   reinvite(): Promise<void>;
 
   /**
    * Put the session on hold.
    */
-  hold(): Promise<boolean>;
+  //hold(): Promise<boolean>;
 
   /**
    * Take the session out of hold.
@@ -95,7 +97,8 @@ export interface ISession {
    * Blind transfer the current session to a target number.
    * @param {string} target - Number to transfer to.
    */
-  blindTransfer(target: string): Promise<boolean>;
+  // TODO
+  //blindTransfer(target: string): Promise<boolean>;
   bye(): void;
 
   /**
@@ -176,13 +179,12 @@ export class SessionImpl extends EventEmitter implements ISession {
   public holdState: boolean;
   public status: SessionStatus = SessionStatus.RINGING;
 
-  private session: Inviter;
+  private session: Inviter | Invitation;
   private inviteOptions: InviterInviteOptions;
 
-  private acceptedPromise: Promise<ISessionAccept> = Promise.reject(
-    new Error('Cannot accept an outgoing session.')
-  );
+  private acceptedPromise: Promise<ISessionAccept>;
   private acceptPromise: Promise<void>;
+  private progressedPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
@@ -213,27 +215,32 @@ export class SessionImpl extends EventEmitter implements ISession {
     this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
 
-    if (!this.isIncoming) {
-      this.acceptedPromise = new Promise((resolve, reject) => {
+    this.progressedPromise = new Promise(progressResolve => {
+      this.acceptedPromise = new Promise((acceptedResolve, acceptedReject) => {
         this.inviteOptions = {
           requestDelegate: {
             onAccept: response => {
               this.status = SessionStatus.ACTIVE;
               this.emit('statusUpdate', { id: this.id, status: this.status });
-              resolve({ accepted: true });
+              acceptedResolve({ accepted: true });
             },
             onReject: ({ message }: Core.IncomingResponse) => {
+              console.log(message);
               try {
                 const cause = Utils.getReasonPhrase(message.statusCode);
-                resolve({
+                acceptedResolve({
                   accepted: false,
                   rejectCause: this.findCause(message, cause)
                 });
               } catch (e) {
                 console.log(message);
                 log.error(`Session failed: ${e}`, this.constructor.name);
-                reject(e);
+                acceptedReject(e);
               }
+            },
+            onProgress: inviteResponse => {
+              console.log(inviteResponse);
+              progressResolve();
             }
           },
           sessionDescriptionHandlerOptions: {
@@ -243,20 +250,19 @@ export class SessionImpl extends EventEmitter implements ISession {
             }
           }
         };
-
-        //const handlers = {
-        //  onAccepted: () => {
-        //    this.session.removeListener('rejected', handlers.onRejected);
-        //  },
-        //  onRejected: (response: IncomingResponse, cause: string) => {
-        //    this.session.removeListener('accepted', handlers.onAccepted);
-        //  }
-        //};
-
-        //this.session.once('accepted', handlers.onAccepted);
-        //this.session.once('rejected', handlers.onRejected);
       });
-    }
+      //const handlers = {
+      //  onAccepted: () => {
+      //    this.session.removeListener('rejected', handlers.onRejected);
+      //  },
+      //  onRejected: (response: IncomingResponse, cause: string) => {
+      //    this.session.removeListener('accepted', handlers.onAccepted);
+      //  }
+      //};
+
+      //this.session.once('accepted', handlers.onAccepted);
+      //this.session.once('rejected', handlers.onRejected);
+    });
 
     // Terminated promise will resolve when the session is terminated. It will
     // be rejected when there is some fault is detected with the session after it
@@ -327,8 +333,9 @@ export class SessionImpl extends EventEmitter implements ISession {
 
   get autoAnswer(): boolean {
     const callInfo = this.session.request.headers['Call-Info'];
-    if (callInfo && callInfo[0]) {
-      return callInfo[0].raw.includes('answer-after=0');
+    if (callInfo && callInfo[0] && callInfo[0]) {
+      // ugly, not sure how to check if object with TS agreeing on my methods
+      return (callInfo[0] as { parsed?: any; raw: string }).raw.includes('answer-after=0');
     }
 
     return false;
@@ -350,56 +357,61 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.session.endTime;
   }
 
-  public accept(): Promise<void> {
-    if (this.rejectPromise) {
-      throw new Error('invalid operation: session is rejected');
-    }
+  // TODO
+  //public accept(): Promise<void> {
+  //  if (this.rejectPromise) {
+  //    throw new Error('invalid operation: session is rejected');
+  //  }
 
-    if (this.acceptPromise) {
-      return this.acceptPromise;
-    }
+  //  if (this.acceptPromise) {
+  //    return this.acceptPromise;
+  //  }
 
-    this.acceptPromise = new Promise((resolve, reject) => {
-      const handlers = {
-        onAnswered: () => {
-          this.session.removeListener('failed', handlers.onFail);
-          resolve();
-        },
-        onFail: (response: IncomingResponse, cause: string) => {
-          this.session.removeListener('accepted', handlers.onAnswered);
-          try {
-            reject(this.findCause(response, cause));
-          } catch (e) {
-            log.error(`Accepting session failed: ${e}`, this.constructor.name);
-            reject(e);
-          }
-        }
-      };
-      this.session.once('accepted', handlers.onAnswered);
-      this.session.once('failed', handlers.onFail);
+  //  this.acceptPromise = new Promise((resolve, reject) => {
+  //    const handlers = {
+  //      onAnswered: () => {
+  //        this.session.removeListener('failed', handlers.onFail);
+  //        resolve();
+  //      },
+  //      onFail: (response: IncomingResponse, cause: string) => {
+  //        this.session.removeListener('accepted', handlers.onAnswered);
+  //        try {
+  //          reject(this.findCause(response, cause));
+  //        } catch (e) {
+  //          log.error(`Accepting session failed: ${e}`, this.constructor.name);
+  //          reject(e);
+  //        }
+  //      }
+  //    };
+  //    this.session.once('accepted', handlers.onAnswered);
+  //    this.session.once('failed', handlers.onFail);
 
-      this.session.accept();
-    });
+  //    this.session.accept();
+  //  });
 
-    return this.acceptPromise;
-  }
+  //  return this.acceptPromise;
+  //}
+  //
+  //public reject(): Promise<void> {
+  //  if (this.acceptPromise) {
+  //    throw new Error('invalid operation: session is accepted');
+  //  }
 
-  public reject(): Promise<void> {
-    if (this.acceptPromise) {
-      throw new Error('invalid operation: session is accepted');
-    }
+  //  if (this.rejectPromise) {
+  //    return this.rejectPromise;
+  //  }
 
-    if (this.rejectPromise) {
-      return this.rejectPromise;
-    }
+  //  this.rejectPromise = new Promise(resolve => {
+  //    this.session.once('rejected', () => resolve());
+  //    // reject is immediate, it doesn't fail.
+  //    this.session.reject();
+  //  });
 
-    this.rejectPromise = new Promise(resolve => {
-      this.session.once('rejected', () => resolve());
-      // reject is immediate, it doesn't fail.
-      this.session.reject();
-    });
+  //  return this.rejectPromise;
+  //}
 
-    return this.rejectPromise;
+  public progressed(): Promise<void> {
+    return this.progressedPromise;
   }
 
   public accepted(): Promise<ISessionAccept> {
@@ -410,21 +422,20 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.terminatedPromise;
   }
 
-  public terminate(): Promise<void> {
-    this.session.terminate();
-    return this.terminatedPromise;
-  }
+  //public terminate(): Promise<void> {
+  //  this.session.terminate();
+  //  return this.terminatedPromise;
+  //}
 
-  public invite(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.session.invite(this.inviteOptions);
-    });
+  public invite(): Promise<Core.OutgoingInviteRequest> {
+    return this.session.invite(this.inviteOptions);
   }
 
   public async reinvite(): Promise<void> {
     const reinvitePromise = this.getReinvitePromise();
 
-    this.session.reinvite();
+    // TODO
+    //this.session.reinvite();
 
     await reinvitePromise;
   }
@@ -437,9 +448,10 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.setHoldState(false);
   }
 
-  public async blindTransfer(target: string): Promise<boolean> {
-    return this.transfer(target);
-  }
+  // TODO
+  //public async blindTransfer(target: string): Promise<boolean> {
+  //  return this.transfer(target);
+  //}
 
   public async attendedTransfer(target: SessionImpl): Promise<boolean> {
     return this.transfer(target.session);
@@ -448,9 +460,10 @@ export class SessionImpl extends EventEmitter implements ISession {
   /**
    * Reconfigure the WebRTC peerconnection.
    */
-  public rebuildSessionDescriptionHandler() {
-    this.session.rebuildSessionDescriptionHandler();
-  }
+  // TODO?
+  //public rebuildSessionDescriptionHandler() {
+  //  this.session.rebuildSessionDescriptionHandler();
+  //}
 
   /**
    * Function this.session.bye triggers terminated, so nothing else has to be
@@ -472,7 +485,8 @@ export class SessionImpl extends EventEmitter implements ISession {
     // Sends one tone after the other where the timeout is determined by the kind
     // of tone send. If one tone fails, the entire sequence is cleared. There is
     // no feedback about the failure.
-    this.session.dtmf(tones);
+    // TODO
+    //this.session.dtmf(tones);
   }
 
   public freeze(): ISession {
@@ -544,10 +558,12 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     if (flag) {
       log.debug('Hold requested', this.constructor.name);
-      this.session.hold();
+      // TODO
+      //this.session.hold();
     } else {
       log.debug('Unhold requested', this.constructor.name);
-      this.session.unhold();
+      // TODO
+      //this.session.unhold();
     }
 
     this.holdState = flag;
@@ -569,17 +585,17 @@ export class SessionImpl extends EventEmitter implements ISession {
    * session (a.k.a. InviteClientContext/InviteServerContext depending on
    * whether it is outbound or inbound) should then be passed to this function.
    *
-   * @param {InternalSession | string} target - Target to transfer this session to.
+   * @param {UserAgentSession | string} target - Target to transfer this session to.
    * @returns {Promise<boolean>} Promise that resolves when the transfer is made.
    */
-  private async transfer(target: InternalSession | string): Promise<boolean> {
+  private async transfer(target: UserAgentSession): Promise<boolean> {
     return pTimeout(this.isTransferredPromise(target), 20000, () => {
       log.error('Could not transfer the call', this.constructor.name);
       return Promise.resolve(false);
     });
   }
 
-  private async isTransferredPromise(target: InternalSession | string) {
+  private async isTransferredPromise(target: UserAgentSession) {
     const { referContext, options } = await new Promise((resolve, reject) => {
       this.session.once('referRequested', context => {
         log.debug('Refer is requested', this.constructor.name);
@@ -587,7 +603,8 @@ export class SessionImpl extends EventEmitter implements ISession {
       });
 
       try {
-        this.session.refer(target);
+        // TODO
+        //this.session.refer(target);
       } catch (e) {
         log.error(e, this.constructor.name);
         // When there are multiple attended transfer requests, it could occur

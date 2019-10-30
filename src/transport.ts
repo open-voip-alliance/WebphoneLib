@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Subscription, UA as UABase, Web } from 'sip.js';
+import { Invitation } from 'sip.js/lib/api/invitation'; // not available in pre-combiled bundles just yet
 import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state'; // not available in pre-combiled bundles just yet
@@ -389,8 +390,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private configureUA(options: UABase.Options) {
     this.userAgent = new UserAgent(this.uaOptionsNew);
     this.userAgent.delegate = {
-      onInvite(incomingSession: Session): void {
-        this.emit('invite', incomingSession);
+      onInvite(invitation: Invitation): void {
+        this.emit('invite', invitation);
       }
     };
 

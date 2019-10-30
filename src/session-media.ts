@@ -1,6 +1,8 @@
 import { EventEmitter } from 'events';
 
+import { Invitation } from 'sip.js/lib/api/invitation'; // not available in pre-combiled bundles just yet
 import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
+import { Session } from 'sip.js/lib/api/session';
 import { IncomingInviteRequest } from 'sip.js/lib/core';
 import { audioContext } from './audio-context';
 import * as Features from './features';
@@ -8,31 +10,30 @@ import { clamp } from './lib/utils';
 import { log } from './logger';
 import { Media } from './media';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
-import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
+//import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
   getLocalStreams: () => MediaStream[];
 }
 
-export type InternalSession = WrappedInviteClientContext &
-  WrappedInviteServerContext & {
-    sessionDescriptionHandler: {
-      peerConnection: IRTCPeerConnectionLegacy;
-    };
-
-    __streams: {
-      localStream: MediaStreamAudioDestinationNode;
-      remoteStream: MediaStream;
-    };
-
-    __media: SessionMedia;
-
-    on(
-      event: 'reinvite',
-      listener: (session: InternalSession, request: IncomingInviteRequest) => void
-    ): InternalSession;
+export type InternalSession = Session & {
+  _sessionDescriptionHandler: {
+    peerConnection: IRTCPeerConnectionLegacy;
   };
+
+  __streams: {
+    localStream: MediaStreamAudioDestinationNode;
+    remoteStream: MediaStream;
+  };
+
+  __media: SessionMedia;
+
+  on(
+    event: 'reinvite',
+    listener: (session: InternalSession, request: IncomingInviteRequest) => void
+  ): InternalSession;
+};
 
 interface ISessionMedia extends IMedia {
   on(event: 'setupFailed', listener: () => void): this;
@@ -63,10 +64,11 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
       output: Object.assign({}, media.output)
     };
 
-    session.on('terminated', () => {
-      this.stopInput();
-      this.stopOutput();
-    });
+    // TODO
+    //session.on('terminated', () => {
+    //  this.stopInput();
+    //  this.stopOutput();
+    //});
 
     const self = this;
 
@@ -111,7 +113,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
 
     // If muted; don't connect the node to the local stream.
     if (!newInput.muted) {
-      gainNode.connect(this.session.__streams.localStream);
+      gainNode.connect((this.session as any).__streams.localStream);
     }
     this.inputNode = gainNode;
     this.media.input = newInput;
@@ -142,7 +144,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
 
     this.audioOutput = audio;
     this.media.output = newOutput;
-    audio.srcObject = this.session.__streams.remoteStream;
+    audio.srcObject = (this.session as any).__streams.remoteStream;
 
     // This can fail if autoplay is not yet allowed.
     await audio.play();
@@ -169,7 +171,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
       if (newMuted) {
         this.inputNode.disconnect();
       } else {
-        this.inputNode.connect(this.session.__streams.localStream);
+        this.inputNode.connect((this.session as any).__streams.localStream);
       }
     }
 

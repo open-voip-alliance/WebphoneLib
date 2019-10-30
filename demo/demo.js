@@ -51,7 +51,7 @@ const media = {
 
 let activeSession = null;
 
-log.level = 'debug';
+log.level = 'info';
 log.connector = ({ level, context, message }) => {
   const print = {
     debug: console.debug,
@@ -74,7 +74,7 @@ client.on('statusUpdate', newStatus => {
   console.log(`Status update to ${newStatus}`);
 });
 
-outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
+outBtn.addEventListener('click', () => outgoingCall().catch(console.error));
 
 const subscribeTo = CONF.subscribeTo;
 
@@ -302,13 +302,13 @@ async function runSession(session) {
   }
 }
 
-async function outgoingCall(number) {
+async function outgoingCall() {
   const session = await client.invite(CONF.outgoingCallTo);
   if (!session) {
     return;
   }
 
-  console.log('created outgoing call', session.id, 'to', number);
+  console.log('created outgoing call', session.id, 'to', CONF.outgoingCall);
 
   if (await session.accepted()) {
     console.log('outgoing call got accepted', session.id);
