@@ -287,7 +287,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   public async resubscribe(uri: string) {
     if (!this.subscriptions[uri]) {
-      throw new Error('Cannot resubscribe to nonexistant subscription.');
+      throw new Error('Cannot resubscribe to nonexistent subscription.');
     }
 
     this.removeSubscription({ uri });
