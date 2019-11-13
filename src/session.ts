@@ -7,6 +7,7 @@ import {
   Grammar,
   IncomingResponse,
   NameAddrHeader,
+  SessionDescriptionHandlerModifiers,
   TypeStrings as SIPTypeStrings,
   Utils
 } from 'sip.js';
@@ -86,7 +87,7 @@ export interface ISession {
   /**
    * Put the session on hold.
    */
-  //hold(): Promise<boolean>;
+  hold(): Promise<boolean>;
 
   /**
    * Take the session out of hold.
@@ -191,7 +192,6 @@ export class SessionImpl extends EventEmitter implements ISession {
   private reinvitePromise: Promise<boolean>;
 
   private onTerminated: (sessionId: string) => void;
-
   private _remoteIdentity: IRemoteIdentity;
 
   constructor({
@@ -398,7 +398,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.acceptedSession;
   }
 
-  public async reinvite(): Promise<void> {
+  public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
     console.log('trying to invite again');
 
     //const reinvitePromise = this.getReinvitePromise();
@@ -407,15 +407,15 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     //await reinvitePromise;
     await new Promise((resolve, reject) => {
-      this.session.invite({
-        ...this.makeInviteOptions({
+      this.session.invite(
+        this.makeInviteOptions({
           onAccept: resolve,
           onReject: reject,
           onRejectThrow: reject,
-          onProgress: resolve
-        }),
-        withoutSdp: false
-      });
+          onProgress: resolve,
+          sessionDescriptionHandlerModifiers: modifiers
+        })
+      );
     });
     console.log('invited again!');
   }
@@ -442,11 +442,8 @@ export class SessionImpl extends EventEmitter implements ISession {
    */
   public rebuildSessionDescriptionHandler() {
     console.log('rebuilding');
-    //this.acceptedSession._sessionDescriptionHandler = undefined;
     (this.session as any)._sessionDescriptionHandler = undefined;
     (this.session as any).setupSessionDescriptionHandler();
-    //(this.session as any).setOfferAndGetAnswer();
-    //this.acceptedSession.progress();
   }
 
   /**
@@ -510,7 +507,13 @@ export class SessionImpl extends EventEmitter implements ISession {
     ]);
   }
 
-  private makeInviteOptions({ onAccept, onReject, onRejectThrow, onProgress }) {
+  private makeInviteOptions({
+    onAccept,
+    onReject,
+    onRejectThrow,
+    onProgress,
+    sessionDescriptionHandlerModifiers = []
+  }) {
     return {
       requestDelegate: {
         onAccept: response => {
@@ -544,7 +547,8 @@ export class SessionImpl extends EventEmitter implements ISession {
           audio: true,
           video: false
         }
-      }
+      },
+      sessionDescriptionHandlerModifiers
     };
   }
 
@@ -571,24 +575,23 @@ export class SessionImpl extends EventEmitter implements ISession {
     });
   }
 
-  private setHoldState(flag: boolean) {
+  private async setHoldState(flag: boolean) {
     if (this.holdState === flag) {
       return this.reinvitePromise;
     }
 
-    this.reinvitePromise = this.getReinvitePromise();
-
+    const modifiers = [];
     if (flag) {
       log.debug('Hold requested', this.constructor.name);
-      // TODO
-      //this.session.hold();
+      modifiers.push(this.session.sessionDescriptionHandler.holdModifier);
     } else {
       log.debug('Unhold requested', this.constructor.name);
-      // TODO
-      //this.session.unhold();
     }
 
+    await this.reinvite(modifiers);
+
     this.holdState = flag;
+
     this.status = flag ? SessionStatus.ON_HOLD : SessionStatus.ACTIVE;
     this.emit('statusUpdate', { id: this.id, status: this.status });
 
