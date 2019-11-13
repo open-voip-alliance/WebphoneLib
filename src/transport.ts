@@ -312,10 +312,17 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     log.debug(`isOnline: ${isOnline}`, this.constructor.name);
     if (isOnline) {
       await this.userAgent.transport.disconnect();
-      log.debug('Socket closed', this.constructor.name);
+      log.info('Socket closed', this.constructor.name);
 
       await this.userAgent.transport.connect();
-      log.debug('Socket opened', this.constructor.name);
+      log.info('Socket opened', this.constructor.name);
+
+      this.registeredPromise = this.createRegisteredPromise();
+
+      this.registerer.register();
+
+      await this.registeredPromise;
+      log.debug('Reregistered!', this.constructor.name);
 
       // Before the dyingCounter reached 0, there is a decent chance our
       // sessions are still alive and kicking. Let's try to revive them.
@@ -324,13 +331,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       }
 
       this.emit('reviveSubscriptions');
-
-      this.registeredPromise = this.createRegisteredPromise();
-
-      this.registerer.register();
-
-      await this.registeredPromise;
-      log.debug('Reregistered!', this.constructor.name);
 
       this.updateStatus(ClientStatus.CONNECTED);
       this.retry.timeout = 250;
@@ -428,7 +428,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }
 
     const tryOpeningSocketWithTimeout = () =>
-      pTimeout(this.isOnlinePromise(mode), 500, () => {
+      pTimeout(this.isOnlinePromise(mode), 5000, () => {
         // In the case that mode is BURST, throw an error which can be
         // catched by pRetry.
         if (mode === ReconnectionMode.BURST) {
@@ -450,7 +450,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // 500 ms to be able to quickly revive our connection once that succeeds.
     const retryOptions = {
       forever: true,
-      maxTimeout: 100,
+      maxTimeout: 100, // Note: this is time between retries, not time before operation times out
       minTimeout: 100,
       onFailedAttempt: error => {
         log.debug(
@@ -470,6 +470,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return tryOpeningSocketWithTimeout();
     }, retryOptions);
 
+    console.log(`dying counter: ${this.dyingCounter}`);
     return pTimeout(retryForever, this.dyingCounter, () => {
       log.info(
         'We could not recover the session(s) within 1 minute. ' +
