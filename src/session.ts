@@ -401,11 +401,6 @@ export class SessionImpl extends EventEmitter implements ISession {
   public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
     console.log('trying to invite again');
 
-    //const reinvitePromise = this.getReinvitePromise();
-
-    //this.session.invite();
-
-    //await reinvitePromise;
     await new Promise((resolve, reject) => {
       this.session.invite(
         this.makeInviteOptions({
@@ -550,29 +545,6 @@ export class SessionImpl extends EventEmitter implements ISession {
       },
       sessionDescriptionHandlerModifiers
     };
-  }
-
-  private getReinvitePromise(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const handlers = {
-        onReinviteAccepted: () => {
-          this.session.removeListener('reinviteFailed', handlers.onReinviteFailed);
-          // Calling resolve after removeListener, otherwise, when it fails,
-          // the resolved promise can not be rejected with an error trace
-          // anymore.
-          resolve(true);
-        },
-        onReinviteFailed: (e: Error) => {
-          this.session.removeListener('reinviteAccepted', handlers.onReinviteAccepted);
-          // Calling reject after removeListener, otherwise, when it fails,
-          // reject returns the wrong trace.
-          reject(e);
-        }
-      };
-
-      this.session.once('reinviteAccepted', handlers.onReinviteAccepted);
-      this.session.once('reinviteFailed', handlers.onReinviteFailed);
-    });
   }
 
   private async setHoldState(flag: boolean) {
