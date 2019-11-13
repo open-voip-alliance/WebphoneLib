@@ -5,6 +5,7 @@ import * as Features from './features';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
 import { ISession, SessionImpl } from './session';
+import { Inviter } from './inviter';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
 import { ITransport, ReconnectableTransport, TransportFactory } from './transport';
@@ -346,19 +347,6 @@ export class ClientImpl extends EventEmitter implements IClient {
       });
     });
 
-    //this.transport.on('invite', outgoingSession => {
-    //  const session = new SessionImpl({
-    //    media: this.defaultMedia,
-    //    session: outgoingSession,
-    //    onTerminated: this.onSessionTerminated.bind(this),
-    //    isIncoming: true
-    //  });
-
-    //  this.addSession(session);
-
-    //  this.emit('invite', session.freeze());
-    //});
-
     this.transport.on('invite', incomingSession => {
       const session = new SessionImpl({
         media: this.defaultMedia,
@@ -393,7 +381,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   private async tryInvite(phoneNumber: string): Promise<SessionImpl> {
     const outgoingSession = this.transport.invite(phoneNumber);
-    const session = new SessionImpl({
+    const session = new Inviter({
       media: this.defaultMedia,
       session: outgoingSession,
       onTerminated: this.onSessionTerminated.bind(this),

@@ -162,7 +162,7 @@ const CAUSE_ERRORS: string[] = [
   SIPConstants.causes.SIP_FAILURE_CODE
 ];
 
-interface ISessionAccept {
+export interface ISessionAccept {
   accepted: boolean;
   rejectCause?: SessionCause;
 }
@@ -180,13 +180,13 @@ export class SessionImpl extends EventEmitter implements ISession {
   public holdState: boolean;
   public status: SessionStatus = SessionStatus.RINGING;
 
-  private session: Inviter | Invitation;
-  private acceptedSession: any;
-  private inviteOptions: InviterInviteOptions;
+  protected acceptedPromise: Promise<ISessionAccept>;
+  protected inviteOptions: InviterInviteOptions;
+  protected session: Inviter | Invitation;
 
-  private acceptedPromise: Promise<ISessionAccept>;
+  private acceptedSession: any;
+
   private acceptPromise: Promise<void>;
-  private progressedPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
@@ -215,17 +215,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     });
     this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
-
-    this.progressedPromise = new Promise(progressResolve => {
-      this.acceptedPromise = new Promise((acceptedResolve, acceptedReject) => {
-        this.inviteOptions = this.makeInviteOptions({
-          onAccept: acceptedResolve,
-          onReject: acceptedResolve,
-          onRejectThrow: acceptedReject,
-          onProgress: progressResolve
-        });
-      });
-    });
 
     // Terminated promise will resolve when the session is terminated. It will
     // be rejected when there is some fault is detected with the session after it
@@ -322,41 +311,6 @@ export class SessionImpl extends EventEmitter implements ISession {
   get endTime(): Date {
     return this.session.endTime;
   }
-
-  // TODO
-  //public accept(): Promise<void> {
-  //  if (this.rejectPromise) {
-  //    throw new Error('invalid operation: session is rejected');
-  //  }
-
-  //  if (this.acceptPromise) {
-  //    return this.acceptPromise;
-  //  }
-
-  //  this.acceptPromise = new Promise((resolve, reject) => {
-  //    const handlers = {
-  //      onAnswered: () => {
-  //        this.session.removeListener('failed', handlers.onFail);
-  //        resolve();
-  //      },
-  //      onFail: (response: IncomingResponse, cause: string) => {
-  //        this.session.removeListener('accepted', handlers.onAnswered);
-  //        try {
-  //          reject(this.findCause(response, cause));
-  //        } catch (e) {
-  //          log.error(`Accepting session failed: ${e}`, this.constructor.name);
-  //          reject(e);
-  //        }
-  //      }
-  //    };
-  //    this.session.once('accepted', handlers.onAnswered);
-  //    this.session.once('failed', handlers.onFail);
-
-  //    this.session.accept();
-  //  });
-
-  //  return this.acceptPromise;
-  //}
   //
   //public reject(): Promise<void> {
   //  if (this.acceptPromise) {
@@ -376,11 +330,9 @@ export class SessionImpl extends EventEmitter implements ISession {
   //  return this.rejectPromise;
   //}
 
-  public progressed(): Promise<void> {
-    return this.progressedPromise;
-  }
-
+  // should figure out how to get promise for incoming
   public accepted(): Promise<ISessionAccept> {
+    throw new Error('Should be implemented in superclass');
     return this.acceptedPromise;
   }
 
@@ -392,11 +344,6 @@ export class SessionImpl extends EventEmitter implements ISession {
   //  this.session.terminate();
   //  return this.terminatedPromise;
   //}
-
-  public invite(): Promise<Core.OutgoingInviteRequest> {
-    this.acceptedSession = this.session.invite(this.inviteOptions);
-    return this.acceptedSession;
-  }
 
   public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
     console.log('trying to invite again');
@@ -480,8 +427,7 @@ export class SessionImpl extends EventEmitter implements ISession {
       'startTime',
       'stats',
       'status',
-
-      // TODO 'accept',
+      'accept',
       'accepted',
       'attendedTransfer',
       // TODO 'blindTransfer',
@@ -502,7 +448,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     ]);
   }
 
-  private makeInviteOptions({
+  protected makeInviteOptions({
     onAccept,
     onReject,
     onRejectThrow,
