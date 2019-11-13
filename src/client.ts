@@ -328,9 +328,9 @@ export class ClientImpl extends EventEmitter implements IClient {
     this.transport = this.transportFactory(uaFactory, options);
 
     this.transport.on('reviveSessions', () => {
+      console.log(`Active sessions: ${this.sessions.length}`);
       Object.values(this.sessions).forEach(async session => {
-        //TODO
-        //session.rebuildSessionDescriptionHandler();
+        session.rebuildSessionDescriptionHandler();
         await session.reinvite();
       });
     });
@@ -409,6 +409,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     try {
       await Promise.race([
         Promise.all([session.invite(), session.progressed()]),
+        session.accepted(), // progress is not always emitted, in that case accepted might have
         disconnectedPromise
       ]);
     } catch (e) {
@@ -418,6 +419,7 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.transport.removeListener('transportDisconnected', rejectWithError);
     }
 
+    console.log('sessoin invite succeeded');
     return session;
   }
 
@@ -436,6 +438,7 @@ export class ClientImpl extends EventEmitter implements IClient {
   private addSession(session: SessionImpl) {
     this.sessions[session.id] = session;
     this.emit('sessionAdded', { id: session.id });
+    console.log(this.sessions);
     this.updatePriority();
   }
 

@@ -180,6 +180,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   public status: SessionStatus = SessionStatus.RINGING;
 
   private session: Inviter | Invitation;
+  private acceptedSession: any;
   private inviteOptions: InviterInviteOptions;
 
   private acceptedPromise: Promise<ISessionAccept>;
@@ -217,63 +218,28 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     this.progressedPromise = new Promise(progressResolve => {
       this.acceptedPromise = new Promise((acceptedResolve, acceptedReject) => {
-        this.inviteOptions = {
-          requestDelegate: {
-            onAccept: response => {
-              this.status = SessionStatus.ACTIVE;
-              this.emit('statusUpdate', { id: this.id, status: this.status });
-              acceptedResolve({ accepted: true });
-            },
-            onReject: ({ message }: Core.IncomingResponse) => {
-              console.log(message);
-              try {
-                const cause = Utils.getReasonPhrase(message.statusCode);
-                acceptedResolve({
-                  accepted: false,
-                  rejectCause: this.findCause(message, cause)
-                });
-              } catch (e) {
-                console.log(message);
-                log.error(`Session failed: ${e}`, this.constructor.name);
-                acceptedReject(e);
-              }
-            },
-            onProgress: inviteResponse => {
-              console.log(inviteResponse);
-              progressResolve();
-            }
-          },
-          sessionDescriptionHandlerOptions: {
-            constraints: {
-              audio: true,
-              video: false
-            }
-          }
-        };
+        this.inviteOptions = this.makeInviteOptions({
+          onAccept: acceptedResolve,
+          onReject: acceptedResolve,
+          onRejectThrow: acceptedReject,
+          onProgress: progressResolve
+        });
       });
-      //const handlers = {
-      //  onAccepted: () => {
-      //    this.session.removeListener('rejected', handlers.onRejected);
-      //  },
-      //  onRejected: (response: IncomingResponse, cause: string) => {
-      //    this.session.removeListener('accepted', handlers.onAccepted);
-      //  }
-      //};
-
-      //this.session.once('accepted', handlers.onAccepted);
-      //this.session.once('rejected', handlers.onRejected);
     });
 
     // Terminated promise will resolve when the session is terminated. It will
     // be rejected when there is some fault is detected with the session after it
     // has been accepted.
     this.terminatedPromise = new Promise((resolve, reject) => {
-      this.session.stateChange.once((newState: SessionState) => {
+      this.session.stateChange.on((newState: SessionState) => {
+        console.log(`State changed to ${newState}`);
         if (newState === SessionState.Terminated) {
           this.onTerminated(this.id);
           this.emit('terminated', { id: this.id });
           this.status = SessionStatus.TERMINATED;
           this.emit('statusUpdate', { id: this.id, status: this.status });
+
+          resolve();
         }
       });
 
@@ -428,16 +394,30 @@ export class SessionImpl extends EventEmitter implements ISession {
   //}
 
   public invite(): Promise<Core.OutgoingInviteRequest> {
-    return this.session.invite(this.inviteOptions);
+    this.acceptedSession = this.session.invite(this.inviteOptions);
+    return this.acceptedSession;
   }
 
   public async reinvite(): Promise<void> {
-    const reinvitePromise = this.getReinvitePromise();
+    console.log('trying to invite again');
 
-    // TODO
-    //this.session.reinvite();
+    //const reinvitePromise = this.getReinvitePromise();
 
-    await reinvitePromise;
+    //this.session.invite();
+
+    //await reinvitePromise;
+    await new Promise((resolve, reject) => {
+      this.session.invite({
+        ...this.makeInviteOptions({
+          onAccept: resolve,
+          onReject: reject,
+          onRejectThrow: reject,
+          onProgress: resolve
+        }),
+        withoutSdp: false
+      });
+    });
+    console.log('invited again!');
   }
 
   public hold(): Promise<boolean> {
@@ -460,10 +440,14 @@ export class SessionImpl extends EventEmitter implements ISession {
   /**
    * Reconfigure the WebRTC peerconnection.
    */
-  // TODO?
-  //public rebuildSessionDescriptionHandler() {
-  //  this.session.rebuildSessionDescriptionHandler();
-  //}
+  public rebuildSessionDescriptionHandler() {
+    console.log('rebuilding');
+    //this.acceptedSession._sessionDescriptionHandler = undefined;
+    (this.session as any)._sessionDescriptionHandler = undefined;
+    (this.session as any).setupSessionDescriptionHandler();
+    //(this.session as any).setOfferAndGetAnswer();
+    //this.acceptedSession.progress();
+  }
 
   /**
    * Function this.session.bye triggers terminated, so nothing else has to be
@@ -505,17 +489,17 @@ export class SessionImpl extends EventEmitter implements ISession {
       'stats',
       'status',
 
-      'accept',
+      // TODO 'accept',
       'accepted',
       'attendedTransfer',
-      'blindTransfer',
+      // TODO 'blindTransfer',
       'bye',
       'dtmf',
       'freeze',
       'hold',
       'reinvite',
-      'reject',
-      'terminate',
+      // TODO 'reject',
+      // TODO 'terminate',
       'terminated',
       'unhold',
 
@@ -524,6 +508,44 @@ export class SessionImpl extends EventEmitter implements ISession {
       'removeAllListeners',
       'removeListener'
     ]);
+  }
+
+  private makeInviteOptions({ onAccept, onReject, onRejectThrow, onProgress }) {
+    return {
+      requestDelegate: {
+        onAccept: response => {
+          console.log('session is accepted1!');
+          this.status = SessionStatus.ACTIVE;
+          this.emit('statusUpdate', { id: this.id, status: this.status });
+          onAccept({ accepted: true });
+        },
+        onReject: ({ message }: Core.IncomingResponse) => {
+          console.log('session is rejected');
+          try {
+            const cause = Utils.getReasonPhrase(message.statusCode);
+            onReject({
+              accepted: false,
+              rejectCause: this.findCause(message, cause)
+            });
+          } catch (e) {
+            console.log(message);
+            log.error(`Session failed: ${e}`, this.constructor.name);
+            onReject(e);
+          }
+        },
+        onProgress: inviteResponse => {
+          console.log('session is in progress');
+          console.log(inviteResponse);
+          onProgress();
+        }
+      },
+      sessionDescriptionHandlerOptions: {
+        constraints: {
+          audio: true,
+          video: false
+        }
+      }
+    };
   }
 
   private getReinvitePromise(): Promise<boolean> {

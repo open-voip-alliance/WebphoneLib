@@ -49,7 +49,7 @@ const media = {
 
 let activeSession = null;
 
-log.level = 'info';
+log.level = 'debug';
 log.connector = ({ level, context, message }) => {
   const print = {
     debug: console.debug,
@@ -64,8 +64,12 @@ log.connector = ({ level, context, message }) => {
 
 const client = new Client({ account, transport, media });
 
-client.on('sessionsUpdate', sessions => {
-  sessionsCount.innerHTML = Object.keys(sessions).length;
+client.on('sessionAdded', () => {
+  sessionsCount.innerHTML = client.getSessions().length;
+});
+
+client.on('sessionRemoved', () => {
+  sessionsCount.innerHTML = client.getSessions().length;
 });
 
 client.on('statusUpdate', newStatus => {
@@ -89,8 +93,9 @@ registerBtn.addEventListener('click', () =>
     .connect()
     .then(async () => {
       console.log('connected!');
-      await client.subscribe(subscribeTo);
-      console.log('subscribed!');
+      // TODO leaving this to avoid too much logs for a bit
+      //await client.subscribe(subscribeTo);
+      //console.log('subscribed!');
     })
     .catch(e => {
       console.error(e);
@@ -220,11 +225,11 @@ outMute.addEventListener('change', function() {
 });
 
 function printStats(stats) {
-  const last = (stats.mos.last || 0).toFixed(2);
-  const low = (stats.mos.lowest || 0).toFixed(2);
-  const high = (stats.mos.highest || 0).toFixed(2);
-  const avg = (stats.mos.average || 0).toFixed(2);
-  console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
+  //  const last = (stats.mos.last || 0).toFixed(2);
+  //  const low = (stats.mos.lowest || 0).toFixed(2);
+  //  const high = (stats.mos.highest || 0).toFixed(2);
+  //  const avg = (stats.mos.average || 0).toFixed(2);
+  //  console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
 }
 
 async function attendedTransfer(session) {
@@ -265,10 +270,10 @@ async function runSession(session) {
     .then(() => console.log('audio connected!'))
     .catch(() => console.error('connecting audio failed'));
 
-  session.on('callQualityUpdate', stats => {
-    printStats(stats);
-    mos.innerHTML = (stats.mos.last || 0).toFixed(2);
-  });
+  //session.on('callQualityUpdate', stats => {
+  //  printStats(stats);
+  //  mos.innerHTML = (stats.mos.last || 0).toFixed(2);
+  //});
 
   try {
     inCall.hidden = false;
@@ -278,6 +283,7 @@ async function runSession(session) {
     blindTransferBtn.addEventListener('click', blindTransfer);
     attendedTransferBtn.addEventListener('click', attTransfer);
 
+    console.log('waiting for terminated');
     await session.terminated();
     console.log('session is terminated now');
   } finally {
@@ -299,7 +305,7 @@ async function outgoingCall() {
     return;
   }
 
-  console.log('created outgoing call', session.id, 'to', CONF.outgoingCall);
+  console.log('created outgoing call', session.id, 'to', CONF.outgoingCallTo);
 
   if (await session.accepted()) {
     console.log('outgoing call got accepted', session.id);

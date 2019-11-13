@@ -43,14 +43,14 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
   public readonly input: IMediaInput;
   public readonly output: IMediaOutput;
 
-  private session: Inviter;
+  private session: Inviter | Invitation;
 
   private media: IMedia;
   private audioOutput: HTMLAudioElement;
   private inputStream: MediaStream;
   private inputNode: GainNode;
 
-  public constructor(session: Inviter, media: IMedia) {
+  public constructor(session: Inviter | Invitation, media: IMedia) {
     super();
 
     this.session = session;
