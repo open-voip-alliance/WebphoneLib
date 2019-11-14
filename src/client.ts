@@ -268,11 +268,16 @@ export class ClientImpl extends EventEmitter implements IClient {
           resolve();
         },
         onNotify: (dialog: ISubscriptionNotification) =>
-          this.emit('subscriptionNotify', uri, statusFromDialog(dialog))
+          this.emit('subscriptionNotify', uri, statusFromDialog(dialog)),
+        onTerminated: () => {
+          delete this.subscriptions[uri];
+          this.emit('subscriptionTerminated', uri);
+        }
       };
 
       this.subscriptions[uri].on('failed', handlers.onFailed);
       this.subscriptions[uri].on('notify', handlers.onNotify);
+      this.subscriptions[uri].on('terminated', handlers.onTerminated);
       this.subscriptions[uri].once('notify', handlers.onFirstNotify);
 
       this.subscriptions[uri].subscribe();
