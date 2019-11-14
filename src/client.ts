@@ -244,24 +244,23 @@ export class ClientImpl extends EventEmitter implements IClient {
             return;
           }
 
-          const retryAfter = response.getHeader('Retry-After');
-          if (!retryAfter) {
-            this.removeSubscription({ uri });
-            reject();
-            return;
-          }
+          let waitTime = 100;
 
-          log.info(
-            `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
-            this.constructor.name
-          );
+          const retryAfter = response.getHeader('Retry-After');
+          if (retryAfter) {
+            log.info(
+              `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
+              this.constructor.name
+            );
+            waitTime = Number(retryAfter) * second;
+          }
 
           setTimeout(() => {
             this.removeSubscription({ uri });
             this.subscribe(uri)
               .then(resolve)
               .catch(reject);
-          }, Number(retryAfter) * second);
+          }, waitTime);
         },
         onFirstNotify: () => {
           this.subscriptions[uri].removeListener('failed', handlers.onFailed);
