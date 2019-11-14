@@ -422,6 +422,10 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 
   private removeSubscription({ uri, unsubscribe = false }) {
+    if (!(uri in this.subscriptions)) {
+      return;
+    }
+
     this.subscriptions[uri].removeAllListeners();
 
     if (unsubscribe) {

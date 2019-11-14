@@ -11,14 +11,16 @@
       <input id="reconfigure" type="button" value="Reconfigure" />
       <input id="register" type="button" value="Register" />
       <input id="unregister" type="button" value="Unregister" />
-      <input id="resubscribe" type="button" value="Resubscribe"/>
+      <input id="subscribe" type="button" value="Subscribe" />
+      <input id="resubscribe" type="button" value="Resubscribe" />
+      <input id="unsubscribe" type="button" value="Unsubscribe" />
     </div>
     <div id="in-call" hidden>
       <input id="bye" type="button" value="Bye now..." />
       <input id="hold" type="button" value="Hold" />
       <input id="unhold" type="button" value="Unhold" />
       <input id="blindtransfer" type="button" value="Blind transfer" />
-      <input id="attendedtransfer" type="button" value="Attended transfer"/>
+      <input id="attendedtransfer" type="button" value="Attended transfer" />
       MOS: <span id="mos"></span>
       <div>
         <input id="dtmf-0" type="button" value="0" />
@@ -47,13 +49,18 @@
     </div>
     <h4>Devices</h4>
     <div>
-      <div>Input: <select id="input"></select></div>
-      <div>Output: <select id="output"></select></div>
+      <div>
+        Input:
+        <select id="input"></select>
+      </div>
+      <div>
+        Output:
+        <select id="output"></select>
+      </div>
       <button id="play">Test output</button>
     </div>
-    <br>
+    <br />
     Active sessions: <span id="sessions-count">0</span>
     <script type="module" src="./demo.js"></script>
   </body>
-
 </html>

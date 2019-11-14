@@ -18,7 +18,9 @@ const outVol = document.querySelector('#outVol');
 const inMute = document.querySelector('#inMute');
 const outMute = document.querySelector('#outMute');
 const mos = document.querySelector('#mos');
+const subscribeBtn = document.querySelector('#subscribe');
 const resubscribeBtn = document.querySelector('#resubscribe');
+const unsubscribeBtn = document.querySelector('#unsubscribe');
 const sessionsCount = document.querySelector('#sessions-count');
 
 const account = {
@@ -76,6 +78,9 @@ client.on('invite', incomingCall);
 client.on('subscriptionNotify', (notifiedContact, notification) => {
   console.log(`${notifiedContact}: ${notification}`);
 });
+client.on('subscriptionTerminated', notifiedContact => {
+  console.log(`${notifiedContact}: terminated`);
+});
 
 reconfigureBtn.addEventListener('click', () =>
   client.reconfigure({ account, transport }).catch(console.error)
@@ -90,10 +95,14 @@ registerBtn.addEventListener('click', () =>
     .catch(console.error)
 );
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
+subscribeBtn.addEventListener('click', () => client.subscribe(subscribeTo).catch(console.error));
 resubscribeBtn.addEventListener('click', async () => {
   await client.resubscribe(subscribeTo).catch(console.error);
   console.log('resubscribed!');
 });
+unsubscribeBtn.addEventListener('click', () =>
+  client.unsubscribe(subscribeTo).catch(console.error)
+);
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
