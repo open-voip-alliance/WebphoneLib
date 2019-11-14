@@ -1,25 +1,23 @@
 {
-    "env": {
-        "browser": true,
-        "es6": true
-    },
-    "extends": [
-        "eslint:recommended",
-        "plugin:prettier/recommended"
-    ],
-    "globals": {
-        "Atomics": "readonly",
-        "SharedArrayBuffer": "readonly"
-    },
-    "parserOptions": {
-        "ecmaVersion": 9,
-        "sourceType": "module"
-    },
-    "rules": {
-        "curly": ["error", "all"],
-        "brace-style": ["error", "1tbs"],
-        "indent": ["warn", 2],
-        "no-console": "off",
-        "prettier/prettier": "off"
-    }
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "extends": ["eslint:recommended", "plugin:prettier/recommended"],
+  "globals": {
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly"
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 9,
+    "sourceType": "module"
+  },
+  "rules": {
+    "curly": ["error", "all"],
+    "brace-style": ["error", "1tbs"],
+    "indent": ["warn", 2],
+    "no-console": "off",
+    "prettier/prettier": "off"
+  }
 }
