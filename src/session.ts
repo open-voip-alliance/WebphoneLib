@@ -396,20 +396,24 @@ export class SessionImpl extends EventEmitter implements ISession {
     this.session.bye();
   }
 
-  public dtmf(tones: string): void {
+  /**
+   * Returns true if the DTMF was successful.
+   */
+  public dtmf(tones: string): boolean {
     // Unfortunately there is no easy way to give feedback about the DTMF
     // tones. SIP.js uses one of two methods for sending the DTMF:
     //
     // 1. RTP (via the SDH)
-    // Internally returns a `boolean` for the whole strong.
+    // Internally returns a `boolean` for the whole string.
     //
     // 2. INFO (websocket)
     //
     // Sends one tone after the other where the timeout is determined by the kind
     // of tone send. If one tone fails, the entire sequence is cleared. There is
     // no feedback about the failure.
-    // TODO
-    //this.session.dtmf(tones);
+    //
+    // For now only use the RTP method using the session description handler.
+    return this.session.sessionDescriptionHandler.sendDtmf(tones);
   }
 
   public freeze(): ISession {
@@ -427,7 +431,7 @@ export class SessionImpl extends EventEmitter implements ISession {
       'startTime',
       'stats',
       'status',
-      'accept',
+      // 'accept',
       'accepted',
       'attendedTransfer',
       // TODO 'blindTransfer',
