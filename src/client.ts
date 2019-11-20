@@ -2,10 +2,10 @@ import { EventEmitter } from 'events';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
+import { Inviter } from './inviter';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
 import { ISession, SessionImpl } from './session';
-import { Inviter } from './inviter';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
 import { ITransport, ReconnectableTransport, TransportFactory } from './transport';

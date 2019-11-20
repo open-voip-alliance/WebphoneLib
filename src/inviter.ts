@@ -10,7 +10,6 @@ export class Inviter extends SessionImpl {
 
     this.progressedPromise = new Promise(progressResolve => {
       this.acceptedPromise = new Promise((acceptedResolve, acceptedReject) => {
-        // This only works for outgoing calls
         this.inviteOptions = this.makeInviteOptions({
           onAccept: acceptedResolve,
           onReject: acceptedResolve,
