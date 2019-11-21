@@ -442,7 +442,7 @@ export class SessionImpl extends EventEmitter implements ISession {
       'startTime',
       'stats',
       'status',
-      // 'accept',
+      'accept',
       'accepted',
       'attendedTransfer',
       'blindTransfer',

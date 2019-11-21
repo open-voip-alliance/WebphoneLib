@@ -347,6 +347,10 @@ async function incomingCall(session) {
 
   let terminateTimer;
   try {
+    if (session.autoAnswer) {
+      await session.accept();
+    }
+
     const { accepted, rejectCause } = await session.accepted();
     if (accepted) {
       console.log('session is accepted \\o/', session.id);

@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
+import { Invitation } from './invitation';
 import { Inviter } from './inviter';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
@@ -355,7 +356,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     });
 
     this.transport.on('invite', incomingSession => {
-      const session = new SessionImpl({
+      const session = new Invitation({
         media: this.defaultMedia,
         session: incomingSession,
         onTerminated: this.onSessionTerminated.bind(this),

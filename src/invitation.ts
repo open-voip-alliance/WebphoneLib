@@ -12,7 +12,7 @@ export class Invitation extends SessionImpl {
   }
 
   public accept(): Promise<void> {
-    return (this.session as any).accept().then(this.acceptedRef);
+    return (this.session as any).accept().then(() => this.acceptedRef({ accepted: true }));
   }
 
   public accepted(): Promise<ISessionAccept> {
