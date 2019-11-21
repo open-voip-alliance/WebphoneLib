@@ -99,7 +99,7 @@ registerBtn.addEventListener('click', () =>
     .then(async () => {
       console.log('connected!');
       // TODO leaving this to avoid too much logs for a bit
-      //await client.subscribe(subscribeTo);
+      await client.subscribe(subscribeTo);
       //console.log('subscribed!');
     })
     .catch(e => {

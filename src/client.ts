@@ -12,8 +12,10 @@ import { ITransport, ReconnectableTransport, TransportFactory } from './transpor
 import { IClientOptions, IMedia } from './types';
 
 import { Core, UA as UABase } from 'sip.js';
+import { Notification } from 'sip.js/lib/api/notification'; // not available in pre-combiled bundles just yet
 import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
 import { Subscriber } from 'sip.js/lib/api/subscriber'; // not available in pre-combiled bundles just yet
+import { SubscriptionState } from 'sip.js/lib/api/subscription-state'; // not available in pre-combiled bundles just yet
 import { UA, UAFactory } from './ua';
 
 // TODO: use EventTarget instead of EventEmitter.
@@ -239,48 +241,49 @@ export class ClientImpl extends EventEmitter implements IClient {
 
       this.subscriptions[uri] = this.transport.subscribe(uri);
 
-      const handlers = {
-        onFailed: (response: Core.IncomingResponseMessage) => {
-          if (!response) {
-            this.removeSubscription({ uri });
-            reject();
-            return;
-          }
-
-          let waitTime = 100;
-
-          const retryAfter = response.getHeader('Retry-After');
-          if (retryAfter) {
-            log.info(
-              `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
-              this.constructor.name
-            );
-            waitTime = Number(retryAfter) * second;
-          }
-
-          setTimeout(() => {
-            this.removeSubscription({ uri });
-            this.subscribe(uri)
-              .then(resolve)
-              .catch(reject);
-          }, waitTime);
-        },
-        onFirstNotify: () => {
-          this.subscriptions[uri].removeListener('failed', handlers.onFailed);
-          resolve();
-        },
-        onNotify: (dialog: ISubscriptionNotification) =>
-          this.emit('subscriptionNotify', uri, statusFromDialog(dialog)),
-        onTerminated: () => {
-          delete this.subscriptions[uri];
-          this.emit('subscriptionTerminated', uri);
+      this.subscriptions[uri].delegate = {
+        onNotify: (notification: Notification) => {
+          this.emit('subscriptionNotify', uri, statusFromDialog(notification));
         }
       };
 
-      this.subscriptions[uri].on('failed', handlers.onFailed);
-      this.subscriptions[uri].on('notify', handlers.onNotify);
-      this.subscriptions[uri].on('terminated', handlers.onTerminated);
-      this.subscriptions[uri].once('notify', handlers.onFirstNotify);
+      this.subscriptions[uri].stateChange.on((newState: SubscriptionState) => {
+        switch (newState) {
+          case SubscriptionState.Subscribed:
+            resolve();
+            break;
+          case SubscriptionState.Terminated:
+            delete this.subscriptions[uri];
+            this.emit('subscriptionTerminated', uri);
+            break;
+        }
+      });
+
+      this.subscriptions[uri].on('failed', (response: Core.IncomingResponseMessage) => {
+        if (!response) {
+          this.removeSubscription({ uri });
+          reject();
+          return;
+        }
+
+        let waitTime = 100;
+
+        const retryAfter = response.getHeader('Retry-After');
+        if (retryAfter) {
+          log.info(
+            `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
+            this.constructor.name
+          );
+          waitTime = Number(retryAfter) * second;
+        }
+
+        setTimeout(() => {
+          this.removeSubscription({ uri });
+          this.subscribe(uri)
+            .then(resolve)
+            .catch(reject);
+        }, waitTime);
+      });
 
       this.subscriptions[uri].subscribe();
     });
