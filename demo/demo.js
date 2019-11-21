@@ -51,7 +51,7 @@ const media = {
 
 let activeSession = null;
 
-log.level = 'debug';
+log.level = 'info';
 log.connector = ({ level, context, message }) => {
   const print = {
     debug: console.debug,
@@ -252,8 +252,9 @@ async function attendedTransfer(session) {
 
     // Giving 10 seconds to talk between session & toSession
     setTimeout(async () => {
+      console.log('Initiating attended transfer');
       client.attendedTransfer(session, toSession);
-    }, 10000);
+    }, 5000);
 
     await toSession.terminated();
     console.log('Second session got terminated');
@@ -323,8 +324,6 @@ async function outgoingCall() {
     console.log('outgoing call was rejected', session.id);
     await session.terminated();
   }
-
-  await runSession(session);
 
   console.log('session is terminated', session.id);
 }

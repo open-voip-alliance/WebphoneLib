@@ -18,6 +18,7 @@ import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options'; //
 import { Referrer } from 'sip.js/lib/api/referrer'; // not available in pre-combiled bundles just yet
 import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
 import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
+import { UserAgent } from 'sip.js/lib/api/user-agent'; // not available in pre-combiled bundles just yet
 import { SessionStatus } from './enums';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
@@ -99,7 +100,6 @@ export interface ISession {
    * Blind transfer the current session to a target number.
    * @param {string} target - Number to transfer to.
    */
-  // TODO
   blindTransfer(target: string): Promise<boolean>;
   bye(): void;
 
@@ -371,21 +371,30 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.setHoldState(false);
   }
 
-  // TODO
   public async blindTransfer(target: string): Promise<boolean> {
-    //return this.transfer(target);
-    return Promise.resolve(true);
+    return this.transfer(UserAgent.makeURI(target)).then(success => {
+      if (success) {
+        this.bye();
+      }
+
+      return Promise.resolve(success);
+    });
   }
 
   public async attendedTransfer(target: SessionImpl): Promise<boolean> {
-    return this.transfer(target.session);
+    return this.transfer(target.session).then(success => {
+      if (success) {
+        this.bye();
+      }
+
+      return Promise.resolve(success);
+    });
   }
 
   /**
    * Reconfigure the WebRTC peerconnection.
    */
   public rebuildSessionDescriptionHandler() {
-    console.log('rebuilding');
     (this.session as any)._sessionDescriptionHandler = undefined;
     (this.session as any).setupSessionDescriptionHandler();
   }
@@ -436,7 +445,7 @@ export class SessionImpl extends EventEmitter implements ISession {
       // 'accept',
       'accepted',
       'attendedTransfer',
-      // TODO 'blindTransfer',
+      'blindTransfer',
       'bye',
       'dtmf',
       'freeze',
@@ -537,21 +546,26 @@ export class SessionImpl extends EventEmitter implements ISession {
    * @param {UserAgentSession | string} target - Target to transfer this session to.
    * @returns {Promise<boolean>} Promise that resolves when the transfer is made.
    */
-  private async transfer(target: UserAgentSession): Promise<boolean> {
+  private async transfer(target: Core.URI | UserAgentSession): Promise<boolean> {
     return pTimeout(this.isTransferredPromise(target), 20000, () => {
       log.error('Could not transfer the call', this.constructor.name);
       return Promise.resolve(false);
     });
   }
 
-  private async isTransferredPromise(target: UserAgentSession) {
+  private async isTransferredPromise(target: Core.URI | UserAgentSession) {
     return new Promise<boolean>(resolve => {
-      const options = {
+      const referrer = new Referrer(this.session, target);
+
+      referrer.refer({
         requestDelegate: {
           onAccept: () => {
             console.log('Transferred session is accepted!');
             resolve(true);
           },
+          // Refer can be rejected with the following responses:
+          // - 503: Service Unavailable (i.e. server can't handle one-legged transfers)
+          // - 603: Declined
           onReject: () => {
             console.log('Transferred session is rejected!');
             resolve(false);
@@ -560,58 +574,8 @@ export class SessionImpl extends EventEmitter implements ISession {
             // log.debug(notification, this.constructor.name);
           }
         }
-      };
-
-      const referrer = new Referrer(this.session, target);
-
-      referrer.refer(options);
+      });
     });
-
-    //const { referContext, options } = await new Promise((resolve, reject) => {
-    //  this.session.once('referRequested', context => {
-    //    log.debug('Refer is requested', this.constructor.name);
-    //    resolve(context);
-    //  });
-
-    //  try {
-    //    // TODO
-    //    //this.session.refer(target);
-    //  } catch (e) {
-    //    log.error(e, this.constructor.name);
-    //    // When there are multiple attended transfer requests, it could occur
-    //    // that the status of this session is set by another one of these requests
-    //    // is set to an unexpected state.
-    //    if (e.type === SIPTypeStrings.InvalidStateError) {
-    //      reject();
-    //    }
-
-    //    throw e;
-    //  }
-    //});
-
-    //return new Promise<boolean>(resolve => {
-    //  const handlers = {
-    //    onReferAccepted: () => {
-    //      log.debug('Refer is accepted', this.constructor.name);
-    //      referContext.removeListener('referRejected', handlers.onReferRejected);
-    //      resolve(true);
-    //    },
-    //    // Refer can be rejected with the following responses:
-    //    // - 503: Service Unavailable (i.e. server can't handle one-legged transfers)
-    //    // - 603: Declined
-    //    onReferRejected: () => {
-    //      log.debug('Refer is rejected', this.constructor.name);
-    //      referContext.removeListener('referAccepted', handlers.onReferAccepted);
-    //      resolve(false);
-    //    }
-    //  };
-
-    //  referContext.once('referAccepted', handlers.onReferAccepted);
-    //  referContext.once('referRejected', handlers.onReferRejected);
-
-    //  // Refer after the handlers have been set.
-    //  referContext.refer(options);
-    //});
   }
 
   private findCause(response: IncomingResponse, cause: string): SessionCause {
