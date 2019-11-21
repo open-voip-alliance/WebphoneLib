@@ -62,23 +62,6 @@ const connector = (level, category, label, content) => {
  * @hidden
  */
 export class ReconnectableTransport extends EventEmitter implements ITransport {
-  private get defaultOptions() {
-    return {
-      autostart: false,
-      autostop: false,
-      log: {
-        builtinEnabled: true,
-        connector: undefined,
-        level: 'warn'
-      },
-      noAnswerTimeout: 60,
-      register: false,
-      registerOptions: {
-        expires: 3600
-      }
-    };
-  }
-
   public transportConnectedPromise: Promise<any>;
   public registeredPromise: Promise<any>;
   public registered: boolean = false;
@@ -87,8 +70,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private unregisteredPromise: Promise<any>;
   private uaFactory: UAFactory;
   private ua: IUA;
-  private uaOptions: UABase.Options;
-  private uaOptionsNew: UserAgentOptions;
+  private uaOptions: UserAgentOptions;
   private userAgent: UserAgent;
   private dyingCounter: number = 60000;
   private wsTimeout: number = 10000;
@@ -122,7 +104,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       modifiers.push(Web.Modifiers.stripG722);
     }
 
-    this.uaOptionsNew = {
+    this.uaOptions = {
+      autoStart: false,
+      autoStop: false,
+      noAnswerTimeout: 60,
       authorizationUsername: account.user,
       authorizationPassword: account.password,
       displayName: userAgent || 'vialer-calling-lib',
@@ -146,36 +131,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         wsServers: transport.wsServers
       },
       uri
-    };
-
-    this.uaOptions = {
-      ...this.defaultOptions,
-      authorizationUser: account.user,
-      log: {
-        builtinEnabled: false,
-        connector,
-        level: 'debug'
-      },
-      password: account.password,
-      sessionDescriptionHandlerFactory,
-      sessionDescriptionHandlerFactoryOptions: {
-        alwaysAcquireMediaFirst: Features.isFirefox,
-        constraints: { audio: true, video: false },
-        modifiers,
-        peerConnectionOptions: {
-          rtcConfiguration: {
-            iceServers: transport.iceServers.map((s: string) => ({ urls: s }))
-          }
-        }
-      },
-      transportConstructor: WrappedTransport,
-      transportOptions: {
-        maxReconnectionAttempts: 0,
-        traceSip: true,
-        wsServers: transport.wsServers
-      },
-      uri: account.uri,
-      userAgentString: userAgent || 'vialer-calling-lib'
     };
   }
 
@@ -210,8 +165,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return this.registeredPromise;
     }
 
-    //this.ua.start();
-
     await pTimeout(this.userAgent.start(), this.wsTimeout, () =>
       Promise.reject(new Error('Could not connect to the websocket in time.'))
     );
@@ -219,8 +172,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.registeredPromise = this.createRegisteredPromise();
 
     this.registerer.register();
-
-    //this.ua.register();
 
     return this.registeredPromise;
   }
@@ -387,8 +338,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     });
   }
 
-  private configureUA(options: UABase.Options) {
-    this.userAgent = new UserAgent(this.uaOptionsNew);
+  private configureUA(options: UserAgentOptions) {
+    this.userAgent = new UserAgent(this.uaOptions);
     this.userAgent.delegate = {
       onInvite: (invitation: Invitation) => {
         this.emit('invite', invitation);
@@ -396,25 +347,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     };
 
     this.userAgent.transport.on('disconnected', this.onTransportDisconnected.bind(this));
-
-    //this.transportConnectedPromise = new Promise(resolve => {
-    //
-    //});
-
-    //this.ua = this.uaFactory(options);
-    //this.ua.on('invite', uaSession => this.emit('invite', uaSession));
-
-    //this.transportConnectedPromise = new Promise(resolve => {
-    //  this.ua.once('transportCreated', () => {
-    //    log.debug('Transport created.', this.constructor.name);
-    //    this.ua.transport.once('connected', () => {
-    //      log.debug('Transport connected.', this.constructor.name);
-    //      resolve();
-    //    });
-
-    //    this.ua.transport.on('disconnected', this.onTransportDisconnected.bind(this));
-    //  });
-    //});
   }
 
   private isOnline(mode: ReconnectionMode): Promise<any> {
