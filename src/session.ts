@@ -249,7 +249,7 @@ export class SessionImpl extends EventEmitter implements ISession {
       //});
     });
 
-    this._remoteIdentity = this.getRemoteIdentity(this.session.request);
+    this._remoteIdentity = this.getRemoteIdentity();
 
     // TODO
     //this.session.on('reinvite', (_, request) => {
@@ -331,10 +331,8 @@ export class SessionImpl extends EventEmitter implements ISession {
   //  return this.rejectPromise;
   //}
 
-  // should figure out how to get promise for incoming
   public accepted(): Promise<ISessionAccept> {
     throw new Error('Should be implemented in superclass');
-    return this.acceptedPromise;
   }
 
   public terminated(): Promise<void> {
@@ -347,12 +345,15 @@ export class SessionImpl extends EventEmitter implements ISession {
   //}
 
   public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
-    console.log('trying to invite again');
-
     await new Promise((resolve, reject) => {
       this.session.invite(
         this.makeInviteOptions({
-          onAccept: resolve,
+          onAccept: () => {
+            this._remoteIdentity = this.getRemoteIdentity();
+            this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
+            console.log(this._remoteIdentity);
+            resolve();
+          },
           onReject: reject,
           onRejectThrow: reject,
           onProgress: resolve,
@@ -360,7 +361,6 @@ export class SessionImpl extends EventEmitter implements ISession {
         })
       );
     });
-    console.log('invited again!');
   }
 
   public hold(): Promise<boolean> {
@@ -608,21 +608,12 @@ export class SessionImpl extends EventEmitter implements ISession {
     return undefined;
   }
 
-  private getRemoteIdentity(request): IRemoteIdentity {
-    let identity: NameAddrHeader;
-    ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
-      if (request.hasHeader(header)) {
-        identity = Grammar.nameAddrHeaderParse(request.getHeader(header));
-        return true;
-      }
-    });
-
-    let phoneNumber = this.session.remoteIdentity.uri.user;
+  private getRemoteIdentity() {
+    let phoneNumber: string = this.session.remoteIdentity.uri.user;
     let displayName: string;
-
-    if (identity) {
-      phoneNumber = (identity.uri as any).normal.user;
-      displayName = identity.displayName;
+    if (this.session.assertedIdentity) {
+      phoneNumber = this.session.assertedIdentity.uri.user;
+      displayName = this.session.assertedIdentity.displayName;
     }
 
     return { phoneNumber, displayName };

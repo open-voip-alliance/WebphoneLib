@@ -31,4 +31,8 @@ export class Inviter extends SessionImpl {
   public invite(): Promise<Core.OutgoingInviteRequest> {
     return this.session.invite(this.inviteOptions);
   }
+
+  public accept(): Promise<ISessionAccept> {
+    throw new Error('Cannot accept an outgoing call.');
+  }
 }

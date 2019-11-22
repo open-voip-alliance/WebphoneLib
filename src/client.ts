@@ -337,7 +337,6 @@ export class ClientImpl extends EventEmitter implements IClient {
     this.transport = this.transportFactory(uaFactory, options);
 
     this.transport.on('reviveSessions', () => {
-      console.log(`Active sessions: ${this.sessions.length}`);
       Object.values(this.sessions).forEach(async session => {
         session.rebuildSessionDescriptionHandler();
         await session.reinvite();
