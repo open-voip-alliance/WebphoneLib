@@ -251,12 +251,6 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     this._remoteIdentity = this.getRemoteIdentity();
 
-    // TODO
-    //this.session.on('reinvite', (_, request) => {
-    //  this._remoteIdentity = this.getRemoteIdentity(request);
-    //  this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
-    //});
-
     // Track if the other side said bye before terminating.
     this.saidBye = false;
     this.session.once('bye', () => {
@@ -348,12 +342,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     await new Promise((resolve, reject) => {
       this.session.invite(
         this.makeInviteOptions({
-          onAccept: () => {
-            this._remoteIdentity = this.getRemoteIdentity();
-            this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
-            console.log(this._remoteIdentity);
-            resolve();
-          },
+          onAccept: resolve,
           onReject: reject,
           onRejectThrow: reject,
           onProgress: resolve,
@@ -476,6 +465,8 @@ export class SessionImpl extends EventEmitter implements ISession {
           console.log('session is accepted1!');
           this.status = SessionStatus.ACTIVE;
           this.emit('statusUpdate', { id: this.id, status: this.status });
+          this._remoteIdentity = this.getRemoteIdentity();
+          this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
           onAccept({ accepted: true });
         },
         onReject: ({ message }: Core.IncomingResponse) => {
