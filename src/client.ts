@@ -9,7 +9,7 @@ import { log } from './logger';
 import { ISession, SessionImpl } from './session';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
-import { ITransport, ReconnectableTransport, TransportFactory } from './transport';
+import { ITransport, ReconnectableTransport, TransportFactory, UAFactory } from './transport';
 import { IClientOptions, IMedia } from './types';
 
 import { Core, UA as UABase } from 'sip.js';
@@ -17,7 +17,8 @@ import { Notification } from 'sip.js/lib/api/notification'; // not available in 
 import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
 import { Subscriber } from 'sip.js/lib/api/subscriber'; // not available in pre-combiled bundles just yet
 import { SubscriptionState } from 'sip.js/lib/api/subscription-state'; // not available in pre-combiled bundles just yet
-import { UA, UAFactory } from './ua';
+import { UserAgent } from 'sip.js/lib/api/user-agent'; // not available in pre-combiled bundles just yet
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options'; // not available in pre-combiled bundles just yet
 
 // TODO: use EventTarget instead of EventEmitter.
 
@@ -481,8 +482,8 @@ type ClientCtor = new (options: IClientOptions) => IClient;
  * are ways around this.
  */
 export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
-  const uaFactory = (options: UABase.Options) => {
-    return new UA(options);
+  const uaFactory = (options: UserAgentOptions) => {
+    return new UserAgent(options);
   };
 
   const transportFactory = (factory: UAFactory, options: IClientOptions) => {

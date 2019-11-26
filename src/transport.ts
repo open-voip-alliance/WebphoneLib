@@ -18,7 +18,8 @@ import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
 import { hour, second } from './time';
 import { IClientOptions, IRetry } from './types';
-import { IUA, UA, UAFactory, WrappedInviteClientContext, WrappedTransport } from './ua';
+
+export type UAFactory = (options: UserAgentOptions) => UserAgent;
 
 /**
  * @hidden
@@ -44,6 +45,27 @@ export interface ITransport extends EventEmitter {
  */
 export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) => ITransport;
 
+/**
+ * @hidden
+ */
+// tslint:disable-next-line: max-classes-per-file
+class WrappedTransport extends Web.Transport {
+  /**
+   * Disconnect socket. It could happen that the user switches network
+   * interfaces while calling. If this happens, closing a websocket will
+   * cause it to be blocked. To make sure that UA gets to the proper internal
+   * state so that it is ready to 'switch over' to the new network interface
+   * with a new websocket, we call the function that normally causes the
+   * disconnectPromise to be resolved after a timeout.
+   */
+  protected disconnectPromise(options: any = {}): Promise<any> {
+    return pTimeout(super.disconnectPromise(), 1000, () => {
+      log.debug('Fake-closing the the socket by ourselves.', this.constructor.name);
+      (this as any).onClose({ code: 'fake', reason: 'Artificial timeout' });
+    }).then(() => ({ overrideEvent: true }));
+  }
+}
+
 const SIP_PRESENCE_EXPIRE = hour / second; // one hour in seconds
 
 const logLevelConversion = {
@@ -61,6 +83,7 @@ const connector = (level, category, label, content) => {
 /**
  * @hidden
  */
+// tslint:disable-next-line: max-classes-per-file
 export class ReconnectableTransport extends EventEmitter implements ITransport {
   public transportConnectedPromise: Promise<any>;
   public registeredPromise: Promise<any>;
@@ -69,14 +92,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private priority: boolean = false;
   private unregisteredPromise: Promise<any>;
   private uaFactory: UAFactory;
-  private ua: IUA;
+  private ua: UserAgent;
   private uaOptions: UserAgentOptions;
   private userAgent: UserAgent;
   private dyingCounter: number = 60000;
   private wsTimeout: number = 10000;
   private dyingIntervalID: number;
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
-  private registerer: any;
+  private registerer: Registerer;
+  private unregisterer: Registerer;
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
   private wasWindowOffline: boolean = false;
@@ -178,7 +202,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
   // Unregister (and subsequently disconnect) to server.
   public async disconnect({ hasRegistered = true }): Promise<void> {
-    if (!this.ua || this.status === ClientStatus.DISCONNECTED) {
+    if (!this.userAgent || this.status === ClientStatus.DISCONNECTED) {
       log.info('Already disconnected.', this.constructor.name);
       return;
     }
@@ -192,34 +216,30 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // - by a network node during a call
     // - by the client during a call (browser accidentally killing ws)
     if (hasRegistered) {
-      this.unregisteredPromise = new Promise(resolve =>
-        this.ua.once('unregistered', () => {
-          this.registered = false;
-          resolve(true);
-        })
-      );
+      this.unregisteredPromise = this.createUnregisteredPromise();
 
-      log.debug('Trying to unregister.', this.constructor.name);
-      this.ua.unregister();
+      log.info('Trying to unregister.', this.constructor.name);
+
+      this.unregisterer.unregister();
 
       // Little protection to make sure our account is actually unregistered
       // and received an ACK before other functions are called
       // (i.e. ua.disconnect)
       await this.unregisteredPromise;
 
-      log.debug('Unregistered.', this.constructor.name);
+      log.info('Unregistered.', this.constructor.name);
     }
 
-    await this.ua.disconnect();
+    await this.userAgent.stop();
+    await this.userAgent.transport.disconnect(); // This calls our patched disconnectPromise.
 
     this.updateStatus(ClientStatus.DISCONNECTED);
 
-    log.debug('Disconnected.', this.constructor.name);
+    log.info('Disconnected.', this.constructor.name);
 
-    this.ua.transport.removeAllListeners();
-    this.ua.removeAllListeners();
+    this.userAgent.transport.removeAllListeners();
 
-    delete this.ua;
+    delete this.userAgent;
     delete this.unregisteredPromise;
   }
 
@@ -230,19 +250,13 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }
 
     return new Inviter(this.userAgent, UserAgent.makeURI(phoneNumber));
-
-    //return this.ua.invite(phoneNumber);
   }
 
   public subscribe(contact: string): Subscriber {
+    // Introducing a jitter here, to avoid thundering herds.
     return new Subscriber(this.userAgent, UserAgent.makeURI(contact), 'dialog', {
       expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
     });
-
-    // Introducing a jitter here, to avoid thundering herds.
-    //return this.ua.subscribe(contact, 'dialog', {
-    //  expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
-    //});
   }
 
   public isRegistered() {
@@ -269,7 +283,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       log.info('Socket opened', this.constructor.name);
 
       this.registeredPromise = this.createRegisteredPromise();
-
       this.registerer.register();
 
       await this.registeredPromise;
@@ -339,7 +352,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   }
 
   private configureUA(options: UserAgentOptions) {
-    this.userAgent = new UserAgent(this.uaOptions);
+    this.userAgent = this.uaFactory(options);
     this.userAgent.delegate = {
       onInvite: (invitation: Invitation) => {
         this.emit('invite', invitation);
@@ -465,7 +478,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     if (this.registerer) {
       // Remove from UA's collection, not using this.registerer.dispose to
       // avoid unregistering.
-      delete this.userAgent.registerers[this.registerer.id];
+      delete this.userAgent.registerers[(this.registerer as any).id];
     }
 
     this.registerer = new Registerer(this.userAgent);
@@ -489,27 +502,26 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         }
       });
     });
+  }
 
-    //return new Promise((resolve, reject) => {
-    //  const handlers = {
-    //    onRegistered: () => {
-    //      this.ua.removeListener('registrationFailed', handlers.onRegistrationFailed);
-    //      this.updateStatus(ClientStatus.CONNECTED);
-    //      resolve(true);
-    //    },
-    //    onRegistrationFailed: async e => {
-    //      this.ua.removeListener('registered', handlers.onRegistered);
+  private createUnregisteredPromise() {
+    if (this.unregisterer) {
+      // Remove from UA's collection, not using this.registerer.dispose to
+      // avoid unregistering.
+      delete this.userAgent.registerers[(this.unregisterer as any).id];
+    }
 
-    //      await this.disconnect({ hasRegistered: false });
+    this.unregisterer = new Registerer(this.userAgent);
 
-    //      this.updateStatus(ClientStatus.DISCONNECTED);
-    //      reject(e);
-    //    }
-    //  };
-
-    //  this.ua.once('registered', handlers.onRegistered);
-    //  this.ua.once('registrationFailed', handlers.onRegistrationFailed);
-    //});
+    return new Promise((resolve, reject) => {
+      // Handle outgoing session state changes.
+      this.unregisterer.stateChange.once(async (newState: RegistererState) => {
+        if (newState === RegistererState.Unregistered) {
+          log.info('State changed to Unregistered.', this.constructor.name);
+          resolve(true);
+        }
+      });
+    });
   }
 
   private onWindowOffline() {
