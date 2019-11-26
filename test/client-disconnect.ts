@@ -3,13 +3,15 @@ import pTimeout from 'p-timeout';
 import * as sinon from 'sinon';
 import { Subscription, UA as UABase } from 'sip.js';
 
+import { UserAgent } from 'sip.js/lib/api/user-agent';
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
+
 import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
 import { Client, IClientOptions } from '../src/index';
 import { log } from '../src/logger';
-import { ReconnectableTransport, TransportFactory } from '../src/transport';
-import { IUA, UA, UAFactory } from '../src/ua';
+import { ReconnectableTransport, TransportFactory, UAFactory } from '../src/transport';
 
 import { createClientImpl, defaultTransportFactory, defaultUAFactory } from './_helpers';
 
@@ -56,14 +58,19 @@ test.serial('do not try to disconnect when already disconnected (status DISCONNE
 test.serial('status updates in order: DISCONNECTING > DISCONNECTED', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
-  const ua = (options: UABase.Options) => {
-    const userAgent = new UA(options);
-    userAgent.unregister = () => userAgent.emit('unregistered') as any;
-    userAgent.disconnect = sinon.fake();
+  const ua = (options: UserAgentOptions) => {
+    const userAgent = new UserAgent(options);
+    userAgent.stop = () => Promise.resolve();
+    userAgent.transport.disconnect = () => Promise.resolve();
     return userAgent;
   };
 
   const client = createClientImpl(ua, defaultTransportFactory());
+  (client as any).transport.createUnregisteredPromise = () => {
+    (client as any).transport.unregisteredPromise = () => Promise.resolve();
+    (client as any).transport.unregisterer = sinon.fake();
+    (client as any).transport.unregisterer.unregister = () => sinon.fake();
+  };
 
   const status = [];
   client.on('statusUpdate', clientStatus => status.push(clientStatus));
@@ -82,9 +89,8 @@ test.serial('status updates in order: DISCONNECTING > DISCONNECTED', async t => 
 test.serial('disconnected does not resolve until unregistered', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
-  const ua = (options: UABase.Options) => {
-    const userAgent = new UA(options);
-    userAgent.disconnect = sinon.fake();
+  const ua = (options: UserAgentOptions) => {
+    const userAgent = new UserAgent(options);
     return userAgent;
   };
 
@@ -104,13 +110,13 @@ test.serial('disconnected does not resolve until unregistered', async t => {
   t.is((client as any).transport.status, ClientStatus.DISCONNECTING);
 });
 
-test.serial('ua.disconnect is not called without unregistered event', async t => {
+test.serial('ua.stop is not called without unregistered event', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
-  const ua = (options: UABase.Options) => {
-    const userAgent = new UA(options);
-    userAgent.disconnect = sinon.fake();
-    userAgent.unregister = sinon.fake();
+  const ua = (options: UserAgentOptions) => {
+    const userAgent = new UserAgent(options);
+    userAgent.stop = sinon.fake();
+    userAgent.transport.disconnect = () => Promise.resolve();
     return userAgent;
   };
 
@@ -124,36 +130,42 @@ test.serial('ua.disconnect is not called without unregistered event', async t =>
   // event.
   await t.throwsAsync(pTimeout(client.disconnect(), 100));
 
-  t.false((client as any).transport.ua.disconnect.called);
+  t.false((client as any).transport.userAgent.stop.called);
 });
 
 test.serial('ua is removed after ua.disconnect', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
-  const ua = (options: UABase.Options) => {
-    const userAgent = new UA(options);
-    userAgent.disconnect = sinon.fake();
-    userAgent.unregister = () => userAgent.emit('unregistered') as any;
+  const ua = (options: UserAgentOptions) => {
+    const userAgent = new UserAgent(options);
+    userAgent.stop = sinon.fake();
+    userAgent.transport.disconnect = () => Promise.resolve();
     return userAgent;
   };
 
   const client = createClientImpl(ua, defaultTransportFactory());
+  (client as any).transport.createUnregisteredPromise = () => {
+    (client as any).transport.unregisteredPromise = () => Promise.resolve();
+    (client as any).transport.unregisterer = sinon.fake();
+    (client as any).transport.unregisterer.unregister = () => sinon.fake();
+  };
 
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
-  t.false((client as any).transport.ua === undefined);
+  t.false((client as any).transport.userAgent === undefined);
 
   await client.disconnect();
 
-  t.true((client as any).transport.ua === undefined);
+  t.true((client as any).transport.userAgent === undefined);
 });
 
 test.serial('not waiting for unregistered if hasRegistered = false', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
-  const ua = (options: UABase.Options) => {
-    const userAgent = new UA(options);
-    userAgent.disconnect = sinon.fake();
+  const ua = (options: UserAgentOptions) => {
+    const userAgent = new UserAgent(options);
+    userAgent.stop = sinon.fake();
+    userAgent.transport.disconnect = () => Promise.resolve();
     return userAgent;
   };
 

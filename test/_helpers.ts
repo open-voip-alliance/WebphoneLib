@@ -2,15 +2,17 @@ import test from 'ava';
 import * as sinon from 'sinon';
 import { UA as UABase } from 'sip.js';
 
+import { UserAgent } from 'sip.js/lib/api/user-agent';
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
+
 import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
 import { Client, IClientOptions } from '../src/index';
-import { ReconnectableTransport, TransportFactory } from '../src/transport';
-import { IUA, UA, UAFactory } from '../src/ua';
+import { ReconnectableTransport, TransportFactory, UAFactory } from '../src/transport';
 
 export function defaultUAFactory() {
-  return (options: UABase.Options) => new UA(options);
+  return (options: UserAgentOptions) => new UserAgent(options);
 }
 
 export function defaultTransportFactory() {
