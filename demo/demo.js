@@ -232,11 +232,11 @@ outMute.addEventListener('change', function() {
 });
 
 function printStats(stats) {
-  //  const last = (stats.mos.last || 0).toFixed(2);
-  //  const low = (stats.mos.lowest || 0).toFixed(2);
-  //  const high = (stats.mos.highest || 0).toFixed(2);
-  //  const avg = (stats.mos.average || 0).toFixed(2);
-  //  console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
+  const last = (stats.mos.last || 0).toFixed(2);
+  const low = (stats.mos.lowest || 0).toFixed(2);
+  const high = (stats.mos.highest || 0).toFixed(2);
+  const avg = (stats.mos.average || 0).toFixed(2);
+  console.log(`MOS: ${last} low ${low} high ${high} avg ${avg}`);
 }
 
 async function attendedTransfer(session) {
@@ -278,10 +278,10 @@ async function runSession(session) {
     .then(() => console.log('audio connected!'))
     .catch(() => console.error('connecting audio failed'));
 
-  //session.on('callQualityUpdate', stats => {
-  //  printStats(stats);
-  //  mos.innerHTML = (stats.mos.last || 0).toFixed(2);
-  //});
+  session.on('callQualityUpdate', (sessionId, stats) => {
+    printStats(stats);
+    mos.innerHTML = (stats.mos.last || 0).toFixed(2);
+  });
 
   try {
     inCall.hidden = false;

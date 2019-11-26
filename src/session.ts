@@ -229,6 +229,7 @@ export class SessionImpl extends EventEmitter implements ISession {
         }
       });
 
+      // TODO have to get these x-sterisk headers somewhere
       //this.session.once('terminated', (message, cause) => {
       //  this.onTerminated(this.id);
       //  this.emit('terminated', { id: this.id });
@@ -302,24 +303,6 @@ export class SessionImpl extends EventEmitter implements ISession {
   get endTime(): Date {
     return this.session.endTime;
   }
-  //
-  //public reject(): Promise<void> {
-  //  if (this.acceptPromise) {
-  //    throw new Error('invalid operation: session is accepted');
-  //  }
-
-  //  if (this.rejectPromise) {
-  //    return this.rejectPromise;
-  //  }
-
-  //  this.rejectPromise = new Promise(resolve => {
-  //    this.session.once('rejected', () => resolve());
-  //    // reject is immediate, it doesn't fail.
-  //    this.session.reject();
-  //  });
-
-  //  return this.rejectPromise;
-  //}
 
   public accept(): Promise<void> {
     throw new Error('Should be implemented in superclass');
@@ -460,7 +443,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     return {
       requestDelegate: {
         onAccept: response => {
-          console.log('session is accepted1!');
           this.status = SessionStatus.ACTIVE;
           this.emit('statusUpdate', { id: this.id, status: this.status });
           this._remoteIdentity = this.getRemoteIdentity();
