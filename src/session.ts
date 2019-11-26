@@ -27,7 +27,6 @@ import { InternalSession, SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
 import * as Time from './time';
 import { IMedia, IRemoteIdentity } from './types';
-import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 export interface ISession {
   readonly id: string;
@@ -208,7 +207,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     super();
     this.session = session;
     this.id = session.request.callId;
-    this.media = new SessionMedia(this.session, media);
+    this.media = new SessionMedia(this, media);
     this.media.on('mediaFailure', () => {
       this.session.bye();
     });

@@ -1,7 +1,5 @@
 import { EventEmitter } from 'events';
 
-import { Invitation } from 'sip.js/lib/api/invitation'; // not available in pre-combiled bundles just yet
-import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
 import { Session } from 'sip.js/lib/api/session';
 import { IncomingInviteRequest } from 'sip.js/lib/core';
 import { audioContext } from './audio-context';
@@ -9,8 +7,8 @@ import * as Features from './features';
 import { clamp } from './lib/utils';
 import { log } from './logger';
 import { Media } from './media';
+import { SessionImpl } from './session';
 import { IMedia, IMediaInput, IMediaOutput } from './types';
-//import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 interface IRTCPeerConnectionLegacy extends RTCPeerConnection {
   getRemoteStreams: () => MediaStream[];
@@ -43,20 +41,20 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
   public readonly input: IMediaInput;
   public readonly output: IMediaOutput;
 
-  private session: Inviter | Invitation;
+  private session: SessionImpl;
 
   private media: IMedia;
   private audioOutput: HTMLAudioElement;
   private inputStream: MediaStream;
   private inputNode: GainNode;
 
-  public constructor(session: Inviter | Invitation, media: IMedia) {
+  public constructor(session: SessionImpl, media: IMedia) {
     super();
 
-    this.session = session;
+    this.session = (session as any).session;
 
     // This link is for the custom SessionDescriptionHandler.
-    (session as any).__media = this;
+    (this.session as any).__media = this;
 
     // Make a copy of media.
     this.media = {
@@ -64,11 +62,10 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
       output: Object.assign({}, media.output)
     };
 
-    // TODO
-    //session.on('terminated', () => {
-    //  this.stopInput();
-    //  this.stopOutput();
-    //});
+    session.on('terminated', () => {
+      this.stopInput();
+      this.stopOutput();
+    });
 
     const self = this;
 
