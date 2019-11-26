@@ -2,7 +2,8 @@ import { Client, Media, Sound, log } from '../dist/index.mjs';
 import * as CONF from './config.js';
 
 const caller = document.querySelector('#caller');
-const ringerBtn = document.querySelector('#ring');
+const acceptCallBtn = document.querySelector('#accept-call');
+const rejectCallBtn = document.querySelector('#reject-call');
 const outBtn = document.querySelector('#out');
 const reconfigureBtn = document.querySelector('#reconfigure');
 const registerBtn = document.querySelector('#register');
@@ -112,9 +113,7 @@ resubscribeBtn.addEventListener('click', async () => {
   await client.resubscribe(subscribeTo).catch(console.error);
   console.log('resubscribed!');
 });
-unsubscribeBtn.addEventListener('click', () =>
-  client.unsubscribe(subscribeTo).catch(console.error)
-);
+unsubscribeBtn.addEventListener('click', () => client.unsubscribe(subscribeTo));
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
@@ -329,21 +328,15 @@ async function outgoingCall() {
 }
 
 async function incomingCall(session) {
-  console.log('invited', session.id);
-
   const { number, displayName } = session.remoteIdentity;
   caller.innerHTML = `${displayName} (${number})`;
   caller.hidden = false;
-  ringerBtn.hidden = true;
 
-  ringerBtn.addEventListener(
-    'click',
-    () => {
-      session.accept();
-    },
-    { once: true }
-  );
-  ringerBtn.hidden = false;
+  acceptCallBtn.hidden = false;
+  rejectCallBtn.hidden = false;
+
+  acceptCallBtn.addEventListener('click', session.accept, { once: true });
+  rejectCallBtn.addEventListener('click', session.reject, { once: true });
 
   let terminateTimer;
   try {
@@ -352,6 +345,10 @@ async function incomingCall(session) {
     }
 
     const { accepted, rejectCause } = await session.accepted();
+
+    acceptCallBtn.hidden = true;
+    rejectCallBtn.hidden = true;
+
     if (accepted) {
       console.log('session is accepted \\o/', session.id);
 
@@ -375,7 +372,8 @@ async function incomingCall(session) {
   } finally {
     console.log('closing session...', session.id);
 
-    ringerBtn.hidden = true;
+    acceptCallBtn.hidden = true;
+    rejectCallBtn.hidden = true;
     caller.hidden = true;
 
     if (terminateTimer) {

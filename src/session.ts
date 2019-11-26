@@ -65,13 +65,12 @@ export interface ISession {
    */
   endTime: any;
 
-  // TODO
-  //accept(): Promise<void>;
-  //reject(): Promise<void>;
+  accept(): Promise<ISessionAccept | void>;
+  reject(): Promise<void>;
   /**
    * Terminate the session.
    */
-  //terminate(): Promise<void>;
+  terminate(): Promise<Core.OutgoingByeRequest>;
 
   /**
    * Promise that resolves when the session is accepted or rejected.
@@ -195,7 +194,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   private onTerminated: (sessionId: string) => void;
   private _remoteIdentity: IRemoteIdentity;
 
-  constructor({
+  protected constructor({
     session,
     media,
     onTerminated,
@@ -211,8 +210,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     this.id = session.request.callId;
     this.media = new SessionMedia(this.session, media);
     this.media.on('mediaFailure', () => {
-      // TODO: fix this so it doesn't `reject` the `terminatedPromise`?
-      //this.session.terminate();
+      this.session.bye();
     });
     this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
@@ -222,7 +220,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     // has been accepted.
     this.terminatedPromise = new Promise((resolve, reject) => {
       this.session.stateChange.on((newState: SessionState) => {
-        console.log(`State changed to ${newState}`);
         if (newState === SessionState.Terminated) {
           this.onTerminated(this.id);
           this.emit('terminated', { id: this.id });
@@ -325,18 +322,25 @@ export class SessionImpl extends EventEmitter implements ISession {
   //  return this.rejectPromise;
   //}
 
+  public accept(): Promise<void> {
+    throw new Error('Should be implemented in superclass');
+  }
+
+  public reject(): Promise<void> {
+    throw new Error('Should be implemented in superclass');
+  }
+
   public accepted(): Promise<ISessionAccept> {
     throw new Error('Should be implemented in superclass');
+  }
+
+  public terminate(): Promise<Core.OutgoingByeRequest> {
+    return this.bye();
   }
 
   public terminated(): Promise<void> {
     return this.terminatedPromise;
   }
-
-  //public terminate(): Promise<void> {
-  //  this.session.terminate();
-  //  return this.terminatedPromise;
-  //}
 
   public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
     await new Promise((resolve, reject) => {
@@ -388,12 +392,8 @@ export class SessionImpl extends EventEmitter implements ISession {
     (this.session as any).setupSessionDescriptionHandler();
   }
 
-  /**
-   * Function this.session.bye triggers terminated, so nothing else has to be
-   * done here.
-   */
   public bye() {
-    this.session.bye();
+    return this.session.bye();
   }
 
   /**
@@ -440,11 +440,10 @@ export class SessionImpl extends EventEmitter implements ISession {
       'freeze',
       'hold',
       'reinvite',
-      // TODO 'reject',
-      // TODO 'terminate',
+      'reject',
+      'terminate',
       'terminated',
       'unhold',
-
       'on',
       'once',
       'removeAllListeners',

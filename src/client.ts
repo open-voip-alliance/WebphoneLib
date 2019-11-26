@@ -232,6 +232,10 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 
   public subscribe(uri: string) {
+    if (!this.transport.registeredPromise) {
+      throw new Error('Register first!');
+    }
+
     return new Promise<void>((resolve, reject) => {
       if (this.subscriptions[uri]) {
         log.info('Already subscribed', this.constructor.name);
@@ -500,6 +504,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
     'removeAllListeners',
     'removeListener',
     'subscribe',
+    'resubscribe',
     'unsubscribe'
   ]);
 } as any) as ClientCtor;

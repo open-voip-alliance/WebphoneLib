@@ -1,8 +1,10 @@
 import { Core } from 'sip.js';
+import { Inviter as SIPInviter } from 'sip.js/lib/api/inviter';
 
 import { ISessionAccept, SessionImpl } from './session';
 
 export class Inviter extends SessionImpl {
+  protected session: SIPInviter;
   private progressedPromise: Promise<void>;
 
   constructor(options) {
@@ -32,7 +34,11 @@ export class Inviter extends SessionImpl {
     return this.session.invite(this.inviteOptions);
   }
 
-  public accept(): Promise<ISessionAccept> {
+  public async accept() {
     throw new Error('Cannot accept an outgoing call.');
+  }
+
+  public async reject() {
+    throw new Error('Cannot reject an outgoing call.');
   }
 }

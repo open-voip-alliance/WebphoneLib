@@ -1,6 +1,8 @@
+import { Invitation as SIPInvitation } from 'sip.js/lib/api/invitation';
 import { ISessionAccept, SessionImpl } from './session';
 
 export class Invitation extends SessionImpl {
+  protected session: SIPInvitation;
   private acceptedRef: any;
 
   constructor(options) {
@@ -12,10 +14,17 @@ export class Invitation extends SessionImpl {
   }
 
   public accept(): Promise<void> {
-    return (this.session as any).accept().then(() => this.acceptedRef({ accepted: true }));
+    return (this.session as SIPInvitation)
+      .accept()
+      .then(() => this.acceptedRef({ accepted: true }));
   }
 
   public accepted(): Promise<ISessionAccept> {
     return this.acceptedPromise;
+  }
+
+  public reject(): Promise<void> {
+    console.log('trying to reject!');
+    return this.session.reject().then(() => this.acceptedRef({ accepted: false }));
   }
 }
