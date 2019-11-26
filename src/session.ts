@@ -199,7 +199,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     onTerminated,
     isIncoming
   }: {
-    session: Inviter;
+    session: Inviter | Invitation;
     media: IMedia;
     onTerminated: (sessionId: string) => void;
     isIncoming: boolean;
