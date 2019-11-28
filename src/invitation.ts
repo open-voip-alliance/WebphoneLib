@@ -1,4 +1,5 @@
 import { Invitation as SIPInvitation } from 'sip.js/lib/api/invitation';
+import { SessionStatus } from './enums';
 import { ISessionAccept, SessionImpl } from './session';
 
 export class Invitation extends SessionImpl {
@@ -9,6 +10,8 @@ export class Invitation extends SessionImpl {
     super(options);
 
     this.acceptedPromise = new Promise(resolve => {
+      this.status = SessionStatus.ACTIVE;
+      this.emit('statusUpdate', { id: this.id, status: this.status });
       this.acceptedRef = resolve;
     });
   }
