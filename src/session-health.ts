@@ -15,7 +15,7 @@ export function checkAudioConnected(
 
   return new Promise((resolve, reject) => {
     session.once('SessionDescriptionHandler-created', () => {
-      // We patched the sdh with peerConnection ourselves.
+      // We patched the sdh with peerConnection.
       const pc = (session.sessionDescriptionHandler as any).peerConnection;
 
       // onconnectionstatechange is only supported on Chromium. For all other

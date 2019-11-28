@@ -427,7 +427,6 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.transport.removeListener('transportDisconnected', rejectWithError);
     }
 
-    console.log('sessoin invite succeeded');
     return session;
   }
 
@@ -450,7 +449,6 @@ export class ClientImpl extends EventEmitter implements IClient {
   private addSession(session: SessionImpl) {
     this.sessions[session.id] = session;
     this.emit('sessionAdded', { id: session.id });
-    console.log(this.sessions);
     this.updatePriority();
   }
 

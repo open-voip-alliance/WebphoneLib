@@ -252,7 +252,7 @@ async function attendedTransfer(session) {
     setTimeout(async () => {
       console.log('Initiating attended transfer');
       client.attendedTransfer(session, toSession);
-    }, 5000);
+    }, 10000);
 
     await toSession.terminated();
     console.log('Second session got terminated');

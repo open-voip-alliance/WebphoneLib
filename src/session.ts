@@ -450,7 +450,7 @@ export class SessionImpl extends EventEmitter implements ISession {
           onAccept({ accepted: true });
         },
         onReject: ({ message }: Core.IncomingResponse) => {
-          console.log('session is rejected');
+          log.info('Session is rejected.', this.constructor.name);
           try {
             const cause = Utils.getReasonPhrase(message.statusCode);
             onReject({
@@ -458,14 +458,12 @@ export class SessionImpl extends EventEmitter implements ISession {
               rejectCause: this.findCause(message, cause)
             });
           } catch (e) {
-            console.log(message);
             log.error(`Session failed: ${e}`, this.constructor.name);
             onReject(e);
           }
         },
         onProgress: inviteResponse => {
-          console.log('session is in progress');
-          console.log(inviteResponse);
+          log.debug('Session is in progress', this.constructor.name);
           onProgress();
         }
       },
@@ -531,19 +529,17 @@ export class SessionImpl extends EventEmitter implements ISession {
       referrer.refer({
         requestDelegate: {
           onAccept: () => {
-            console.log('Transferred session is accepted!');
+            log.info('Transferred session is accepted!', this.constructor.name);
             resolve(true);
           },
           // Refer can be rejected with the following responses:
           // - 503: Service Unavailable (i.e. server can't handle one-legged transfers)
           // - 603: Declined
           onReject: () => {
-            console.log('Transferred session is rejected!');
+            log.info('Transferred session is rejected!', this.constructor.name);
             resolve(false);
           },
-          onNotify: notification => {
-            // log.debug(notification, this.constructor.name);
-          }
+          onNotify: () => ({}) // To
         }
       });
     });

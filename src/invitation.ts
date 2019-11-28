@@ -24,7 +24,6 @@ export class Invitation extends SessionImpl {
   }
 
   public reject(): Promise<void> {
-    console.log('trying to reject!');
     return this.session.reject().then(() => this.acceptedRef({ accepted: false }));
   }
 }

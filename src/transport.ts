@@ -276,10 +276,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     log.debug(`isOnline: ${isOnline}`, this.constructor.name);
     if (isOnline) {
       await this.userAgent.transport.disconnect();
-      log.info('Socket closed', this.constructor.name);
+      log.debug('Socket closed', this.constructor.name);
 
       await this.userAgent.transport.connect();
-      log.info('Socket opened', this.constructor.name);
+      log.debug('Socket opened', this.constructor.name);
 
       this.registeredPromise = this.createRegisteredPromise();
       this.registerer.register();
@@ -572,7 +572,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // internet. In that case, the 'window' events won't help us. That is why
     // we can call tryUntilConnected in that case, because the
     // 'wasWindowOffline' will be false.
-    log.info('Transport disconnected..', this.constructor.name);
+    log.debug('Transport disconnected..', this.constructor.name);
     this.emit('transportDisconnected');
 
     if (!this.wasWindowOffline) {
