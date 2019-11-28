@@ -25,7 +25,6 @@ export type UAFactory = (options: UserAgentOptions) => UserAgent;
  * @hidden
  */
 export interface ITransport extends EventEmitter {
-  transportConnectedPromise: Promise<any>;
   registeredPromise: Promise<any>;
   registered: boolean;
   status: ClientStatus;
@@ -49,7 +48,7 @@ export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) =
  * @hidden
  */
 // tslint:disable-next-line: max-classes-per-file
-class WrappedTransport extends Web.Transport {
+export class WrappedTransport extends Web.Transport {
   /**
    * Disconnect socket. It could happen that the user switches network
    * interfaces while calling. If this happens, closing a websocket will
@@ -85,7 +84,6 @@ const connector = (level, category, label, content) => {
  */
 // tslint:disable-next-line: max-classes-per-file
 export class ReconnectableTransport extends EventEmitter implements ITransport {
-  public transportConnectedPromise: Promise<any>;
   public registeredPromise: Promise<any>;
   public registered: boolean = false;
   public status: ClientStatus = ClientStatus.DISCONNECTED;
@@ -189,9 +187,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return this.registeredPromise;
     }
 
-    await pTimeout(this.userAgent.start(), this.wsTimeout, () =>
-      Promise.reject(new Error('Could not connect to the websocket in time.'))
-    );
+    await pTimeout(this.userAgent.start(), this.wsTimeout, () => {
+      log.info('Could not connect to the websocket in time.', this.constructor.name);
+      return Promise.reject(new Error('Could not connect to the websocket in time.'));
+    });
 
     this.registeredPromise = this.createRegisteredPromise();
 
@@ -415,7 +414,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return tryOpeningSocketWithTimeout();
     }, retryOptions);
 
-    console.log(`dying counter: ${this.dyingCounter}`);
     return pTimeout(retryForever, this.dyingCounter, () => {
       log.info(
         'We could not recover the session(s) within 1 minute. ' +
@@ -481,7 +479,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       delete this.userAgent.registerers[(this.registerer as any).id];
     }
 
-    this.registerer = new Registerer(this.userAgent);
+    this.registerer = new Registerer(this.userAgent, undefined);
 
     return new Promise((resolve, reject) => {
       // Handle outgoing session state changes.
