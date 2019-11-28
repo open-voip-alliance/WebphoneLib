@@ -10,16 +10,16 @@ export class Invitation extends SessionImpl {
     super(options);
 
     this.acceptedPromise = new Promise(resolve => {
-      this.status = SessionStatus.ACTIVE;
-      this.emit('statusUpdate', { id: this.id, status: this.status });
       this.acceptedRef = resolve;
     });
   }
 
   public accept(): Promise<void> {
-    return (this.session as SIPInvitation)
-      .accept()
-      .then(() => this.acceptedRef({ accepted: true }));
+    return (this.session as SIPInvitation).accept().then(() => {
+      this.status = SessionStatus.ACTIVE;
+      this.emit('statusUpdate', { id: this.id, status: this.status });
+      this.acceptedRef({ accepted: true });
+    });
   }
 
   public accepted(): Promise<ISessionAccept> {
