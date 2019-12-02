@@ -32,7 +32,7 @@ const account = {
 };
 
 const transport = {
-  wsServers: `wss://websocket-staging.${CONF.yourPlatformURL}`,
+  wsServers: `wss://websocket.${CONF.yourPlatformURL}`,
   iceServers: []
 };
 
