@@ -14,12 +14,12 @@ import { ITransport, ReconnectableTransport, TransportFactory, UAFactory } from 
 import { IClientOptions, IMedia } from './types';
 
 import { Core, UA as UABase } from 'sip.js';
-import { Notification } from 'sip.js/lib/api/notification'; // not available in pre-combiled bundles just yet
-import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
-import { Subscriber } from 'sip.js/lib/api/subscriber'; // not available in pre-combiled bundles just yet
-import { SubscriptionState } from 'sip.js/lib/api/subscription-state'; // not available in pre-combiled bundles just yet
-import { UserAgent } from 'sip.js/lib/api/user-agent'; // not available in pre-combiled bundles just yet
-import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options'; // not available in pre-combiled bundles just yet
+import { Notification } from 'sip.js/lib/api/notification';
+import { SessionState } from 'sip.js/lib/api/session-state';
+import { Subscriber } from 'sip.js/lib/api/subscriber';
+import { SubscriptionState } from 'sip.js/lib/api/subscription-state';
+import { UserAgent } from 'sip.js/lib/api/user-agent';
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
 // TODO: use EventTarget instead of EventEmitter.
 

@@ -2,14 +2,14 @@ import { EventEmitter } from 'events';
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Subscription, UA as UABase, Web } from 'sip.js';
-import { Invitation } from 'sip.js/lib/api/invitation'; // not available in pre-combiled bundles just yet
-import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
+import { Invitation } from 'sip.js/lib/api/invitation';
+import { Inviter } from 'sip.js/lib/api/inviter';
 import { Registerer } from 'sip.js/lib/api/registerer';
-import { RegistererState } from 'sip.js/lib/api/registerer-state'; // not available in pre-combiled bundles just yet
+import { RegistererState } from 'sip.js/lib/api/registerer-state';
 import { Session } from 'sip.js/lib/api/session';
-import { Subscriber } from 'sip.js/lib/api/subscriber'; // not available in pre-combiled bundles just yet
-import { UserAgent } from 'sip.js/lib/api/user-agent'; // not available in pre-combiled bundles just yet
-import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options'; // not available in pre-combiled bundles just yet
+import { Subscriber } from 'sip.js/lib/api/subscriber';
+import { UserAgent } from 'sip.js/lib/api/user-agent';
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
@@ -61,7 +61,7 @@ export class WrappedTransport extends Web.Transport {
     return pTimeout(super.disconnectPromise(), 1000, () => {
       log.debug('Fake-closing the the socket by ourselves.', this.constructor.name);
       (this as any).onClose({ code: 'fake', reason: 'Artificial timeout' });
-    }).then(() => ({ overrideEvent: true }));
+    }).then(() => ({ overrideEvent: true })); // overrideEvent to avoid sip.js emitting disconnected.
   }
 }
 

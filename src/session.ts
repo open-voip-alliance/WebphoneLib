@@ -12,13 +12,13 @@ import {
   Utils
 } from 'sip.js';
 
-import { Invitation } from 'sip.js/lib/api/invitation'; // not available in pre-combiled bundles just yet
-import { Inviter } from 'sip.js/lib/api/inviter'; // not available in pre-combiled bundles just yet
-import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options'; // not available in pre-combiled bundles just yet
-import { Referrer } from 'sip.js/lib/api/referrer'; // not available in pre-combiled bundles just yet
-import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
-import { SessionState } from 'sip.js/lib/api/session-state'; // not available in pre-combiled bundles just yet
-import { UserAgent } from 'sip.js/lib/api/user-agent'; // not available in pre-combiled bundles just yet
+import { Invitation } from 'sip.js/lib/api/invitation';
+import { Inviter } from 'sip.js/lib/api/inviter';
+import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options';
+import { Referrer } from 'sip.js/lib/api/referrer';
+import { Session as UserAgentSession } from 'sip.js/lib/api/session';
+import { SessionState } from 'sip.js/lib/api/session-state';
+import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { SessionStatus } from './enums';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
@@ -228,22 +228,6 @@ export class SessionImpl extends EventEmitter implements ISession {
           resolve();
         }
       });
-
-      // TODO have to get these x-sterisk headers somewhere
-      //this.session.once('terminated', (message, cause) => {
-      //  this.onTerminated(this.id);
-      //  this.emit('terminated', { id: this.id });
-      //  this.status = SessionStatus.TERMINATED;
-      //  this.emit('statusUpdate', { id: this.id, status: this.status });
-
-      //  // Asterisk specific header that signals that the VoIP account used is not
-      //  // configured for WebRTC.
-      //  if (cause === 'BYE' && message.getHeader('X-Asterisk-Hangupcausecode') === '58') {
-      //    reject(new Error('misconfigured_account'));
-      //  } else {
-      //    resolve();
-      //  }
-      //});
     });
 
     this._remoteIdentity = this.getRemoteIdentity();
@@ -280,7 +264,7 @@ export class SessionImpl extends EventEmitter implements ISession {
 
   get autoAnswer(): boolean {
     const callInfo = this.session.request.headers['Call-Info'];
-    if (callInfo && callInfo[0] && callInfo[0]) {
+    if (callInfo && callInfo[0]) {
       // ugly, not sure how to check if object with TS agreeing on my methods
       return (callInfo[0] as { parsed?: any; raw: string }).raw.includes('answer-after=0');
     }
@@ -451,6 +435,8 @@ export class SessionImpl extends EventEmitter implements ISession {
         },
         onReject: ({ message }: Core.IncomingResponse) => {
           log.info('Session is rejected.', this.constructor.name);
+          log.debug(message, this.constructor.name);
+          console.log(message);
           try {
             const cause = Utils.getReasonPhrase(message.statusCode);
             onReject({
@@ -539,7 +525,7 @@ export class SessionImpl extends EventEmitter implements ISession {
             log.info('Transferred session is rejected!', this.constructor.name);
             resolve(false);
           },
-          onNotify: () => ({}) // To
+          onNotify: () => ({}) // To make sure the requestDelegate type is complete.
         }
       });
     });

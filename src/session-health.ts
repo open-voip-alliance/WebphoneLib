@@ -1,4 +1,4 @@
-import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
+import { Session as UserAgentSession } from 'sip.js/lib/api/session';
 import * as Features from './features';
 
 export function checkAudioConnected(

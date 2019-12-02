@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { Session as UserAgentSession } from 'sip.js/lib/api/session'; // not available in pre-combiled bundles just yet
+import { Session as UserAgentSession } from 'sip.js/lib/api/session';
 import { log } from './logger';
 
 class StatsAggregation {
