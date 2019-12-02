@@ -1,17 +1,25 @@
 import { EventEmitter } from 'events';
 
 import { ClientStatus, ReconnectionMode } from './enums';
+import { SessionStatus } from './enums';
 import * as Features from './features';
+import { Invitation } from './invitation';
+import { Inviter } from './inviter';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
 import { ISession, SessionImpl } from './session';
 import { statusFromDialog, Subscription } from './subscription';
 import { second } from './time';
-import { ITransport, ReconnectableTransport, TransportFactory } from './transport';
+import { ITransport, ReconnectableTransport, TransportFactory, UAFactory } from './transport';
 import { IClientOptions, IMedia } from './types';
 
 import { Core, UA as UABase } from 'sip.js';
-import { UA, UAFactory } from './ua';
+import { Notification } from 'sip.js/lib/api/notification';
+import { SessionState } from 'sip.js/lib/api/session-state';
+import { Subscriber } from 'sip.js/lib/api/subscriber';
+import { SubscriptionState } from 'sip.js/lib/api/subscription-state';
+import { UserAgent } from 'sip.js/lib/api/user-agent';
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
 // TODO: use EventTarget instead of EventEmitter.
 
@@ -138,7 +146,7 @@ export class ClientImpl extends EventEmitter implements IClient {
   public defaultMedia: IMedia;
 
   private readonly sessions: { [index: string]: SessionImpl } = {};
-  private subscriptions: { [index: string]: Subscription } = {};
+  private subscriptions: { [index: string]: Subscriber } = {};
   private connected: boolean = false;
 
   private transportFactory: TransportFactory;
@@ -213,6 +221,22 @@ export class ClientImpl extends EventEmitter implements IClient {
 
     this.addSession(session);
 
+    // Dirty hack to avoid rewriting to much at this time and to avoid
+    // users to be in a broken state:
+    //
+    // It could happen that a session is terminated before progress is emitted
+    // and tryInvite returned, for example if the server doesn't accept our
+    // invite. In that case, we remove the session shortly after adding it to
+    // our session list, to make sure users of this lib still get the
+    // appropriate events fired.
+    //
+    // Normally the onTerminated handler should do that for us, but if it
+    // fired before addSession, it is still added to the list of sessions,
+    // even though it will never be terminated 'again'.
+    if (session.status === SessionStatus.TERMINATED) {
+      setTimeout(() => this.removeSession(session), 50);
+    }
+
     return session.freeze();
   }
 
@@ -226,6 +250,10 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 
   public subscribe(uri: string) {
+    if (!this.transport.registeredPromise) {
+      throw new Error('Register first!');
+    }
+
     return new Promise<void>((resolve, reject) => {
       if (this.subscriptions[uri]) {
         log.info('Already subscribed', this.constructor.name);
@@ -236,48 +264,50 @@ export class ClientImpl extends EventEmitter implements IClient {
 
       this.subscriptions[uri] = this.transport.subscribe(uri);
 
-      const handlers = {
-        onFailed: (response: Core.IncomingResponseMessage) => {
-          if (!response) {
-            this.removeSubscription({ uri });
-            reject();
-            return;
-          }
-
-          let waitTime = 100;
-
-          const retryAfter = response.getHeader('Retry-After');
-          if (retryAfter) {
-            log.info(
-              `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
-              this.constructor.name
-            );
-            waitTime = Number(retryAfter) * second;
-          }
-
-          setTimeout(() => {
-            this.removeSubscription({ uri });
-            this.subscribe(uri)
-              .then(resolve)
-              .catch(reject);
-          }, waitTime);
-        },
-        onFirstNotify: () => {
-          this.subscriptions[uri].removeListener('failed', handlers.onFailed);
-          resolve();
-        },
-        onNotify: (dialog: ISubscriptionNotification) =>
-          this.emit('subscriptionNotify', uri, statusFromDialog(dialog)),
-        onTerminated: () => {
-          delete this.subscriptions[uri];
-          this.emit('subscriptionTerminated', uri);
+      this.subscriptions[uri].delegate = {
+        onNotify: (notification: Notification) => {
+          notification.accept();
+          this.emit('subscriptionNotify', uri, statusFromDialog(notification));
         }
       };
 
-      this.subscriptions[uri].on('failed', handlers.onFailed);
-      this.subscriptions[uri].on('notify', handlers.onNotify);
-      this.subscriptions[uri].on('terminated', handlers.onTerminated);
-      this.subscriptions[uri].once('notify', handlers.onFirstNotify);
+      this.subscriptions[uri].stateChange.on((newState: SubscriptionState) => {
+        switch (newState) {
+          case SubscriptionState.Subscribed:
+            resolve();
+            break;
+          case SubscriptionState.Terminated:
+            delete this.subscriptions[uri];
+            this.emit('subscriptionTerminated', uri);
+            break;
+        }
+      });
+
+      this.subscriptions[uri].on('failed', (response: Core.IncomingResponseMessage) => {
+        if (!response) {
+          this.removeSubscription({ uri });
+          reject();
+          return;
+        }
+
+        let waitTime = 100;
+
+        const retryAfter = response.getHeader('Retry-After');
+        if (retryAfter) {
+          log.info(
+            `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
+            this.constructor.name
+          );
+          waitTime = Number(retryAfter) * second;
+        }
+
+        setTimeout(() => {
+          this.removeSubscription({ uri });
+          this.subscribe(uri)
+            .then(resolve)
+            .catch(reject);
+        }, waitTime);
+      });
 
       this.subscriptions[uri].subscribe();
     });
@@ -285,7 +315,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   public async resubscribe(uri: string) {
     if (!this.subscriptions[uri]) {
-      throw new Error('Cannot resubscribe to nonexistant subscription.');
+      throw new Error('Cannot resubscribe to nonexistent subscription.');
     }
 
     this.removeSubscription({ uri });
@@ -347,10 +377,10 @@ export class ClientImpl extends EventEmitter implements IClient {
       });
     });
 
-    this.transport.on('invite', uaSession => {
-      const session = new SessionImpl({
+    this.transport.on('invite', incomingSession => {
+      const session = new Invitation({
         media: this.defaultMedia,
-        session: uaSession,
+        session: incomingSession,
         onTerminated: this.onSessionTerminated.bind(this),
         isIncoming: true
       });
@@ -388,36 +418,34 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 
   private async tryInvite(phoneNumber: string): Promise<SessionImpl> {
-    return new Promise((resolve, reject) => {
-      // Transport invite just creates a ClientContext, it doesn't send the
-      // actual invite. We need to bind the event handlers below before we can
-      // send out the actual invite. Otherwise we might miss the events.
-      const uaSession = this.transport.invite(phoneNumber);
-      const session = new SessionImpl({
-        media: this.defaultMedia,
-        session: uaSession,
-        onTerminated: this.onSessionTerminated.bind(this),
-        isIncoming: false
-      });
-
-      const handlers = {
-        onFailed: () => {
-          log.error('Session emitted failed after an invite.', this.constructor.name);
-          uaSession.removeListener('progress', handlers.onProgress);
-          reject(new Error('Could not send an invite. Socket could be broken.'));
-        },
-        onProgress: () => {
-          log.debug('Session emitted progress after an invite.', this.constructor.name);
-          uaSession.removeListener('failed', handlers.onFailed);
-          resolve(session);
-        }
-      };
-
-      uaSession.once('failed', handlers.onFailed);
-      uaSession.once('progress', handlers.onProgress);
-
-      uaSession.invite();
+    const outgoingSession = this.transport.invite(phoneNumber);
+    const session = new Inviter({
+      media: this.defaultMedia,
+      session: outgoingSession,
+      onTerminated: this.onSessionTerminated.bind(this),
+      isIncoming: false
     });
+
+    let rejectWithError;
+    const disconnectedPromise = new Promise((resolve, reject) => {
+      rejectWithError = () => reject(new Error('Socket broke during inviting'));
+      this.transport.once('transportDisconnected', rejectWithError);
+    });
+
+    try {
+      await Promise.race([
+        Promise.all([session.invite(), session.progressed()]),
+        session.accepted(), // progress is not always emitted, in that case accepted might have
+        disconnectedPromise
+      ]);
+    } catch (e) {
+      log.error('Could not send an invite. Socket could be broken.', this.constructor.name);
+      return Promise.reject(new Error('Could not send an invite. Socket could be broken.'));
+    } finally {
+      this.transport.removeListener('transportDisconnected', rejectWithError);
+    }
+
+    return session;
   }
 
   private removeSubscription({ uri, unsubscribe = false }) {
@@ -470,8 +498,8 @@ type ClientCtor = new (options: IClientOptions) => IClient;
  * are ways around this.
  */
 export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
-  const uaFactory = (options: UABase.Options) => {
-    return new UA(options);
+  const uaFactory = (options: UserAgentOptions) => {
+    return new UserAgent(options);
   };
 
   const transportFactory = (factory: UAFactory, options: IClientOptions) => {
@@ -493,6 +521,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
     'removeAllListeners',
     'removeListener',
     'subscribe',
+    'resubscribe',
     'unsubscribe'
   ]);
 } as any) as ClientCtor;

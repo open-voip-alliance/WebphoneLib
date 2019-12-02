@@ -3,12 +3,22 @@ import pTimeout from 'p-timeout';
 
 import {
   C as SIPConstants,
+  Core,
   Grammar,
   IncomingResponse,
   NameAddrHeader,
-  TypeStrings as SIPTypeStrings
+  SessionDescriptionHandlerModifiers,
+  TypeStrings as SIPTypeStrings,
+  Utils
 } from 'sip.js';
 
+import { Invitation } from 'sip.js/lib/api/invitation';
+import { Inviter } from 'sip.js/lib/api/inviter';
+import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options';
+import { Referrer } from 'sip.js/lib/api/referrer';
+import { Session as UserAgentSession } from 'sip.js/lib/api/session';
+import { SessionState } from 'sip.js/lib/api/session-state';
+import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { SessionStatus } from './enums';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
@@ -17,7 +27,6 @@ import { InternalSession, SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
 import * as Time from './time';
 import { IMedia, IRemoteIdentity } from './types';
-import { WrappedInviteClientContext, WrappedInviteServerContext } from './ua';
 
 export interface ISession {
   readonly id: string;
@@ -55,8 +64,12 @@ export interface ISession {
    */
   endTime: any;
 
-  accept(): Promise<void>;
+  accept(): Promise<ISessionAccept | void>;
   reject(): Promise<void>;
+  /**
+   * Terminate the session.
+   */
+  terminate(): Promise<Core.OutgoingByeRequest>;
 
   /**
    * Promise that resolves when the session is accepted or rejected.
@@ -69,10 +82,6 @@ export interface ISession {
    */
   terminated(): Promise<void>;
 
-  /**
-   * Terminate the session.
-   */
-  terminate(): Promise<void>;
   reinvite(): Promise<void>;
 
   /**
@@ -152,7 +161,7 @@ const CAUSE_ERRORS: string[] = [
   SIPConstants.causes.SIP_FAILURE_CODE
 ];
 
-interface ISessionAccept {
+export interface ISessionAccept {
   accepted: boolean;
   rejectCause?: SessionCause;
 }
@@ -170,93 +179,58 @@ export class SessionImpl extends EventEmitter implements ISession {
   public holdState: boolean;
   public status: SessionStatus = SessionStatus.RINGING;
 
-  private session: InternalSession;
+  protected acceptedPromise: Promise<ISessionAccept>;
+  protected inviteOptions: InviterInviteOptions;
+  protected session: Inviter | Invitation;
 
-  private acceptedPromise: Promise<ISessionAccept>;
+  private acceptedSession: any;
+
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
   private terminatedPromise: Promise<void>;
   private reinvitePromise: Promise<boolean>;
 
   private onTerminated: (sessionId: string) => void;
-
   private _remoteIdentity: IRemoteIdentity;
 
-  constructor({
+  protected constructor({
     session,
     media,
     onTerminated,
     isIncoming
   }: {
-    session: WrappedInviteClientContext | WrappedInviteServerContext;
+    session: Inviter | Invitation;
     media: IMedia;
     onTerminated: (sessionId: string) => void;
     isIncoming: boolean;
   }) {
     super();
-    this.session = session as InternalSession;
+    this.session = session;
     this.id = session.request.callId;
-    this.media = new SessionMedia(this.session, media);
+    this.media = new SessionMedia(this, media);
     this.media.on('mediaFailure', () => {
-      // TODO: fix this so it doesn't `reject` the `terminatedPromise`?
-      this.session.terminate();
+      this.session.bye();
     });
     this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
-
-    this.acceptedPromise = new Promise((resolve, reject) => {
-      const handlers = {
-        onAccepted: () => {
-          this.session.removeListener('rejected', handlers.onRejected);
-          this.status = SessionStatus.ACTIVE;
-          this.emit('statusUpdate', { id: this.id, status: this.status });
-          resolve({ accepted: true });
-        },
-        onRejected: (response: IncomingResponse, cause: string) => {
-          this.session.removeListener('accepted', handlers.onAccepted);
-          try {
-            resolve({
-              accepted: false,
-              rejectCause: this.findCause(response, cause)
-            });
-          } catch (e) {
-            console.log(response);
-            log.error(`Session failed: ${e}`, this.constructor.name);
-            reject(e);
-          }
-        }
-      };
-
-      this.session.once('accepted', handlers.onAccepted);
-      this.session.once('rejected', handlers.onRejected);
-    });
 
     // Terminated promise will resolve when the session is terminated. It will
     // be rejected when there is some fault is detected with the session after it
     // has been accepted.
     this.terminatedPromise = new Promise((resolve, reject) => {
-      this.session.once('terminated', (message, cause) => {
-        this.onTerminated(this.id);
-        this.emit('terminated', { id: this.id });
-        this.status = SessionStatus.TERMINATED;
-        this.emit('statusUpdate', { id: this.id, status: this.status });
+      this.session.stateChange.on((newState: SessionState) => {
+        if (newState === SessionState.Terminated) {
+          this.onTerminated(this.id);
+          this.emit('terminated', { id: this.id });
+          this.status = SessionStatus.TERMINATED;
+          this.emit('statusUpdate', { id: this.id, status: this.status });
 
-        // Asterisk specific header that signals that the VoIP account used is not
-        // configured for WebRTC.
-        if (cause === 'BYE' && message.getHeader('X-Asterisk-Hangupcausecode') === '58') {
-          reject(new Error('misconfigured_account'));
-        } else {
           resolve();
         }
       });
     });
 
-    this._remoteIdentity = this.getRemoteIdentity(this.session.request);
-
-    this.session.on('reinvite', (_, request) => {
-      this._remoteIdentity = this.getRemoteIdentity(request);
-      this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
-    });
+    this._remoteIdentity = this.getRemoteIdentity();
 
     // Track if the other side said bye before terminating.
     this.saidBye = false;
@@ -291,7 +265,8 @@ export class SessionImpl extends EventEmitter implements ISession {
   get autoAnswer(): boolean {
     const callInfo = this.session.request.headers['Call-Info'];
     if (callInfo && callInfo[0]) {
-      return callInfo[0].raw.includes('answer-after=0');
+      // ugly, not sure how to check if object with TS agreeing on my methods
+      return (callInfo[0] as { parsed?: any; raw: string }).raw.includes('answer-after=0');
     }
 
     return false;
@@ -314,76 +289,37 @@ export class SessionImpl extends EventEmitter implements ISession {
   }
 
   public accept(): Promise<void> {
-    if (this.rejectPromise) {
-      throw new Error('invalid operation: session is rejected');
-    }
-
-    if (this.acceptPromise) {
-      return this.acceptPromise;
-    }
-
-    this.acceptPromise = new Promise((resolve, reject) => {
-      const handlers = {
-        onAnswered: () => {
-          this.session.removeListener('failed', handlers.onFail);
-          resolve();
-        },
-        onFail: (response: IncomingResponse, cause: string) => {
-          this.session.removeListener('accepted', handlers.onAnswered);
-          try {
-            reject(this.findCause(response, cause));
-          } catch (e) {
-            log.error(`Accepting session failed: ${e}`, this.constructor.name);
-            reject(e);
-          }
-        }
-      };
-      this.session.once('accepted', handlers.onAnswered);
-      this.session.once('failed', handlers.onFail);
-
-      this.session.accept();
-    });
-
-    return this.acceptPromise;
+    throw new Error('Should be implemented in superclass');
   }
 
   public reject(): Promise<void> {
-    if (this.acceptPromise) {
-      throw new Error('invalid operation: session is accepted');
-    }
-
-    if (this.rejectPromise) {
-      return this.rejectPromise;
-    }
-
-    this.rejectPromise = new Promise(resolve => {
-      this.session.once('rejected', () => resolve());
-      // reject is immediate, it doesn't fail.
-      this.session.reject();
-    });
-
-    return this.rejectPromise;
+    throw new Error('Should be implemented in superclass');
   }
 
   public accepted(): Promise<ISessionAccept> {
-    return this.acceptedPromise;
+    throw new Error('Should be implemented in superclass');
+  }
+
+  public terminate(): Promise<Core.OutgoingByeRequest> {
+    return this.bye();
   }
 
   public terminated(): Promise<void> {
     return this.terminatedPromise;
   }
 
-  public terminate(): Promise<void> {
-    this.session.terminate();
-    return this.terminatedPromise;
-  }
-
-  public async reinvite(): Promise<void> {
-    const reinvitePromise = this.getReinvitePromise();
-
-    this.session.reinvite();
-
-    await reinvitePromise;
+  public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
+    await new Promise((resolve, reject) => {
+      this.session.invite(
+        this.makeInviteOptions({
+          onAccept: resolve,
+          onReject: reject,
+          onRejectThrow: reject,
+          onProgress: resolve,
+          sessionDescriptionHandlerModifiers: modifiers
+        })
+      );
+    });
   }
 
   public hold(): Promise<boolean> {
@@ -395,41 +331,55 @@ export class SessionImpl extends EventEmitter implements ISession {
   }
 
   public async blindTransfer(target: string): Promise<boolean> {
-    return this.transfer(target);
+    return this.transfer(UserAgent.makeURI(target)).then(success => {
+      if (success) {
+        this.bye();
+      }
+
+      return Promise.resolve(success);
+    });
   }
 
   public async attendedTransfer(target: SessionImpl): Promise<boolean> {
-    return this.transfer(target.session);
+    return this.transfer(target.session).then(success => {
+      if (success) {
+        this.bye();
+      }
+
+      return Promise.resolve(success);
+    });
   }
 
   /**
    * Reconfigure the WebRTC peerconnection.
    */
   public rebuildSessionDescriptionHandler() {
-    this.session.rebuildSessionDescriptionHandler();
+    (this.session as any)._sessionDescriptionHandler = undefined;
+    (this.session as any).setupSessionDescriptionHandler();
+  }
+
+  public bye() {
+    return this.session.bye();
   }
 
   /**
-   * Function this.session.bye triggers terminated, so nothing else has to be
-   * done here.
+   * Returns true if the DTMF was successful.
    */
-  public bye() {
-    this.session.bye();
-  }
-
-  public dtmf(tones: string): void {
+  public dtmf(tones: string): boolean {
     // Unfortunately there is no easy way to give feedback about the DTMF
     // tones. SIP.js uses one of two methods for sending the DTMF:
     //
     // 1. RTP (via the SDH)
-    // Internally returns a `boolean` for the whole strong.
+    // Internally returns a `boolean` for the whole string.
     //
     // 2. INFO (websocket)
     //
     // Sends one tone after the other where the timeout is determined by the kind
     // of tone send. If one tone fails, the entire sequence is cleared. There is
     // no feedback about the failure.
-    this.session.dtmf(tones);
+    //
+    // For now only use the RTP method using the session description handler.
+    return this.session.sessionDescriptionHandler.sendDtmf(tones);
   }
 
   public freeze(): ISession {
@@ -447,7 +397,6 @@ export class SessionImpl extends EventEmitter implements ISession {
       'startTime',
       'stats',
       'status',
-
       'accept',
       'accepted',
       'attendedTransfer',
@@ -461,7 +410,6 @@ export class SessionImpl extends EventEmitter implements ISession {
       'terminate',
       'terminated',
       'unhold',
-
       'on',
       'once',
       'removeAllListeners',
@@ -469,45 +417,69 @@ export class SessionImpl extends EventEmitter implements ISession {
     ]);
   }
 
-  private getReinvitePromise(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const handlers = {
-        onReinviteAccepted: () => {
-          this.session.removeListener('reinviteFailed', handlers.onReinviteFailed);
-          // Calling resolve after removeListener, otherwise, when it fails,
-          // the resolved promise can not be rejected with an error trace
-          // anymore.
-          resolve(true);
+  protected makeInviteOptions({
+    onAccept,
+    onReject,
+    onRejectThrow,
+    onProgress,
+    sessionDescriptionHandlerModifiers = []
+  }) {
+    return {
+      requestDelegate: {
+        onAccept: response => {
+          this.status = SessionStatus.ACTIVE;
+          this.emit('statusUpdate', { id: this.id, status: this.status });
+          this._remoteIdentity = this.getRemoteIdentity();
+          this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
+          onAccept({ accepted: true });
         },
-        onReinviteFailed: (e: Error) => {
-          this.session.removeListener('reinviteAccepted', handlers.onReinviteAccepted);
-          // Calling reject after removeListener, otherwise, when it fails,
-          // reject returns the wrong trace.
-          reject(e);
+        onReject: ({ message }: Core.IncomingResponse) => {
+          log.info('Session is rejected.', this.constructor.name);
+          log.debug(message, this.constructor.name);
+          console.log(message);
+          try {
+            const cause = Utils.getReasonPhrase(message.statusCode);
+            onReject({
+              accepted: false,
+              rejectCause: this.findCause(message, cause)
+            });
+          } catch (e) {
+            log.error(`Session failed: ${e}`, this.constructor.name);
+            onReject(e);
+          }
+        },
+        onProgress: inviteResponse => {
+          log.debug('Session is in progress', this.constructor.name);
+          onProgress();
         }
-      };
-
-      this.session.once('reinviteAccepted', handlers.onReinviteAccepted);
-      this.session.once('reinviteFailed', handlers.onReinviteFailed);
-    });
+      },
+      sessionDescriptionHandlerOptions: {
+        constraints: {
+          audio: true,
+          video: false
+        }
+      },
+      sessionDescriptionHandlerModifiers
+    };
   }
 
-  private setHoldState(flag: boolean) {
+  private async setHoldState(flag: boolean) {
     if (this.holdState === flag) {
       return this.reinvitePromise;
     }
 
-    this.reinvitePromise = this.getReinvitePromise();
-
+    const modifiers = [];
     if (flag) {
       log.debug('Hold requested', this.constructor.name);
-      this.session.hold();
+      modifiers.push(this.session.sessionDescriptionHandler.holdModifier);
     } else {
       log.debug('Unhold requested', this.constructor.name);
-      this.session.unhold();
     }
 
+    await this.reinvite(modifiers);
+
     this.holdState = flag;
+
     this.status = flag ? SessionStatus.ON_HOLD : SessionStatus.ACTIVE;
     this.emit('statusUpdate', { id: this.id, status: this.status });
 
@@ -526,60 +498,36 @@ export class SessionImpl extends EventEmitter implements ISession {
    * session (a.k.a. InviteClientContext/InviteServerContext depending on
    * whether it is outbound or inbound) should then be passed to this function.
    *
-   * @param {InternalSession | string} target - Target to transfer this session to.
+   * @param {UserAgentSession | string} target - Target to transfer this session to.
    * @returns {Promise<boolean>} Promise that resolves when the transfer is made.
    */
-  private async transfer(target: InternalSession | string): Promise<boolean> {
+  private async transfer(target: Core.URI | UserAgentSession): Promise<boolean> {
     return pTimeout(this.isTransferredPromise(target), 20000, () => {
       log.error('Could not transfer the call', this.constructor.name);
       return Promise.resolve(false);
     });
   }
 
-  private async isTransferredPromise(target: InternalSession | string) {
-    const { referContext, options } = await new Promise((resolve, reject) => {
-      this.session.once('referRequested', context => {
-        log.debug('Refer is requested', this.constructor.name);
-        resolve(context);
-      });
-
-      try {
-        this.session.refer(target);
-      } catch (e) {
-        log.error(e, this.constructor.name);
-        // When there are multiple attended transfer requests, it could occur
-        // that the status of this session is set by another one of these requests
-        // is set to an unexpected state.
-        if (e.type === SIPTypeStrings.InvalidStateError) {
-          reject();
-        }
-
-        throw e;
-      }
-    });
-
+  private async isTransferredPromise(target: Core.URI | UserAgentSession) {
     return new Promise<boolean>(resolve => {
-      const handlers = {
-        onReferAccepted: () => {
-          log.debug('Refer is accepted', this.constructor.name);
-          referContext.removeListener('referRejected', handlers.onReferRejected);
-          resolve(true);
-        },
-        // Refer can be rejected with the following responses:
-        // - 503: Service Unavailable (i.e. server can't handle one-legged transfers)
-        // - 603: Declined
-        onReferRejected: () => {
-          log.debug('Refer is rejected', this.constructor.name);
-          referContext.removeListener('referAccepted', handlers.onReferAccepted);
-          resolve(false);
+      const referrer = new Referrer(this.session, target);
+
+      referrer.refer({
+        requestDelegate: {
+          onAccept: () => {
+            log.info('Transferred session is accepted!', this.constructor.name);
+            resolve(true);
+          },
+          // Refer can be rejected with the following responses:
+          // - 503: Service Unavailable (i.e. server can't handle one-legged transfers)
+          // - 603: Declined
+          onReject: () => {
+            log.info('Transferred session is rejected!', this.constructor.name);
+            resolve(false);
+          },
+          onNotify: () => ({}) // To make sure the requestDelegate type is complete.
         }
-      };
-
-      referContext.once('referAccepted', handlers.onReferAccepted);
-      referContext.once('referRejected', handlers.onReferRejected);
-
-      // Refer after the handlers have been set.
-      referContext.refer(options);
+      });
     });
   }
 
@@ -613,21 +561,12 @@ export class SessionImpl extends EventEmitter implements ISession {
     return undefined;
   }
 
-  private getRemoteIdentity(request): IRemoteIdentity {
-    let identity: NameAddrHeader;
-    ['P-Asserted-Identity', 'Remote-Party-Id', 'From'].some(header => {
-      if (request.hasHeader(header)) {
-        identity = Grammar.nameAddrHeaderParse(request.getHeader(header));
-        return true;
-      }
-    });
-
-    let phoneNumber = this.session.remoteIdentity.uri.user;
+  private getRemoteIdentity() {
+    let phoneNumber: string = this.session.remoteIdentity.uri.user;
     let displayName: string;
-
-    if (identity) {
-      phoneNumber = (identity.uri as any).normal.user;
-      displayName = identity.displayName;
+    if (this.session.assertedIdentity) {
+      phoneNumber = this.session.assertedIdentity.uri.user;
+      displayName = this.session.assertedIdentity.displayName;
     }
 
     return { phoneNumber, displayName };

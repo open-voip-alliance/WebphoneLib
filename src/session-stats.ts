@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
+import { Session as UserAgentSession } from 'sip.js/lib/api/session';
 import { log } from './logger';
-import { InternalSession } from './session-media';
 
 class StatsAggregation {
   private stats: {
@@ -67,7 +67,7 @@ export class SessionStats extends EventEmitter {
   private statsInterval: number;
 
   public constructor(
-    session: InternalSession,
+    session: UserAgentSession,
     {
       statsInterval
     }: {
@@ -82,7 +82,7 @@ export class SessionStats extends EventEmitter {
     // statistics and feed them to the stats aggregator.
     session.once('SessionDescriptionHandler-created', () => {
       this.statsTimer = window.setInterval(() => {
-        const pc = session.sessionDescriptionHandler.peerConnection;
+        const pc = (session.sessionDescriptionHandler as any).peerConnection;
         pc.getStats().then((stats: RTCStatsReport) => {
           if (this.add(stats)) {
             this.emit('statsUpdated', this);

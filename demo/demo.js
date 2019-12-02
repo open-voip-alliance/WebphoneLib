@@ -2,7 +2,8 @@ import { Client, Media, Sound, log } from '../dist/index.mjs';
 import * as CONF from './config.js';
 
 const caller = document.querySelector('#caller');
-const ringerBtn = document.querySelector('#ring');
+const acceptCallBtn = document.querySelector('#accept-call');
+const rejectCallBtn = document.querySelector('#reject-call');
 const outBtn = document.querySelector('#out');
 const reconfigureBtn = document.querySelector('#reconfigure');
 const registerBtn = document.querySelector('#register');
@@ -51,7 +52,7 @@ const media = {
 
 let activeSession = null;
 
-log.level = 'debug';
+log.level = 'info';
 log.connector = ({ level, context, message }) => {
   const print = {
     debug: console.debug,
@@ -66,11 +67,19 @@ log.connector = ({ level, context, message }) => {
 
 const client = new Client({ account, transport, media });
 
-client.on('sessionsUpdate', sessions => {
-  sessionsCount.innerHTML = Object.keys(sessions).length;
+client.on('sessionAdded', () => {
+  sessionsCount.innerHTML = client.getSessions().length;
 });
 
-outBtn.addEventListener('click', () => outgoingCall('518').catch(console.error));
+client.on('sessionRemoved', () => {
+  sessionsCount.innerHTML = client.getSessions().length;
+});
+
+client.on('statusUpdate', newStatus => {
+  console.log(`Status update to ${newStatus}`);
+});
+
+outBtn.addEventListener('click', () => outgoingCall().catch(console.error));
 
 const subscribeTo = CONF.subscribeTo;
 
@@ -89,10 +98,13 @@ registerBtn.addEventListener('click', () =>
   client
     .connect()
     .then(async () => {
-      await client.subscribe(subscribeTo);
-      console.log('subscribed!');
+      console.log('connected!');
+      //await client.subscribe(subscribeTo);
+      //console.log('subscribed!');
     })
-    .catch(console.error)
+    .catch(e => {
+      console.error(e);
+    })
 );
 unregisterBtn.addEventListener('click', () => client.disconnect().catch(console.error));
 subscribeBtn.addEventListener('click', () => client.subscribe(subscribeTo).catch(console.error));
@@ -100,9 +112,7 @@ resubscribeBtn.addEventListener('click', async () => {
   await client.resubscribe(subscribeTo).catch(console.error);
   console.log('resubscribed!');
 });
-unsubscribeBtn.addEventListener('click', () =>
-  client.unsubscribe(subscribeTo).catch(console.error)
-);
+unsubscribeBtn.addEventListener('click', () => client.unsubscribe(subscribeTo));
 
 const inputSelect = document.querySelector('#input');
 const outputSelect = document.querySelector('#output');
@@ -240,6 +250,7 @@ async function attendedTransfer(session) {
 
     // Giving 10 seconds to talk between session & toSession
     setTimeout(async () => {
+      console.log('Initiating attended transfer');
       client.attendedTransfer(session, toSession);
     }, 10000);
 
@@ -267,7 +278,7 @@ async function runSession(session) {
     .then(() => console.log('audio connected!'))
     .catch(() => console.error('connecting audio failed'));
 
-  session.on('callQualityUpdate', stats => {
+  session.on('callQualityUpdate', (sessionId, stats) => {
     printStats(stats);
     mos.innerHTML = (stats.mos.last || 0).toFixed(2);
   });
@@ -280,6 +291,7 @@ async function runSession(session) {
     blindTransferBtn.addEventListener('click', blindTransfer);
     attendedTransferBtn.addEventListener('click', attTransfer);
 
+    console.log('waiting for terminated');
     await session.terminated();
     console.log('session is terminated now');
   } finally {
@@ -295,19 +307,21 @@ async function runSession(session) {
   }
 }
 
-async function outgoingCall(number) {
+async function outgoingCall() {
   const session = await client.invite(CONF.outgoingCallTo);
   if (!session) {
     return;
   }
 
-  console.log('created outgoing call', session.id, 'to', number);
+  console.log('created outgoing call', session.id, 'to', CONF.outgoingCallTo);
 
-  if (await session.accepted()) {
+  const { accepted, rejectCause } = await session.accepted();
+  if (accepted) {
+    console.log(accepted);
     console.log('outgoing call got accepted', session.id);
     await runSession(session);
   } else {
-    console.log('outgoing call was rejected', session.id);
+    console.log(`outgoing call was rejected because ${rejectCause}`, session.id);
     await session.terminated();
   }
 
@@ -315,25 +329,27 @@ async function outgoingCall(number) {
 }
 
 async function incomingCall(session) {
-  console.log('invited', session.id);
-
   const { number, displayName } = session.remoteIdentity;
   caller.innerHTML = `${displayName} (${number})`;
   caller.hidden = false;
-  ringerBtn.hidden = true;
 
-  ringerBtn.addEventListener(
-    'click',
-    () => {
-      session.accept();
-    },
-    { once: true }
-  );
-  ringerBtn.hidden = false;
+  acceptCallBtn.hidden = false;
+  rejectCallBtn.hidden = false;
+
+  acceptCallBtn.addEventListener('click', session.accept, { once: true });
+  rejectCallBtn.addEventListener('click', session.reject, { once: true });
 
   let terminateTimer;
   try {
+    if (session.autoAnswer) {
+      await session.accept();
+    }
+
     const { accepted, rejectCause } = await session.accepted();
+
+    acceptCallBtn.hidden = true;
+    rejectCallBtn.hidden = true;
+
     if (accepted) {
       console.log('session is accepted \\o/', session.id);
 
@@ -357,7 +373,8 @@ async function incomingCall(session) {
   } finally {
     console.log('closing session...', session.id);
 
-    ringerBtn.hidden = true;
+    acceptCallBtn.hidden = true;
+    rejectCallBtn.hidden = true;
     caller.hidden = true;
 
     if (terminateTimer) {
