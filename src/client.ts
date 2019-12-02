@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 
 import { ClientStatus, ReconnectionMode } from './enums';
+import { SessionStatus } from './enums';
 import * as Features from './features';
 import { Invitation } from './invitation';
 import { Inviter } from './inviter';
@@ -219,6 +220,22 @@ export class ClientImpl extends EventEmitter implements IClient {
     }
 
     this.addSession(session);
+
+    // Dirty hack to avoid rewriting to much at this time and to avoid
+    // users to be in a broken state:
+    //
+    // It could happen that a session is terminated before progress is emitted
+    // and tryInvite returned, for example if the server doesn't accept our
+    // invite. In that case, we remove the session shortly after adding it to
+    // our session list, to make sure users of this lib still get the
+    // appropriate events fired.
+    //
+    // Normally the onTerminated handler should do that for us, but if it
+    // fired before addSession, it is still added to the list of sessions,
+    // even though it will never be terminated 'again'.
+    if (session.status === SessionStatus.TERMINATED) {
+      setTimeout(() => this.removeSession(session), 50);
+    }
 
     return session.freeze();
   }

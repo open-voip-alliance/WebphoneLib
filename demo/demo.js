@@ -99,8 +99,8 @@ registerBtn.addEventListener('click', () =>
     .connect()
     .then(async () => {
       console.log('connected!');
-      await client.subscribe(subscribeTo);
-      console.log('subscribed!');
+      //await client.subscribe(subscribeTo);
+      //console.log('subscribed!');
     })
     .catch(e => {
       console.error(e);
@@ -315,11 +315,13 @@ async function outgoingCall() {
 
   console.log('created outgoing call', session.id, 'to', CONF.outgoingCallTo);
 
-  if (await session.accepted()) {
+  const { accepted, rejectCause } = await session.accepted();
+  if (accepted) {
+    console.log(accepted);
     console.log('outgoing call got accepted', session.id);
     await runSession(session);
   } else {
-    console.log('outgoing call was rejected', session.id);
+    console.log(`outgoing call was rejected because ${rejectCause}`, session.id);
     await session.terminated();
   }
 
