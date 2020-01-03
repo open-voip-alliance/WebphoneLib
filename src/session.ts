@@ -136,6 +136,10 @@ export interface ISessionAccept {
   rejectPhrase?: string;
 }
 
+export interface ISessionCancelled {
+  reason?: string;
+}
+
 /**
  * @hidden
  */
@@ -153,7 +157,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   protected inviteOptions: InviterInviteOptions;
   protected session: Inviter | Invitation;
   protected terminatedReason?: string;
-  protected canceledPromise?: Promise<void>;
+  protected cancelled?: ISessionCancelled;
 
   private acceptedSession: any;
 
@@ -197,14 +201,10 @@ export class SessionImpl extends EventEmitter implements ISession {
           this.status = SessionStatus.TERMINATED;
           this.emit('statusUpdate', { id: this.id, status: this.status });
 
-          // The canceledPromise is currently only used by an Invitation.
+          // The cancelled object is currently only used by an Invitation.
           // For instance when an incoming call is cancelled by the other
           // party or system (i.e. call completed elsewhere).
-          if (this.canceledPromise) {
-            this.canceledPromise.then(resolve);
-          } else {
-            resolve();
-          }
+          resolve(this.cancelled ? this.cancelled.reason : undefined);
         }
       });
     });

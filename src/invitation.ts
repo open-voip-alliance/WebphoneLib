@@ -13,7 +13,7 @@ export class Invitation extends SessionImpl {
       this.acceptedRef = resolve;
     });
 
-    this.canceledPromise = options.canceledPromise;
+    this.cancelled = options.cancelled;
   }
 
   public accept(): Promise<void> {
