@@ -345,6 +345,8 @@ async function incomingCall(session) {
       await session.accept();
     }
 
+    session.terminated().then(reason => console.log(`Session is terminated, reason: ${reason}`));
+
     const { accepted, rejectCause } = await session.accepted();
 
     acceptCallBtn.hidden = true;
