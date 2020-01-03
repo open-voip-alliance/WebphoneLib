@@ -79,6 +79,10 @@ const connector = (level, category, label, content) => {
   log.log(convertedLevel, content, category);
 };
 
+const CANCELLED_REASON = {
+  'Call completed elsewhere': 'call_completed_elsewhere'
+};
+
 /**
  * @hidden
  */
@@ -354,7 +358,20 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.userAgent = this.uaFactory(options);
     this.userAgent.delegate = {
       onInvite: (invitation: Invitation) => {
-        this.emit('invite', invitation);
+        // Patch the onCancel delegate function to parse the reason of
+        // cancellation. This is then used by the terminatedPromise of
+        // a Session to return the reason when a session is terminated.
+        const onCancel = (invitation as any).incomingInviteRequest.delegate.onCancel;
+        const canceledPromise = new Promise(resolve => {
+          (invitation as any).incomingInviteRequest.delegate.onCancel = (
+            message: Core.IncomingRequestMessage
+          ) => {
+            const reason = this.parseHeader(message.getHeader('reason'));
+            resolve(reason ? CANCELLED_REASON[reason.get('text')] : undefined);
+            onCancel(message);
+          };
+        });
+        this.emit('invite', { invitation, canceledPromise });
       }
     };
 
@@ -599,5 +616,24 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }
 
     this.tryUntilConnected({ skipCheck: true });
+  }
+
+  /**
+   * Convert a comma-separated string like:
+   * `SIP;cause=200;text="Call completed elsewhere` to a Map.
+   * @param {string} header - The header to parse.
+   * @returns {Map} - A map of key/values of the header.
+   */
+  private parseHeader(header?: string): Map<string, string> {
+    if (header) {
+      return new Map(
+        header
+          .replace(/"/g, '')
+          .split(';')
+          .map(i => i.split('=') as [string, string])
+      );
+    } else {
+      return undefined;
+    }
   }
 }

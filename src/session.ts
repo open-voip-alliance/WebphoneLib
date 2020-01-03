@@ -80,7 +80,7 @@ export interface ISession {
   /**
    * Promise that resolves when the session is terminated.
    */
-  terminated(): Promise<void>;
+  terminated(): Promise<string | void>;
 
   reinvite(): Promise<void>;
 
@@ -118,52 +118,22 @@ export interface ISession {
   /* tslint:enable:unified-signatures */
 }
 
-export enum SessionCause {
-  BUSY = 'busy',
-  REJECTED = 'rejected',
-  UNAVAILABLE = 'unavailable',
-  CANCELLED = 'cancelled',
-  CALL_COMPLETED_ELSEWHERE = 'call_completed_elsewhere',
-  NOT_FOUND = 'not_found',
-  REDIRECTED = 'redirected',
-  NO_ANSWER = 'no_answer',
-  REQUEST_TERMINATED = 'request_terminated',
-  TEMPORARILY_UNAVAILABLE = 'temporarily_unavailable'
-}
-
+/**
+ * SIP already returns a reasonPhrase but for backwards compatibility purposes
+ * we use this mapping to return an additional reasonCause.
+ */
 const CAUSE_MAPPING = {
-  [SIPConstants.causes.BUSY]: SessionCause.BUSY,
-  [SIPConstants.causes.REJECTED]: SessionCause.REJECTED,
-  [SIPConstants.causes.UNAVAILABLE]: SessionCause.UNAVAILABLE,
-  [SIPConstants.causes.NOT_FOUND]: SessionCause.NOT_FOUND,
-  [SIPConstants.causes.REDIRECTED]: SessionCause.REDIRECTED,
-  [SIPConstants.causes.CANCELED]: SessionCause.CANCELLED,
-  [SIPConstants.causes.NO_ANSWER]: SessionCause.NO_ANSWER,
-  'Temporarily Unavailable': SessionCause.TEMPORARILY_UNAVAILABLE
+  480: 'temporarily_unavailable',
+  484: 'address_incomplete',
+  486: 'busy',
+  487: 'request_terminated'
 };
-
-const CAUSE_ERRORS: string[] = [
-  SIPConstants.causes.CONNECTION_ERROR,
-  SIPConstants.causes.INTERNAL_ERROR,
-  SIPConstants.causes.REQUEST_TIMEOUT,
-  SIPConstants.causes.AUTHENTICATION_ERROR,
-  SIPConstants.causes.ADDRESS_INCOMPLETE,
-  SIPConstants.causes.DIALOG_ERROR,
-  SIPConstants.causes.INCOMPATIBLE_SDP,
-  SIPConstants.causes.BAD_MEDIA_DESCRIPTION,
-  SIPConstants.causes.EXPIRES,
-  SIPConstants.causes.NO_ACK,
-  SIPConstants.causes.NO_PRACK,
-  SIPConstants.causes.RTP_TIMEOUT,
-  SIPConstants.causes.USER_DENIED_MEDIA_ACCESS,
-  SIPConstants.causes.WEBRTC_ERROR,
-  SIPConstants.causes.WEBRTC_NOT_SUPPORTED,
-  SIPConstants.causes.SIP_FAILURE_CODE
-];
 
 export interface ISessionAccept {
   accepted: boolean;
-  rejectCause?: SessionCause;
+  rejectCode?: number;
+  rejectCause?: string;
+  rejectPhrase?: string;
 }
 
 /**
@@ -182,12 +152,14 @@ export class SessionImpl extends EventEmitter implements ISession {
   protected acceptedPromise: Promise<ISessionAccept>;
   protected inviteOptions: InviterInviteOptions;
   protected session: Inviter | Invitation;
+  protected terminatedReason?: string;
+  protected canceledPromise?: Promise<void>;
 
   private acceptedSession: any;
 
   private acceptPromise: Promise<void>;
   private rejectPromise: Promise<void>;
-  private terminatedPromise: Promise<void>;
+  private terminatedPromise: Promise<string | void>;
   private reinvitePromise: Promise<boolean>;
 
   private onTerminated: (sessionId: string) => void;
@@ -217,7 +189,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     // Terminated promise will resolve when the session is terminated. It will
     // be rejected when there is some fault is detected with the session after it
     // has been accepted.
-    this.terminatedPromise = new Promise((resolve, reject) => {
+    this.terminatedPromise = new Promise(resolve => {
       this.session.stateChange.on((newState: SessionState) => {
         if (newState === SessionState.Terminated) {
           this.onTerminated(this.id);
@@ -225,7 +197,14 @@ export class SessionImpl extends EventEmitter implements ISession {
           this.status = SessionStatus.TERMINATED;
           this.emit('statusUpdate', { id: this.id, status: this.status });
 
-          resolve();
+          // The canceledPromise is currently only used by an Invitation.
+          // For instance when an incoming call is cancelled by the other
+          // party or system (i.e. call completed elsewhere).
+          if (this.canceledPromise) {
+            this.canceledPromise.then(resolve);
+          } else {
+            resolve();
+          }
         }
       });
     });
@@ -304,7 +283,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.bye();
   }
 
-  public terminated(): Promise<void> {
+  public terminated(): Promise<string | void> {
     return this.terminatedPromise;
   }
 
@@ -426,29 +405,26 @@ export class SessionImpl extends EventEmitter implements ISession {
   }) {
     return {
       requestDelegate: {
-        onAccept: response => {
+        onAccept: () => {
           this.status = SessionStatus.ACTIVE;
           this.emit('statusUpdate', { id: this.id, status: this.status });
           this._remoteIdentity = this.getRemoteIdentity();
           this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
+
           onAccept({ accepted: true });
         },
         onReject: ({ message }: Core.IncomingResponse) => {
           log.info('Session is rejected.', this.constructor.name);
           log.debug(message, this.constructor.name);
-          console.log(message);
-          try {
-            const cause = Utils.getReasonPhrase(message.statusCode);
-            onReject({
-              accepted: false,
-              rejectCause: this.findCause(message, cause)
-            });
-          } catch (e) {
-            log.error(`Session failed: ${e}`, this.constructor.name);
-            onReject(e);
-          }
+
+          onReject({
+            accepted: false,
+            rejectCode: message.statusCode,
+            rejectCause: CAUSE_MAPPING[message.statusCode],
+            rejectPhrase: message.reasonPhrase
+          });
         },
-        onProgress: inviteResponse => {
+        onProgress: () => {
           log.debug('Session is in progress', this.constructor.name);
           onProgress();
         }
@@ -531,36 +507,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     });
   }
 
-  private findCause(response: IncomingResponse, cause: string): SessionCause {
-    if (cause === SIPConstants.causes.CANCELED) {
-      const reason = parseReason(response.getHeader('Reason'));
-      if (reason && reason.get('text') === 'Call completed elsewhere') {
-        return SessionCause.CALL_COMPLETED_ELSEWHERE;
-      }
-    } else if (cause === SIPConstants.causes.SIP_FAILURE_CODE) {
-      if (response.statusCode === 487) {
-        return SessionCause.REQUEST_TERMINATED;
-      } else {
-        log.warn(
-          `Unknown error: ${response.statusCode} (${response.reasonPhrase})`,
-          this.constructor.name
-        );
-      }
-    }
-
-    if (CAUSE_ERRORS.includes(cause)) {
-      throw new Error(`Session error: ${cause}`);
-    }
-
-    const result = CAUSE_MAPPING[cause];
-    if (result) {
-      return result;
-    }
-
-    log.warn(`Unknown cause: ${cause}`, this.constructor.name);
-    return undefined;
-  }
-
   private getRemoteIdentity() {
     let phoneNumber: string = this.session.remoteIdentity.uri.user;
     let displayName: string;
@@ -570,24 +516,5 @@ export class SessionImpl extends EventEmitter implements ISession {
     }
 
     return { phoneNumber, displayName };
-  }
-}
-
-/**
- * Convert a comma-separated string like:
- * `SIP;cause=200;text="Call completed elsewhere` to a Map.
- * @param {string} header - The header to parse.
- * @returns {Map} - A map of key/values of the header.
- */
-function parseReason(header?: string): Map<string, string> {
-  if (header) {
-    return new Map(
-      header
-        .replace(/"/g, '')
-        .split(';')
-        .map(i => i.split('=') as [string, string])
-    );
-  } else {
-    return undefined;
   }
 }

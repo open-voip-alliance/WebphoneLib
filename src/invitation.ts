@@ -12,6 +12,8 @@ export class Invitation extends SessionImpl {
     this.acceptedPromise = new Promise(resolve => {
       this.acceptedRef = resolve;
     });
+
+    this.canceledPromise = options.canceledPromise;
   }
 
   public accept(): Promise<void> {
