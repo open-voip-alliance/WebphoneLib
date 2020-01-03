@@ -361,17 +361,16 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         // Patch the onCancel delegate function to parse the reason of
         // cancellation. This is then used by the terminatedPromise of
         // a Session to return the reason when a session is terminated.
+        const cancelled = { reason: undefined };
         const onCancel = (invitation as any).incomingInviteRequest.delegate.onCancel;
-        const canceledPromise = new Promise(resolve => {
-          (invitation as any).incomingInviteRequest.delegate.onCancel = (
-            message: Core.IncomingRequestMessage
-          ) => {
-            const reason = this.parseHeader(message.getHeader('reason'));
-            resolve(reason ? CANCELLED_REASON[reason.get('text')] : undefined);
-            onCancel(message);
-          };
-        });
-        this.emit('invite', { invitation, canceledPromise });
+        (invitation as any).incomingInviteRequest.delegate.onCancel = (
+          message: Core.IncomingRequestMessage
+        ) => {
+          const reason = this.parseHeader(message.getHeader('reason'));
+          cancelled.reason = reason ? CANCELLED_REASON[reason.get('text')] : undefined;
+          onCancel(message);
+        };
+        this.emit('invite', { invitation, cancelled });
       }
     };
 

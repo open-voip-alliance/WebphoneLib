@@ -377,12 +377,12 @@ export class ClientImpl extends EventEmitter implements IClient {
       });
     });
 
-    this.transport.on('invite', ({ invitation, canceledPromise }) => {
+    this.transport.on('invite', ({ invitation, cancelled }) => {
       const session = new Invitation({
         media: this.defaultMedia,
         session: invitation,
         onTerminated: this.onSessionTerminated.bind(this),
-        canceledPromise,
+        cancelled,
         isIncoming: true
       });
 
