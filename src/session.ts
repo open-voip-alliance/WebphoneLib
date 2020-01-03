@@ -190,6 +190,13 @@ export class SessionImpl extends EventEmitter implements ISession {
     this.onTerminated = onTerminated;
     this.isIncoming = isIncoming;
 
+    // Session stats will calculate a MOS value of the inbound channel every 5
+    // seconds.
+    // TODO: make this setting configurable.
+    this.stats = new SessionStats(this.session, {
+      statsInterval: 5 * Time.second
+    });
+
     // Terminated promise will resolve when the session is terminated. It will
     // be rejected when there is some fault is detected with the session after it
     // has been accepted.
@@ -200,6 +207,10 @@ export class SessionImpl extends EventEmitter implements ISession {
           this.emit('terminated', { id: this.id });
           this.status = SessionStatus.TERMINATED;
           this.emit('statusUpdate', { id: this.id, status: this.status });
+
+          // Make sure the stats timer stops periodically quering the peer
+          // connections statistics.
+          this.stats.clearStatsTimer();
 
           // The cancelled object is currently only used by an Invitation.
           // For instance when an incoming call is cancelled by the other
@@ -219,12 +230,6 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     this.holdState = false;
 
-    // Session stats will calculate a MOS value of the inbound channel every 5
-    // seconds.
-    // TODO: make this setting configurable.
-    this.stats = new SessionStats(this.session, {
-      statsInterval: 5 * Time.second
-    });
     this.stats.on('statsUpdated', () => {
       this.emit('callQualityUpdate', { id: this.id }, this.stats);
     });

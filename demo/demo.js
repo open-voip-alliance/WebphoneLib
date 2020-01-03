@@ -317,7 +317,6 @@ async function outgoingCall() {
 
   const { accepted, rejectCause } = await session.accepted();
   if (accepted) {
-    console.log(accepted);
     console.log('outgoing call got accepted', session.id);
     await runSession(session);
   } else {

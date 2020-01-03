@@ -92,13 +92,13 @@ export class SessionStats extends EventEmitter {
         });
       }, this.statsInterval);
     });
+  }
 
-    session.once('terminated', () => {
-      if (this.statsTimer) {
-        window.clearInterval(this.statsTimer);
-        delete this.statsTimer;
-      }
-    });
+  public clearStatsTimer() {
+    if (this.statsTimer) {
+      window.clearInterval(this.statsTimer);
+      delete this.statsTimer;
+    }
   }
 
   /**
