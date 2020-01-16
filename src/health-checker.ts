@@ -34,7 +34,7 @@ export class HealthChecker {
           }
         });
       }),
-      5000, // if there is no response after 5 seconds, emit disconnected.
+      2000, // if there is no response after 2 seconds, emit disconnected.
       () => {
         this.logger.error('No response after OPTIONS message to sip server.');
         clearTimeout(this.optionsTimeout);
@@ -45,17 +45,11 @@ export class HealthChecker {
 
   private createOptionsMessage() {
     const settings = {
-      expires: 600,
-      extraContactHeaderParams: [],
-      instanceId: undefined,
       params: {
         toUri: this.userAgent.configuration.uri,
-        toDisplayName: this.userAgent.configuration.displayName,
-        callId: Utils.createRandomToken(22),
         cseq: 1,
         fromUri: this.userAgent.userAgentCore.configuration.aor
       },
-      regId: undefined,
       registrar: undefined
     };
 
