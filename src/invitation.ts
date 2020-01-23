@@ -31,4 +31,8 @@ export class Invitation extends SessionImpl {
   public reject(): Promise<void> {
     return this.session.reject().then(() => this.acceptedRef({ accepted: false }));
   }
+
+  public async cancel() {
+    throw new Error('Cannot cancel an incoming call.');
+  }
 }

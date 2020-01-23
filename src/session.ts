@@ -397,7 +397,8 @@ export class SessionImpl extends EventEmitter implements ISession {
       'on',
       'once',
       'removeAllListeners',
-      'removeListener'
+      'removeListener',
+      'cancel'
     ]);
   }
 

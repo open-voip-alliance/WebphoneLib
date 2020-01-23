@@ -41,4 +41,8 @@ export class Inviter extends SessionImpl {
   public async reject() {
     throw new Error('Cannot reject an outgoing call.');
   }
+
+  public cancel(): Promise<void> {
+    return this.session.cancel();
+  }
 }
