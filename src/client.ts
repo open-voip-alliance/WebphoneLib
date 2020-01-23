@@ -435,8 +435,8 @@ export class ClientImpl extends EventEmitter implements IClient {
 
     try {
       await Promise.race([
-        Promise.all([session.invite(), session.progressed()]),
-        session.accepted(), // progress is not always emitted, in that case accepted might have
+        Promise.all([session.invite(), session.tried()]),
+        session.accepted(), // trying might not always emitted, in that case accepted might have < not sure anymore
         disconnectedPromise
       ]);
     } catch (e) {

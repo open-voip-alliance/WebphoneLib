@@ -6,17 +6,21 @@ import { ISessionAccept, SessionImpl } from './session';
 export class Inviter extends SessionImpl {
   protected session: SIPInviter;
   private progressedPromise: Promise<void>;
+  private triedPromise: Promise<void>;
 
   constructor(options) {
     super(options);
 
-    this.progressedPromise = new Promise(progressResolve => {
-      this.acceptedPromise = new Promise((acceptedResolve, acceptedReject) => {
-        this.inviteOptions = this.makeInviteOptions({
-          onAccept: acceptedResolve,
-          onReject: acceptedResolve,
-          onRejectThrow: acceptedReject,
-          onProgress: progressResolve
+    this.triedPromise = new Promise(tryingResolve => {
+      this.progressedPromise = new Promise(progressResolve => {
+        this.acceptedPromise = new Promise((acceptedResolve, acceptedReject) => {
+          this.inviteOptions = this.makeInviteOptions({
+            onAccept: acceptedResolve,
+            onReject: acceptedResolve,
+            onRejectThrow: acceptedReject,
+            onProgress: progressResolve,
+            onTrying: tryingResolve
+          });
         });
       });
     });
@@ -24,6 +28,10 @@ export class Inviter extends SessionImpl {
 
   public progressed(): Promise<void> {
     return this.progressedPromise;
+  }
+
+  public tried(): Promise<void> {
+    return this.triedPromise;
   }
 
   public accepted(): Promise<ISessionAccept> {

@@ -300,6 +300,7 @@ export class SessionImpl extends EventEmitter implements ISession {
           onReject: reject,
           onRejectThrow: reject,
           onProgress: resolve,
+          onTrying: resolve,
           sessionDescriptionHandlerModifiers: modifiers
         })
       );
@@ -398,7 +399,8 @@ export class SessionImpl extends EventEmitter implements ISession {
       'once',
       'removeAllListeners',
       'removeListener',
-      'cancel'
+      'cancel',
+      'tried'
     ]);
   }
 
@@ -407,6 +409,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     onReject,
     onRejectThrow,
     onProgress,
+    onTrying,
     sessionDescriptionHandlerModifiers = []
   }) {
     return {
@@ -433,6 +436,10 @@ export class SessionImpl extends EventEmitter implements ISession {
         onProgress: () => {
           log.debug('Session is in progress', this.constructor.name);
           onProgress();
+        },
+        onTrying: () => {
+          log.debug('Trying to setup the session', this.constructor.name);
+          onTrying();
         }
       },
       sessionDescriptionHandlerOptions: {
