@@ -523,6 +523,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
     'removeListener',
     'subscribe',
     'resubscribe',
-    'unsubscribe'
+    'unsubscribe',
+    'defaultMedia'
   ]);
 } as any) as ClientCtor;
