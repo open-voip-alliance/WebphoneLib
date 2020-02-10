@@ -10,6 +10,7 @@ import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
+import { HealthChecker } from '../src/health-checker';
 import { Client, IClientOptions } from '../src/index';
 import {
   ReconnectableTransport,
@@ -57,12 +58,25 @@ test.serial('return true when already connected', async t => {
 test.serial.cb('emits connecting status after connect is called', t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
-  const ua = sinon.createStubInstance(UserAgent, { start: Promise.resolve() });
-  (ua as any).transport = sinon.createStubInstance(WrappedTransport, { on: sinon.fake() as any });
+  const ua = sinon.createStubInstance(UserAgent, {
+    start: Promise.resolve()
+  });
+
+  (ua as any).transport = sinon.createStubInstance(WrappedTransport, {
+    on: sinon.fake() as any
+  });
+
   const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
   (client as any).transport.createRegisteredPromise = () => {
     (client as any).transport.registerer = sinon.createStubInstance(Registerer);
+    return Promise.resolve();
+  };
+
+  (client as any).transport.createHealthChecker = () => {
+    (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
+      start: sinon.fake()
+    });
   };
 
   t.plan(3);
@@ -104,6 +118,12 @@ test.serial('emits connected status after register is emitted', async t => {
     return Promise.resolve();
   };
 
+  (client as any).transport.createHealthChecker = () => {
+    (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
+      start: sinon.fake()
+    });
+  };
+
   await (client as any).transport.connect();
 
   // After resolving connect ClientStatus should be CONNECTED.
@@ -140,6 +160,12 @@ test.serial('emits disconnected status after registrationFailed is emitted', asy
     (client as any).transport.registerer = sinon.createStubInstance(Registerer);
     (client as any).transport.updateStatus(ClientStatus.DISCONNECTED);
     return Promise.reject(new Error('Could not register.'));
+  };
+
+  (client as any).transport.createHealthChecker = () => {
+    (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
+      start: sinon.fake()
+    });
   };
 
   const error = await t.throwsAsync(() => client.connect());
@@ -179,6 +205,13 @@ test.serial('ua.start called on first connect', t => {
 
   (client as any).transport.createRegisteredPromise = () => {
     (client as any).transport.registerer = sinon.createStubInstance(Registerer);
+    return Promise.resolve();
+  };
+
+  (client as any).transport.createHealthChecker = () => {
+    (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
+      start: sinon.fake()
+    });
   };
 
   client.connect();
