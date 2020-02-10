@@ -13,6 +13,8 @@ import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
+
+import { HealthChecker } from './health-checker';
 import { increaseTimeout, jitter } from './lib/utils';
 import { log } from './logger';
 import { sessionDescriptionHandlerFactory } from './session-description-handler';
@@ -106,6 +108,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
   private wasWindowOffline: boolean = false;
+  private healthChecker: HealthChecker;
 
   constructor(uaFactory: UAFactory, options: IClientOptions) {
     super();
@@ -196,11 +199,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return Promise.reject(new Error('Could not connect to the websocket in time.'));
     });
 
-    this.registeredPromise = this.createRegisteredPromise();
+    this.createHealthChecker();
 
+    this.registeredPromise = this.createRegisteredPromise();
     this.registerer.register();
 
-    return this.registeredPromise;
+    return this.registeredPromise.then(success => {
+      this.healthChecker.start();
+      return success;
+    });
   }
 
   // Unregister (and subsequently disconnect) to server.
@@ -288,8 +295,12 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       this.registeredPromise = this.createRegisteredPromise();
       this.registerer.register();
 
+      this.createHealthChecker();
+
       await this.registeredPromise;
       log.debug('Reregistered!', this.constructor.name);
+
+      this.healthChecker.start();
 
       // Before the dyingCounter reached 0, there is a decent chance our
       // sessions are still alive and kicking. Let's try to revive them.
@@ -495,7 +506,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       delete this.userAgent.registerers[(this.registerer as any).id];
     }
 
-    this.registerer = new Registerer(this.userAgent, undefined);
+    this.registerer = new Registerer(this.userAgent, {});
 
     return new Promise((resolve, reject) => {
       // Handle outgoing session state changes.
@@ -568,6 +579,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     };
 
     this.dyingIntervalID = window.setInterval(subtractTillDead, subtractValue);
+  }
+
+  private createHealthChecker() {
+    if (this.healthChecker) {
+      this.healthChecker.stop();
+      delete this.healthChecker;
+    }
+
+    this.healthChecker = new HealthChecker(this.userAgent);
   }
 
   private onTransportDisconnected() {
