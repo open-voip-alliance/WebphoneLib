@@ -151,7 +151,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   public readonly isIncoming: boolean;
   public saidBye: boolean;
   public holdState: boolean;
-  public status: SessionStatus = SessionStatus.RINGING;
+  public status: SessionStatus = SessionStatus.TRYING;
 
   protected acceptedPromise: Promise<ISessionAccept>;
   protected inviteOptions: InviterInviteOptions;

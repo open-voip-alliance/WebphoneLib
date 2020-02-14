@@ -1,6 +1,7 @@
 import { Core } from 'sip.js';
 import { Inviter as SIPInviter } from 'sip.js/lib/api/inviter';
 
+import { SessionStatus } from './enums';
 import { ISessionAccept, SessionImpl } from './session';
 
 export class Inviter extends SessionImpl {
@@ -39,7 +40,11 @@ export class Inviter extends SessionImpl {
   }
 
   public invite(): Promise<Core.OutgoingInviteRequest> {
-    return this.session.invite(this.inviteOptions);
+    return this.session.invite(this.inviteOptions).then((request: Core.OutgoingInviteRequest) => {
+      this.status = SessionStatus.RINGING;
+      this.emit('statusUpdate', { id: this.id, status: this.status });
+      return request;
+    });
   }
 
   public async accept() {
