@@ -65,7 +65,7 @@ log.connector = ({ level, context, message }) => {
   print(`${level} [${context}] ${message}`);
 };
 
-const client = new Client({ account, transport, media });
+const client = new Client({ account, transport, media, userAgent: 'WebphoneLib Demo' });
 
 client.on('sessionAdded', () => {
   sessionsCount.innerHTML = client.getSessions().length;
