@@ -123,7 +123,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   public configure(options: IClientOptions) {
     const { account, transport, userAgent } = options;
     const uri = UserAgent.makeURI(account.uri);
-    const userAgentOptions: UserAgentOptions = { uri };
 
     const modifiers = [Web.Modifiers.stripVideo];
     if (Features.isSafari) {
@@ -156,7 +155,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         traceSip: true,
         wsServers: transport.wsServers
       },
-      uri
+      uri,
+      userAgentString: userAgent
     };
   }
 
