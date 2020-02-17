@@ -10,7 +10,7 @@ export interface IClientOptions {
     iceServers: string[];
   };
   media: IMedia;
-  userAgent?: string;
+  userAgentString?: string;
 }
 
 export type MediaDeviceId = string | undefined;
