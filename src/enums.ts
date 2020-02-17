@@ -8,6 +8,7 @@ export enum ClientStatus {
 }
 
 export enum SessionStatus {
+  TRYING = 'trying',
   RINGING = 'ringing',
   ACTIVE = 'active',
   ON_HOLD = 'on_hold',

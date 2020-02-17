@@ -14,6 +14,9 @@ export class Invitation extends SessionImpl {
     });
 
     this.cancelled = options.cancelled;
+
+    this.status = SessionStatus.RINGING;
+    this.emit('statusUpdate', { id: this.id, status: this.status });
   }
 
   public accept(): Promise<void> {

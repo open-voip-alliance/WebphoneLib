@@ -219,24 +219,6 @@ export class ClientImpl extends EventEmitter implements IClient {
       return;
     }
 
-    this.addSession(session);
-
-    // Dirty hack to avoid rewriting to much at this time and to avoid
-    // users to be in a broken state:
-    //
-    // It could happen that a session is terminated before progress is emitted
-    // and tryInvite returned, for example if the server doesn't accept our
-    // invite. In that case, we remove the session shortly after adding it to
-    // our session list, to make sure users of this lib still get the
-    // appropriate events fired.
-    //
-    // Normally the onTerminated handler should do that for us, but if it
-    // fired before addSession, it is still added to the list of sessions,
-    // even though it will never be terminated 'again'.
-    if (session.status === SessionStatus.TERMINATED) {
-      setTimeout(() => this.removeSession(session), 50);
-    }
-
     return session.freeze();
   }
 
@@ -312,7 +294,6 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri].subscribe();
     });
   }
-
   public async resubscribe(uri: string) {
     if (!this.subscriptions[uri]) {
       throw new Error('Cannot resubscribe to nonexistent subscription.');
@@ -420,12 +401,15 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   private async tryInvite(phoneNumber: string): Promise<SessionImpl> {
     const outgoingSession = this.transport.invite(phoneNumber);
+
     const session = new Inviter({
       media: this.defaultMedia,
       session: outgoingSession,
       onTerminated: this.onSessionTerminated.bind(this),
       isIncoming: false
     });
+
+    this.addSession(session);
 
     let rejectWithError;
     const disconnectedPromise = new Promise((resolve, reject) => {
@@ -440,6 +424,7 @@ export class ClientImpl extends EventEmitter implements IClient {
         disconnectedPromise
       ]);
     } catch (e) {
+      this.removeSession(session);
       log.error('Could not send an invite. Socket could be broken.', this.constructor.name);
       return Promise.reject(new Error('Could not send an invite. Socket could be broken.'));
     } finally {
