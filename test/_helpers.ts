@@ -22,9 +22,14 @@ export function defaultTransportFactory() {
 
 export function createClientImpl(
   uaFactory: UAFactory,
-  transportFactory: TransportFactory
+  transportFactory: TransportFactory,
+  additionalOptions: UserAgentOptions = {}
 ): ClientImpl {
-  return new ClientImpl(uaFactory, transportFactory, minimalOptions());
+  return new ClientImpl(
+    uaFactory,
+    transportFactory,
+    Object.assign(minimalOptions(), additionalOptions)
+  );
 }
 
 export function createClient() {
