@@ -121,7 +121,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   }
 
   public configure(options: IClientOptions) {
-    const { account, transport, userAgent } = options;
+    const { account, transport, userAgentString } = options;
     const uri = UserAgent.makeURI(account.uri);
 
     const modifiers = [Web.Modifiers.stripVideo];
@@ -135,7 +135,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       noAnswerTimeout: 60,
       authorizationUsername: account.user,
       authorizationPassword: account.password,
-      displayName: userAgent || 'vialer-calling-lib',
       logConnector: connector,
       logLevel: 'warn',
       sessionDescriptionHandlerFactory,
@@ -156,7 +155,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         wsServers: transport.wsServers
       },
       uri,
-      userAgentString: userAgent
+      userAgentString
     };
   }
 
