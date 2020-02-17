@@ -218,3 +218,12 @@ test.serial('ua.start called on first connect', t => {
 
   t.true(ua.start.called);
 });
+
+test.serial('userAgentString is correct', t => {
+  sinon.stub(Features, 'checkRequired').returns(true);
+  const userAgentString = 'Test UserAgent string';
+  const client = createClientImpl(defaultUAFactory(), defaultTransportFactory(), {
+    userAgentString
+  });
+  t.is((client as any).transport.uaOptions.userAgentString, userAgentString);
+});
