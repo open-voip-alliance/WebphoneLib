@@ -327,9 +327,17 @@ async function outgoingCall() {
   console.log('session is terminated', session.id);
 }
 
+function updateCallerHTML(session) {
+  let {
+    remoteIdentity: { displayName },
+    phoneNumber
+  } = session;
+
+  caller.innerHTML = `${displayName} (${phoneNumber})`;
+}
+
 async function incomingCall(session) {
-  const { number, displayName } = session.remoteIdentity;
-  caller.innerHTML = `${displayName} (${number})`;
+  updateCallerHTML(session);
   caller.hidden = false;
 
   acceptCallBtn.hidden = false;
@@ -353,6 +361,13 @@ async function incomingCall(session) {
 
     if (accepted) {
       console.log('session is accepted \\o/', session.id);
+
+      session.on('remoteIdentityUpdate', () => {
+        console.log(
+          `New identity is: ${session.remoteIdentity.displayName} - ${session.phoneNumber}`
+        );
+        updateCallerHTML(session);
+      });
 
       // Terminate the session after 60 seconds
       terminateTimer = setTimeout(() => {

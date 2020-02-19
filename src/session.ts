@@ -158,6 +158,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   protected session: Inviter | Invitation;
   protected terminatedReason?: string;
   protected cancelled?: ISessionCancelled;
+  protected _remoteIdentity: IRemoteIdentity;
 
   private acceptedSession: any;
 
@@ -167,7 +168,6 @@ export class SessionImpl extends EventEmitter implements ISession {
   private reinvitePromise: Promise<boolean>;
 
   private onTerminated: (sessionId: string) => void;
-  private _remoteIdentity: IRemoteIdentity;
 
   protected constructor({
     session,
@@ -220,7 +220,7 @@ export class SessionImpl extends EventEmitter implements ISession {
       });
     });
 
-    this._remoteIdentity = this.getRemoteIdentity();
+    this._remoteIdentity = this.extractRemoteIdentity();
 
     // Track if the other side said bye before terminating.
     this.saidBye = false;
@@ -417,8 +417,8 @@ export class SessionImpl extends EventEmitter implements ISession {
         onAccept: () => {
           this.status = SessionStatus.ACTIVE;
           this.emit('statusUpdate', { id: this.id, status: this.status });
-          this._remoteIdentity = this.getRemoteIdentity();
-          this.emit('remoteIdentityUpdate', this, this._remoteIdentity);
+          this._remoteIdentity = this.extractRemoteIdentity();
+          this.emit('remoteIdentityUpdate', this, this.remoteIdentity);
 
           onAccept({ accepted: true });
         },
@@ -450,6 +450,17 @@ export class SessionImpl extends EventEmitter implements ISession {
       },
       sessionDescriptionHandlerModifiers
     };
+  }
+
+  protected extractRemoteIdentity() {
+    let phoneNumber: string = this.session.remoteIdentity.uri.user;
+    let displayName: string;
+    if (this.session.assertedIdentity) {
+      phoneNumber = this.session.assertedIdentity.uri.user;
+      displayName = this.session.assertedIdentity.displayName;
+    }
+
+    return { phoneNumber, displayName };
   }
 
   private async setHoldState(flag: boolean) {
@@ -505,6 +516,7 @@ export class SessionImpl extends EventEmitter implements ISession {
         requestDelegate: {
           onAccept: () => {
             log.info('Transferred session is accepted!', this.constructor.name);
+
             resolve(true);
           },
           // Refer can be rejected with the following responses:
@@ -518,16 +530,5 @@ export class SessionImpl extends EventEmitter implements ISession {
         }
       });
     });
-  }
-
-  private getRemoteIdentity() {
-    let phoneNumber: string = this.session.remoteIdentity.uri.user;
-    let displayName: string;
-    if (this.session.assertedIdentity) {
-      phoneNumber = this.session.assertedIdentity.uri.user;
-      displayName = this.session.assertedIdentity.displayName;
-    }
-
-    return { phoneNumber, displayName };
   }
 }
