@@ -21,6 +21,13 @@ export class Invitation extends SessionImpl {
       this.status = SessionStatus.ACTIVE;
       this.emit('statusUpdate', { id: this.id, status: this.status });
       this.acceptedRef({ accepted: true });
+
+      this.session.delegate = {
+        onInvite: request => {
+          this._remoteIdentity = this.extractRemoteIdentity();
+          this.emit('remoteIdentityUpdate', this, this.remoteIdentity);
+        }
+      };
     });
   }
 
