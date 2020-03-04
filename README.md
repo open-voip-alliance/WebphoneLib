@@ -45,7 +45,7 @@ Run the demo-server:
 $ npm i && npm run demo
 ```
 
-And then play around at http://localhost:1234/demo/.
+And then play around at http://localhost:1235/demo/.
 
 ## Examples
 

@@ -10,7 +10,7 @@
     "clean": "rm -fR dist/* build/*",
     "build": "npm run clean && rollup -c",
     "build-watch": "npm run clean && rollup -cw",
-    "serve": "serve -l 1234",
+    "serve": "serve -l 1235",
     "demo": "run-p build-watch serve",
     "typecheck": "tsc",
     "lint": "tslint src/**/*.ts",
