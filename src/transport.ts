@@ -239,6 +239,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       log.info('Unregistered.', this.constructor.name);
     }
 
+    // To avoid sending OPTIONS requests after disconnecting
+    this.healthChecker.stop();
+    delete this.healthChecker;
+
     await this.userAgent.stop();
     await this.userAgent.transport.disconnect(); // This calls our patched disconnectPromise.
 
