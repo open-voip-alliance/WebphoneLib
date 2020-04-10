@@ -2,66 +2,254 @@
 <html>
   <head>
     <title>SipLib test</title>
+    <link rel="stylesheet" href="./styles/main.css" />
   </head>
   <body>
-    <h3 id="caller" hidden></h3>
-    <div>
-      <input id="accept-call" type="button" value="Accept incoming call" hidden />
-      <input id="reject-call" type="button" value="Reject incoming call" hidden />
-      <input id="out" type="button" value="Call out" />
-      <input id="reconfigure" type="button" value="Reconfigure" />
-      <input id="register" type="button" value="Register" />
-      <input id="unregister" type="button" value="Unregister" />
-      <input id="subscribe" type="button" value="Subscribe" />
-      <input id="resubscribe" type="button" value="Resubscribe" />
-      <input id="unsubscribe" type="button" value="Unsubscribe" />
+    <script type="module" src="./index.mjs"></script>
+    <div class="container">
+      <p-demo></p-demo>
     </div>
-    <div id="in-call" hidden>
-      <input id="bye" type="button" value="Bye now..." />
-      <input id="hold" type="button" value="Hold" />
-      <input id="unhold" type="button" value="Unhold" />
-      <input id="blindtransfer" type="button" value="Blind transfer" />
-      <input id="attendedtransfer" type="button" value="Attended transfer" />
-      MOS: <span id="mos"></span>
-      <div>
-        <input id="dtmf-0" type="button" value="0" />
-        <input id="dtmf-1" type="button" value="1" />
-        <input id="dtmf-2" type="button" value="2" />
-        <input id="dtmf-3" type="button" value="3" />
-        <input id="dtmf-4" type="button" value="4" />
-        <input id="dtmf-5" type="button" value="5" />
-        <input id="dtmf-6" type="button" value="6" />
-        <input id="dtmf-7" type="button" value="7" />
-        <input id="dtmf-8" type="button" value="8" />
-        <input id="dtmf-9" type="button" value="9" />
-        <input id="dtmf-star" type="button" value="*" />
-        <input id="dtmf-hash" type="button" value="#" />
-      </div>
-    </div>
-    <div>
-      Input volume:
-      <input id="inVol" type="range" min="0" max="10" value="10" />
-      <input id="inMute" type="checkbox" />
-    </div>
-    <div>
-      Output volume:
-      <input id="outVol" type="range" min="0" max="10" value="10" />
-      <input id="outMute" type="checkbox" />
-    </div>
-    <h4>Devices</h4>
-    <div>
-      <div>
-        Input:
-        <select id="input"></select>
-      </div>
-      <div>
-        Output:
-        <select id="output"></select>
-      </div>
-      <button id="play">Test output</button>
-    </div>
-    <br />
-    Active sessions: <span id="sessions-count">0</span>
-    <script type="module" src="./demo.js"></script>
   </body>
+
+  <template data-component="c-voip-account">
+    <section>
+      <h2>Account</h2>
+
+      <div class="content">
+        <button class="base-button" data-action="register">Register</button>
+        <button class="base-button" data-action="unregister">Unregister</button>
+        <button class="base-button" data-action="reconfigure">Reconfigure</button>
+        <div class="status-pill disconnected">
+          <span data-selector="clientStatus">disconnected</span>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <template data-component="c-debug-console">
+    <section>
+      <h2>Debug console</h2>
+      <p class="debug-console" data-selector="outputWindow">
+        <label>A console to let you know what is happening!</label>
+      </p>
+    </section>
+  </template>
+
+  <template data-component="c-console-message">
+    <div data-selector="consoleMessage">
+      <span class="source-label" data-selector="moduleBox"></span>
+      <span class="message-box" data-selector="messageBox"></span>
+    </div>
+  </template>
+
+  <template data-component="c-contacts">
+    <section>
+      <h2>Contacts</h2>
+      <div class="content">
+        <input type="text" class="subscriber-account-id-input" data-selector="input" />
+        <button class="base-button" data-action="subscribe">Subscribe</button>
+        <button class="base-button" data-action="unsubscribe">Unsubscribe</button>
+        <div class="contacts-list" data-selector="contactsList"></div>
+      </div>
+    </section>
+  </template>
+
+  <template data-component="c-contact">
+    <div class="contact">
+      <div class="information">
+        <span class="contact-uri" data-selector="contactUri"></span>
+        <span class="contact-status" data-selector="contactStatus"></span>
+      </div>
+    </div>
+  </template>
+
+  <template data-component="c-computer-settings">
+    <section>
+      <h2>Computer Settings</h2>
+
+      <h3>Devices</h3>
+      <c-devices-setting></c-devices-setting>
+
+      <h3>Volume setting</h3>
+      <c-volume-setting></c-volume-setting>
+    
+    </section>
+  </template>
+
+  <template data-component="c-devices-setting">
+    <div class="devices-container">
+      <div class="content">
+        <label>Input</label>
+        <select data-selector="inputSelect"></select>
+      </div>
+      <div class="content">
+        <label>Output</label>
+        <div class="device-select-container">
+          <select data-selector="outputSelect"></select>
+          <button class="base-button" data-selector="play">Test</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="devices-list content">
+      <div>
+        <label>Inputdevices list</label>
+        <ul data-selector="inputDevicesList"></ul>
+      </div>
+      <div>
+        <label>Outputdevices list</label>
+        <ul data-selector="outputDevicesList"></ul>
+      </div>
+    </div>
+  </template>
+
+  <template data-component="c-volume-setting">
+    <div>
+      <div class="volume-container">
+        <label>Input volume</label>
+        <input data-selector="inVol" type="range" min="0" max="10" value="10" />
+      </div>
+
+      <label class="checkbox-container">
+        <input data-selector="inMute" type="checkbox" /> <span>Mute input</span>
+      </label>
+    </div>
+    <div>
+      <div class="volume-container">
+        <label>Output volume</label>
+        <input data-selector="outVol" type="range" min="0" max="10" value="10" />
+      </div>
+
+      <label class="checkbox-container">
+        <input data-selector="outMute" type="checkbox" /> <span>Mute output</span>
+      </label>
+    </div>
+  </template>
+
+  <template data-component="c-keypad">
+    <div class="dtmf-keypad" data-selector="dtmf-keypad-buttons">
+      <button class="base-button" data-key="1">1</button>
+      <button class="base-button" data-key="2">2</button>
+      <button class="base-button" data-key="3">3</button>
+      <button class="base-button" data-key="4">4</button>
+      <button class="base-button" data-key="5">5</button>
+      <button class="base-button" data-key="6">6</button>
+      <button class="base-button" data-key="7">7</button>
+      <button class="base-button" data-key="8">8</button>
+      <button class="base-button" data-key="9">9</button>
+      <button class="base-button" data-key="*">*</button>
+      <button class="base-button" data-key="0">0</button>
+      <button class="base-button" data-key="#">#</button>
+    </div>
+  </template>
+
+  <template data-component="c-transfer">
+    <div class="transfer-header">
+      <div>
+        <select data-selector="selectTransferMethod">
+          <option value="attended" data-translation-key="attended_transfer"
+            >Attended transfer</option
+          >
+          <option value="blind" data-translation-key="blind_transfer">Blind transfer</option>
+        </select>
+      </div>
+
+      <div>
+        <input type="text" data-selector="input" />
+        <button class="success" data-action="transferCall" tabindex="0">
+          Transfer call
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <template data-component="c-dialer">
+    <section>
+      <h2>Dialer</h2>
+      <div>
+        <input type="text" data-selector="input" />
+        <div class="dialer-body">
+          <c-keypad data-selector="keypad"></c-keypad>
+          <div class="dialer-buttons">
+            <button class="dialer-call-button base-button" data-action="call">Call</button>
+          </div>
+        </div>
+      </div>
+      <div class="sessions-list" data-selector="sessionsList"></div>
+    </section>
+  </template>
+
+  <template data-component="c-sessions">
+    <section>
+      <h2>Active sessions</h2>
+      <div data-selector="sessionsList"></div>
+    </section>
+  </template>
+
+  <template data-component="c-session">
+    <div class="session">
+      <div class="session-information-header">
+        <div class "session-number" data-selector="phoneNumber"></div>
+        <span class="session-status" data-selector="sessionStatus"></span>
+        <span class="session-direction" data-selector="sessionDirection"></span>
+      </div>
+      <div class="call-options">
+        <button class="session-button accept" data-action="accept">
+          Accept
+        </button>
+        <button class="session-button reject" data-action="reject">
+          Reject
+        </button>
+        <button class="session-button" data-action="cancel">
+          Cancel
+        </button>
+        <button class="session-button" data-action="toggleMute">
+          Mute
+        </button>
+        <button class="session-button" data-action="toggleTransfer">
+          Transfer
+        </button>
+        <button class="session-button" data-action="toggleDTMF">
+          DTMF
+        </button>
+        <button class="session-button" data-action="hold">
+          Hold
+        </button>
+        <button class="session-button" data-action="unhold">
+          Unhold
+        </button>
+        <button class="session-button hangup" data-action="hangup">
+          Hangup
+        </button>
+      </div>
+      <div data-selector="additionalInterface" class="additional-interface"></div>
+    </div>
+  </template>
+
+  <template data-component="c-mos-values">
+    <section>
+      <h2>Mos values</h2>
+      <div data-selector="mosValues" hidden>
+        <span data-selector="lowest"></span>
+        <span data-selector="highest"></span>
+        <span data-selector="average"></span>
+        <span data-selector="last"></span>
+      </div>
+    </section>
+  </template>
+
+  <template data-component="p-demo">
+    <div class="left-part">
+      <c-voip-account></c-voip-account>
+      <c-dialer></c-dialer>
+      <c-contacts></c-contacts>
+      <c-mos-values></c-mos-values>
+    </div>
+
+    <div class="right-part">
+      <c-debug-console></c-debug-console>
+      <c-sessions></c-sessions>
+      <c-computer-settings></c-computer-settings>
+    </div>
+  </template>
 </html>

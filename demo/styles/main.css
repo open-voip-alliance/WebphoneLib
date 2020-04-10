@@ -1,0 +1,355 @@
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Roboto'), local('Roboto-Regular'), url('../fonts/roboto-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Roboto Bold'), local('Roboto-Bold'), url('../fonts/roboto-700.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: local('Roboto Black'), local('Roboto-Black'),
+    url('../fonts/roboto-900.woff2') format('woff2');
+}
+
+body {
+  background-color: #e6e8eb;
+  font-family: 'Roboto', sans-serif;
+  margin: 0.5rem;
+}
+
+section {
+  background-color: #f5f7fa;
+  border-radius: 0.3rem;
+  padding: 1.5rem 2rem;
+  margin: 0.5rem;
+}
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-width: 15rem;
+  max-width: 20rem;
+  font-size: 1rem;
+  font-family: Roboto, sans-serif;
+  color: #555;
+  background: #fff url(../icons/caret-down.svg) right 0.5rem center no-repeat;
+  background-size: 15px 9px;
+  border: 1px solid #e6e8eb;
+  border-radius: 0.2rem;
+  padding: 0.5rem 2rem 0.5rem 0.5rem;
+}
+
+input[type='text'] {
+  font-size: 1rem;
+  font-family: Roboto, sans-serif;
+  color: #555;
+  background-color: #fff;
+  border: 1px solid #e6e8eb;
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+h2 {
+  margin: 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e6e8eb;
+  padding-bottom: 0.6rem;
+}
+
+button {
+  display: -webkit-inline-box;
+  display: inline-flex;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  font-family: Roboto, sans-serif;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  border-radius: 0.3rem;
+  transition: 0.3s;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+button.base-button {
+  color: #555;
+  background: #fff;
+  border-bottom: 2px solid #e6e8eb;
+  border: solid #e6e8eb;
+  border-width: 1px 1px 2px;
+}
+
+button.base-button:hover {
+  background: #555;
+  color: #fff;
+}
+
+button.session-button {
+  color: #555;
+  background: #fff;
+  border-bottom: 2px solid #e6e8eb;
+  border: solid #e6e8eb;
+  border-width: 1px 1px 2px;
+}
+
+button.session-button:focus {
+  background: #ffd0a3;
+  color: #d45400;
+}
+
+p-demo {
+  display: flex;
+}
+
+.left-part {
+  flex: 1;
+}
+
+.right-part {
+  flex: 1.5;
+}
+
+.debug-console {
+  height: 200px;
+  overflow: scroll;
+  margin: 0;
+}
+
+.status-pill {
+  padding: 0.5rem 1rem;
+  height: 27px;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  border-radius: 2rem;
+  width: 10rem;
+  margin-top: 1rem;
+}
+
+.status-pill.disconnected {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.checkbox-container {
+  display: block;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.checkbox-container > input[type='checkbox'] {
+  vertical-align: top;
+}
+
+.checkbox-container > input[type='checkbox'] + span {
+  margin-left: 0.2rem;
+  margin-bottom: 0;
+  display: inline-block;
+  font-weight: 300;
+}
+
+.session {
+  background-color: #ffffff;
+  padding: 0.5rem;
+}
+
+.session .session-information-header {
+  font-weight: 700;
+  padding-bottom: 0.2rem;
+}
+
+.session .session-button.accept {
+  color: #046614;
+  background-color: #acf5a6;
+}
+
+.session .session-button.reject,
+.session .session-button.hangup {
+  color: #8f0a06;
+  background-color: #ffadad;
+}
+
+.session .session-status {
+  border-radius: 0.5em;
+  background-color: #e0e0e0;
+  font-weight: 500;
+  padding: 0.5em;
+  margin: 0.2rem 0;
+  display: inline-block;
+}
+
+c-volume-setting label,
+c-devices-setting label,
+c-debug-console label {
+  display: block;
+  position: relative;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+c-mos-values section span {
+  background-color: #555;
+  border-radius: 0.5rem;
+  padding: 0.5em;
+  margin: 0.2rem 0;
+  color: #ffffff;
+  display: inline-block;
+}
+
+.volume-container {
+  display: flex;
+  margin-bottom: 0.5rem;
+  max-width: 15rem;
+}
+
+.volume-container label {
+  margin: 0;
+  flex: 1;
+}
+
+.volume-container input {
+  flex: 1;
+}
+
+.devices-container {
+  display: flex;
+}
+
+.devices-container .content {
+  flex: 1;
+}
+
+c-volume-setting {
+  display: flex;
+}
+
+c-volume-setting > div {
+  flex: 1;
+}
+
+c-volume-setting [type='range'] {
+  width: 100%;
+}
+
+c-devices-setting select {
+  max-width: 17rem;
+}
+
+c-devices-setting .device-select-container {
+  display: -webkit-box;
+  display: flex;
+}
+
+c-devices-setting button {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.8rem;
+  margin-left: 1rem;
+}
+
+c-devices-setting .content {
+  margin-bottom: 1.5rem;
+}
+
+.devices-list {
+  display: flex;
+}
+
+.devices-list div {
+  flex: 1;
+}
+
+.devices-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.devices-list ul li {
+  padding-bottom: 0.3rem;
+}
+
+.devices-list ul li::before {
+  content: '-';
+  padding-right: 0.5rem;
+}
+
+c-console-message div {
+  margin-top: 0.5rem;
+}
+
+c-console-message span.source-label {
+  border-radius: 0.5em;
+  color: white;
+  font-weight: bold;
+  padding: 2px 0.5em;
+}
+
+c-console-message span.message-box {
+  margin-top: 0.5rem;
+}
+
+.dtmf-keypad {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-gap: 1rem;
+  margin: 1rem;
+  max-width: 12rem;
+}
+
+.dtmf-keypad > button {
+  font-size: 1.25rem;
+  font-weight: 900;
+  width: 3rem;
+  height: 3rem;
+  padding: 0.5rem 1rem;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+c-dialer .dialer-body {
+  display: -webkit-box;
+  display: flex;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  justify-content: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  flex-direction: column;
+}
+
+c-dialer .dialer-buttons {
+  width: 11rem;
+  display: -webkit-box;
+  display: flex;
+}
+
+c-dialer .dialer-call-button {
+  -webkit-box-flex: 2;
+  flex: 2;
+  background-color: #acf5a6;
+  color: #046614;
+}
