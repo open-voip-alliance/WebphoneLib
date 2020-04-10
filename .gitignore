@@ -3,7 +3,7 @@ node_modules
 build
 dist
 docs
-demo/config.js
+demo/config.mjs
 .dir-locals.el
 .nyc_output
 coverage
