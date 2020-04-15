@@ -4,8 +4,11 @@ import pTimeout from 'p-timeout';
 import { Core, Subscription, UA as UABase, Web } from 'sip.js';
 import { Invitation } from 'sip.js/lib/api/invitation';
 import { Inviter } from 'sip.js/lib/api/inviter';
+import { Publisher } from 'sip.js/lib/api/publisher';
+import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
+
 import { Session } from 'sip.js/lib/api/session';
 import { Subscriber } from 'sip.js/lib/api/subscriber';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
@@ -34,11 +37,12 @@ export interface ITransport extends EventEmitter {
   configure(options: IClientOptions): void;
   connect(): Promise<boolean>;
   disconnect(options?: { hasRegistered: boolean }): Promise<void>;
-  invite(phoneNumber: string): Inviter;
   updatePriority(flag: boolean): void;
   getConnection(mode: ReconnectionMode): Promise<boolean>;
   close(): void;
-  subscribe(contact: string): Subscriber;
+  createInviter(phoneNumber: string): Inviter;
+  createSubscriber(contact: string): Subscriber;
+  createPublisher(contact: string, options: PublisherOptions): Publisher;
 }
 
 /**
@@ -252,7 +256,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     delete this.unregisteredPromise;
   }
 
-  public invite(phoneNumber: string): Inviter {
+  public createInviter(phoneNumber: string): Inviter {
     if (this.status !== ClientStatus.CONNECTED) {
       log.info('Could not send an invite. Not connected.', this.constructor.name);
       throw new Error('Cannot send an invite. Not connected.');
@@ -261,11 +265,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     return new Inviter(this.userAgent, UserAgent.makeURI(phoneNumber));
   }
 
-  public subscribe(contact: string): Subscriber {
+  public createSubscriber(contact: string): Subscriber {
     // Introducing a jitter here, to avoid thundering herds.
     return new Subscriber(this.userAgent, UserAgent.makeURI(contact), 'dialog', {
       expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
     });
+  }
+
+  public createPublisher(contact: string, options: PublisherOptions) {
+    return new Publisher(this.userAgent, UserAgent.makeURI(contact), 'dialog', options);
   }
 
   public isRegistered() {

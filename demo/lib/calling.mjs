@@ -27,7 +27,7 @@ const account = {
 };
 
 const transport = {
-  wsServers: `wss://websocket.${CONF.yourPlatformURL}`,
+  //wsServers: `wss://websocket.${CONF.yourPlatformURL}`,
   iceServers: []
 };
 
@@ -197,8 +197,17 @@ export function getSessions() {
 }
 
 export function getSession(id) {
-  if (client && client.isConnected()) {
-    return client.getSession(id);
+  if (client && !client.isConnected()) {
+    return;
   }
-  return undefined;
+
+  return client.getSession(id);
+}
+
+export function createPublisher(contact, options) {
+  if (client && !client.isConnected()) {
+    return;
+  }
+
+  return client.createPublisher(contact, options);
 }

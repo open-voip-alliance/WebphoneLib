@@ -178,6 +178,21 @@
     </section>
   </template>
 
+  <template data-component="c-publisher">
+    <section>
+      <h2>Publisher</h2>
+      <div>
+        <input type="text" data-selector="targetInput" />
+        <input type="text" data-selector="contentInput" />
+        <div class="publisher-body">
+          <div class="publisher-buttons">
+            <button class="publisher-call-button base-button" data-action="publish">Publish</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
   <template data-component="c-sessions">
     <section>
       <h2>Active sessions</h2>
@@ -249,6 +264,7 @@
       <c-debug-console></c-debug-console>
       <c-sessions></c-sessions>
       <c-computer-settings></c-computer-settings>
+      <c-publisher></c-publisher>
     </div>
   </template>
 </html>
