@@ -21,6 +21,9 @@ import { SubscriptionState } from 'sip.js/lib/api/subscription-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
+import { Publisher } from 'sip.js/lib/api/publisher';
+import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
+
 // TODO: use EventTarget instead of EventEmitter.
 
 export interface IClient {
@@ -79,6 +82,8 @@ export interface IClient {
    * ```
    */
   attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean>;
+
+  createPublisher(contact: string, options: PublisherOptions): Publisher;
 
   /* tslint:disable:unified-signatures */
   /**
@@ -244,7 +249,7 @@ export class ClientImpl extends EventEmitter implements IClient {
         return;
       }
 
-      this.subscriptions[uri] = this.transport.subscribe(uri);
+      this.subscriptions[uri] = this.transport.createSubscriber(uri);
 
       this.subscriptions[uri].delegate = {
         onNotify: (notification: Notification) => {
@@ -337,6 +342,14 @@ export class ClientImpl extends EventEmitter implements IClient {
     return sessionA.attendedTransfer(sessionB);
   }
 
+  public createPublisher(contact: string, options: PublisherOptions): Publisher {
+    if (!this.transport.registeredPromise) {
+      throw new Error('Register first!');
+    }
+
+    return this.transport.createPublisher(contact, options);
+  }
+
   private configureTransport(uaFactory: UAFactory, options: IClientOptions) {
     this.transport = this.transportFactory(uaFactory, options);
 
@@ -400,7 +413,7 @@ export class ClientImpl extends EventEmitter implements IClient {
   }
 
   private async tryInvite(phoneNumber: string): Promise<SessionImpl> {
-    const outgoingSession = this.transport.invite(phoneNumber);
+    const outgoingSession = this.transport.createInviter(phoneNumber);
 
     const session = new Inviter({
       media: this.defaultMedia,
@@ -500,6 +513,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
     'getSession',
     'getSessions',
     'invite',
+    'createPublisher',
     'isConnected',
     'on',
     'once',

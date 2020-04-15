@@ -8,7 +8,7 @@ export { Subscription } from 'sip.js';
  * @param {Request} notification - A SIP.js Request object.
  * @returns {string} - The state of the account.
  */
-export function statusFromDialog(notification: any): string {
+export function statusFromDialog(notification: any): SubscriptionStatus | string {
   const parser = new DOMParser();
   const xmlDoc = parser ? parser.parseFromString(notification.request.body, 'text/xml') : null;
   const dialogNode = xmlDoc ? xmlDoc.getElementsByTagName('dialog-info')[0] : null;
@@ -18,7 +18,8 @@ export function statusFromDialog(notification: any): string {
   }
 
   const stateNode = dialogNode.getElementsByTagName('state')[0];
-  let state = SubscriptionStatus.AVAILABLE;
+
+  let state: SubscriptionStatus | string = SubscriptionStatus.AVAILABLE;
 
   // State node has final say, regardless of stateAttr!
   if (stateNode) {
@@ -34,7 +35,11 @@ export function statusFromDialog(notification: any): string {
       case SubscriptionStatus.TERMINATED:
         state = SubscriptionStatus.AVAILABLE;
         break;
+      default:
+        state = stateNode.textContent; // To allow for custom statuses
+        break;
     }
   }
+
   return state;
 }

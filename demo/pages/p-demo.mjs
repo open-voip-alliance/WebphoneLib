@@ -4,6 +4,7 @@ import '../components/c-contact.mjs';
 import '../components/c-debug-console.mjs';
 import '../components/c-computer-settings.mjs';
 import '../components/c-dialer.mjs';
+import '../components/c-publisher.mjs';
 import '../components/c-sessions.mjs';
 import '../components/c-mos-values.mjs';
 
