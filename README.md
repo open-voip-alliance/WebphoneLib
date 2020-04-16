@@ -23,10 +23,10 @@ We would love more input for this project. Create an issue, create a pull reques
 ```bash
 $ git clone git@github.com:open-voip-alliance/WebphoneLib.git
 $ cd WebphoneLib
-$ touch demo/config.js
+$ touch demo/config.mjs
 ```
 
-Add the following to `demo/config.js`:
+Add the following to `demo/config.mjs`:
 
 ```javascript
 export const authorizationUserId = <your-voip-account-id>;
