@@ -17,6 +17,7 @@
     "prepare": "npm run lint && npm run build",
     "test": "ava",
     "test-coverage": "nyc ava",
+    "test:example": "./node_modules/mocha/bin/mocha --timeout=3000 ./puppeteer/test/example-e2e.js",
     "test-watch": "ava --watch",
     "docs": "typedoc --out docs src"
   },
@@ -59,8 +60,11 @@
     "README.md"
   ],
   "dependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^7.1.1",
     "p-retry": "^4.1.0",
     "p-timeout": "^3.2.0",
+    "puppeteer": "^2.1.1",
     "sip.js": "0.15.6"
   },
   "devDependencies": {
