@@ -27,7 +27,7 @@ const account = {
 };
 
 const transport = {
-  //wsServers: `wss://websocket.${CONF.yourPlatformURL}`,
+  wsServers: `wss://websocket.${CONF.yourPlatformURL}`,
   iceServers: []
 };
 

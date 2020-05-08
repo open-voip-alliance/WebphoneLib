@@ -7,12 +7,10 @@ import { accountUri } from '../config.mjs';
 
 const logger = new Logger('c-publisher');
 
-function publish(publisher, state, callId) {
+function publish(publisher, message, callId) {
   logger.info(callId);
 
-  let ourContent = `<?xml version="1.0"?><dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info" state="partial" entity="${accountUri}"><dialog id="${callId}" call-id="${callId}" direction="recipient"><state>${state}</state><remote><identity>${accountUri}</identity><target uri="${accountUri}"/></remote><local><identity>${accountUri}</identity><target uri="${accountUri}"/></local></dialog></dialog-info>`;
-
-  publisher.publish(ourContent);
+  publisher.publish(message);
 }
 
 window.customElements.define(
