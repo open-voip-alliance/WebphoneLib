@@ -45,6 +45,18 @@ export interface ISession {
   remoteIdentity: IRemoteIdentity;
 
   /**
+   * The local stream of this session.
+   * @returns {MediaStream}
+   */
+  localStream: MediaStream;
+
+  /**
+   * The remote stream of this session.
+   * @returns {MediaStream}
+   */
+  remoteStream: MediaStream;
+
+  /**
    * @returns {boolean} if auto answer is on for this session.
    */
   autoAnswer: boolean;
@@ -367,6 +379,14 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.session.sessionDescriptionHandler.sendDtmf(tones);
   }
 
+  public get localStream() {
+    return (this.session as any).__streams.localStream;
+  }
+
+  public get remoteStream() {
+    return (this.session as any).__streams.remoteStream;
+  }
+
   public freeze(): ISession {
     return createFrozenProxy({}, this, [
       'audioConnected',
@@ -400,7 +420,9 @@ export class SessionImpl extends EventEmitter implements ISession {
       'removeAllListeners',
       'removeListener',
       'cancel',
-      'tried'
+      'tried',
+      'localStream',
+      'remoteStream'
     ]);
   }
 
