@@ -1,5 +1,3 @@
-import { Type } from './utils';
-
 /**
  * @hidden
  */
