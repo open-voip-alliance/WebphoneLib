@@ -28,7 +28,7 @@ export interface IMediaInput extends IMediaDevice {
 }
 
 // tslint:disable-next-line
-export interface IMediaOutput extends IMediaDevice {}
+export type IMediaOutput = IMediaDevice;
 
 export interface IMedia {
   input: IMediaInput;

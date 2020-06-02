@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 
 import { Session } from 'sip.js/lib/api/session';
 import { IncomingInviteRequest } from 'sip.js/lib/core';
+
 import { audioContext } from './audio-context';
 import * as Features from './features';
 import { clamp } from './lib/utils';
@@ -67,28 +68,57 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
       this.stopOutput();
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
     // prettier-ignore
     this.input = {
-      get id() { return self.media.input.id; },
-      set id(value) { self.setInputDevice(value); },
-      get audioProcessing() { return self.media.input.audioProcessing; },
-      set audioProcessing(value) { self.setInputAudioProcessing(value); },
-      get volume() { return self.media.input.volume; },
-      set volume(value) { self.setInputVolume(value); },
-      get muted() { return self.media.input.muted; },
-      set muted(value) { self.setInputMuted(value); }
+      get id() {
+        return self.media.input.id; 
+      },
+      set id(value) {
+        self.setInputDevice(value); 
+      },
+      get audioProcessing() {
+        return self.media.input.audioProcessing; 
+      },
+      set audioProcessing(value) {
+        self.setInputAudioProcessing(value); 
+      },
+      get volume() {
+        return self.media.input.volume; 
+      },
+      set volume(value) {
+        self.setInputVolume(value); 
+      },
+      get muted() {
+        return self.media.input.muted; 
+      },
+      set muted(value) {
+        self.setInputMuted(value); 
+      }
     };
 
     // prettier-ignore
     this.output = {
-      get id() { return self.media.output.id; },
-      set id(value) { self.setOutputDevice(value); },
-      get volume() { return self.media.output.volume; },
-      set volume(value) { self.setOutputVolume(value); },
-      get muted() { return self.media.output.muted; },
-      set muted(value) { self.setOutputMuted(value); }
+      get id() {
+        return self.media.output.id; 
+      },
+      set id(value) {
+        self.setOutputDevice(value); 
+      },
+      get volume() {
+        return self.media.output.volume; 
+      },
+      set volume(value) {
+        self.setOutputVolume(value); 
+      },
+      get muted() {
+        return self.media.output.muted; 
+      },
+      set muted(value) {
+        self.setOutputMuted(value); 
+      }
     };
   }
 

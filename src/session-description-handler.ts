@@ -1,4 +1,5 @@
-import { SessionDescriptionHandlerModifier, UA, Web } from 'sip.js';
+import { Web } from 'sip.js';
+import { SessionDescriptionHandler } from 'sip.js/lib/Web';
 
 import { audioContext } from './audio-context';
 import { isPrivateIP } from './lib/utils';
@@ -16,7 +17,7 @@ export function stripPrivateIps(
   return Promise.resolve(description);
 }
 
-export function sessionDescriptionHandlerFactory(session, options) {
+export function sessionDescriptionHandlerFactory(session, options): SessionDescriptionHandler {
   const sdh = Web.SessionDescriptionHandler.defaultFactory(session, options);
 
   session.__streams = {
@@ -31,6 +32,7 @@ export function sessionDescriptionHandlerFactory(session, options) {
 
   (sdh as any).on('addTrack', async (track, stream) => {
     const pc = session.sessionDescriptionHandler.peerConnection;
+    // eslint-disable-next-line prefer-rest-params
     log.debug('addTrack' + arguments, 'sessionDescriptionHandlerFactory');
 
     let remoteStream = new MediaStream();

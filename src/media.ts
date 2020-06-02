@@ -1,11 +1,10 @@
 import { EventEmitter } from 'events';
 
-import { audioContext } from './audio-context';
 import * as Features from './features';
+import { eqSet } from './lib/utils';
 import { log } from './logger';
 import * as Time from './time';
-import { IMediaInput, IMediaOutput } from './types';
-import { eqSet } from './lib/utils';
+import { IMediaInput } from './types';
 
 export interface IAudioDevice {
   /**
@@ -38,7 +37,7 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
   private allDevices: IAudioDevice[] = [];
   private requestPermissionPromise: Promise<void>;
   private timer: number = undefined;
-  private hadPermission: boolean = false;
+  private hadPermission = false;
 
   public init() {
     this.update();
@@ -76,6 +75,7 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
       return this.requestPermissionPromise;
     }
 
+    // eslint-disable-next-line no-async-promise-executor
     this.requestPermissionPromise = new Promise(async (resolve, reject) => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -110,7 +110,10 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
     const promise = navigator.mediaDevices.getUserMedia(constraints);
     promise.then(stream => {
       stream.getTracks().forEach(track => {
-        log.debug(`Media stream track has settings: ${JSON.stringify(track.getSettings())}`, 'media');
+        log.debug(
+          `Media stream track has settings: ${JSON.stringify(track.getSettings())}`,
+          'media'
+        );
       });
     });
     return promise;

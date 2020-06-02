@@ -95,23 +95,23 @@ const CANCELLED_REASON = {
 // tslint:disable-next-line: max-classes-per-file
 export class ReconnectableTransport extends EventEmitter implements ITransport {
   public registeredPromise: Promise<any>;
-  public registered: boolean = false;
+  public registered = false;
   public status: ClientStatus = ClientStatus.DISCONNECTED;
-  private priority: boolean = false;
+  private priority = false;
   private unregisteredPromise: Promise<any>;
   private uaFactory: UAFactory;
   private ua: UserAgent;
   private uaOptions: UserAgentOptions;
   private userAgent: UserAgent;
-  private dyingCounter: number = 60000;
-  private wsTimeout: number = 10000;
+  private dyingCounter = 60000;
+  private wsTimeout = 10000;
   private dyingIntervalID: number;
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
   private registerer: Registerer;
   private unregisterer: Registerer;
   private boundOnWindowOffline: EventListenerOrEventListenerObject;
   private boundOnWindowOnline: EventListenerOrEventListenerObject;
-  private wasWindowOffline: boolean = false;
+  private wasWindowOffline = false;
   private healthChecker: HealthChecker;
 
   constructor(uaFactory: UAFactory, options: IClientOptions) {

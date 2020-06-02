@@ -28,6 +28,6 @@ const required = [
   webaudio.audioContext
 ];
 
-export function checkRequired() {
+export function checkRequired(): boolean {
   return required.every(x => x);
 }
