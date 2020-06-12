@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Subscription, UA as UABase, Web } from 'sip.js';
@@ -8,7 +9,6 @@ import { Publisher } from 'sip.js/lib/api/publisher';
 import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
-
 import { Session } from 'sip.js/lib/api/session';
 import { Subscriber } from 'sip.js/lib/api/subscriber';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
@@ -16,7 +16,6 @@ import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
-
 import { HealthChecker } from './health-checker';
 import { increaseTimeout, jitter } from './lib/utils';
 import { log } from './logger';
@@ -53,7 +52,6 @@ export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) =
 /**
  * @hidden
  */
-// tslint:disable-next-line: max-classes-per-file
 export class WrappedTransport extends Web.Transport {
   /**
    * Disconnect socket. It could happen that the user switches network
@@ -92,7 +90,6 @@ const CANCELLED_REASON = {
 /**
  * @hidden
  */
-// tslint:disable-next-line: max-classes-per-file
 export class ReconnectableTransport extends EventEmitter implements ITransport {
   public registeredPromise: Promise<any>;
   public registered = false;

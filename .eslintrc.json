@@ -9,6 +9,7 @@
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended"
   ],
+  "plugins": ["prettier"],
   "globals": {
     "Atomics": "readonly",
     "SharedArrayBuffer": "readonly"
@@ -23,6 +24,6 @@
     "brace-style": ["error", "1tbs"],
     "indent": ["warn", 2],
     "no-console": "off",
-    "prettier/prettier": "off"
+    "prettier/prettier": "error"
   }
 }
