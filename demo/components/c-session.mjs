@@ -80,6 +80,27 @@ window.customElements.define(
           case 'unhold':
             this.session && this.session.unhold();
             break;
+          case 'reinvite':
+            this.session &&
+              (await this.session.reinvite([
+                sdp => {
+                  //const newSdp = sdp.sdp.replace(
+                  //  'a=rtpmap:111 opus/48000/2',
+                  //  'a=rtpmap:111 opus/24000/2'
+                  //);
+                  //
+                  const newSdp = sdp.sdp.replace(
+                    'a=fmtp:111 minptime=10;useinbandfec=1',
+                    'a=fmtp:111 minptime=10;maxplaybackrate=6000;useinbandfec=1'
+                  );
+
+                  const newThingy = { ...sdp, sdp: newSdp };
+                  console.log(newThingy);
+
+                  return newThingy;
+                }
+              ]));
+            break;
           case 'hangup':
             this.session && (await this.session.terminate());
             break;
@@ -109,6 +130,7 @@ window.customElements.define(
         this.actions.toggleDTMF,
         this.actions.hold,
         this.actions.unhold,
+        this.actions.reinvite,
         this.actions.hangup,
         this.nodes.additionalInterface
       ].forEach(n => {
@@ -127,6 +149,7 @@ window.customElements.define(
         this.actions.toggleDTMF,
         this.actions.hold,
         this.actions.unhold,
+        this.actions.reinvite,
         this.actions.hangup,
         this.nodes.additionalInterface
       ].forEach(n => {
