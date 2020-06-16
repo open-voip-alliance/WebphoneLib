@@ -37,7 +37,7 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
   private allDevices: IAudioDevice[] = [];
   private requestPermissionPromise: Promise<void>;
   private timer: number = undefined;
-  private hadPermission: boolean = false;
+  private hadPermission = false;
 
   public init() {
     this.update();
@@ -80,6 +80,7 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
       return;
     }
 
+    // eslint-disable-next-line no-async-promise-executor
     this.requestPermissionPromise = new Promise(async (resolve, reject) => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({

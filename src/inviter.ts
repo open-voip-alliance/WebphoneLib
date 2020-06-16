@@ -47,11 +47,11 @@ export class Inviter extends SessionImpl {
     });
   }
 
-  public async accept() {
+  public async accept(): Promise<void> {
     throw new Error('Cannot accept an outgoing call.');
   }
 
-  public async reject() {
+  public async reject(): Promise<void> {
     throw new Error('Cannot reject an outgoing call.');
   }
 

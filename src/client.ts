@@ -1,28 +1,25 @@
 import { EventEmitter } from 'events';
 
+import { Core } from 'sip.js';
+import { Notification } from 'sip.js/lib/api/notification';
+import { Publisher } from 'sip.js/lib/api/publisher';
+import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
+import { Subscriber } from 'sip.js/lib/api/subscriber';
+import { SubscriptionState } from 'sip.js/lib/api/subscription-state';
+import { UserAgent } from 'sip.js/lib/api/user-agent';
+import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
+
 import { ClientStatus, ReconnectionMode } from './enums';
-import { SessionStatus } from './enums';
 import * as Features from './features';
 import { Invitation } from './invitation';
 import { Inviter } from './inviter';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
 import { ISession, SessionImpl } from './session';
-import { statusFromDialog, Subscription } from './subscription';
+import { statusFromDialog } from './subscription';
 import { second } from './time';
 import { ITransport, ReconnectableTransport, TransportFactory, UAFactory } from './transport';
 import { IClientOptions, IMedia } from './types';
-
-import { Core, UA as UABase } from 'sip.js';
-import { Notification } from 'sip.js/lib/api/notification';
-import { SessionState } from 'sip.js/lib/api/session-state';
-import { Subscriber } from 'sip.js/lib/api/subscriber';
-import { SubscriptionState } from 'sip.js/lib/api/subscription-state';
-import { UserAgent } from 'sip.js/lib/api/user-agent';
-import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
-
-import { Publisher } from 'sip.js/lib/api/publisher';
-import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
 
 // TODO: use EventTarget instead of EventEmitter.
 
@@ -152,7 +149,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   private readonly sessions: { [index: string]: SessionImpl } = {};
   private subscriptions: { [index: string]: Subscriber } = {};
-  private connected: boolean = false;
+  private connected = false;
 
   private transportFactory: TransportFactory;
   private transport?: ITransport;
@@ -170,7 +167,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     this.configureTransport(uaFactory, options);
   }
 
-  public async reconfigure(options: IClientOptions) {
+  public async reconfigure(options: IClientOptions): Promise<void> {
     await this.disconnect();
 
     this.defaultMedia = options.media;
@@ -227,7 +224,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     return session.freeze();
   }
 
-  public async close() {
+  public async close(): Promise<void> {
     await this.disconnect();
 
     this.transport.close();
@@ -236,7 +233,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     delete this.transport;
   }
 
-  public subscribe(uri: string) {
+  public subscribe(uri: string): Promise<void> {
     if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
@@ -299,7 +296,7 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri].subscribe();
     });
   }
-  public async resubscribe(uri: string) {
+  public async resubscribe(uri: string): Promise<void> {
     if (!this.subscriptions[uri]) {
       throw new Error('Cannot resubscribe to nonexistent subscription.');
     }
@@ -309,7 +306,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     log.debug(`Resubscribed to ${uri}`, this.constructor.name);
   }
 
-  public unsubscribe(uri: string) {
+  public unsubscribe(uri: string): void {
     if (!this.subscriptions[uri]) {
       return;
     }

@@ -1,5 +1,7 @@
 import { EventEmitter } from 'events';
+
 import { Session as UserAgentSession } from 'sip.js/lib/api/session';
+
 import { log } from './logger';
 
 class StatsAggregation {
@@ -59,7 +61,6 @@ class StatsAggregation {
   }
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class SessionStats extends EventEmitter {
   public readonly mos: StatsAggregation = new StatsAggregation();
 

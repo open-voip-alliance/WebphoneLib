@@ -1,4 +1,5 @@
 import { Invitation as SIPInvitation } from 'sip.js/lib/api/invitation';
+
 import { SessionStatus } from './enums';
 import { ISessionAccept, SessionImpl } from './session';
 
@@ -26,7 +27,7 @@ export class Invitation extends SessionImpl {
       this.acceptedRef({ accepted: true });
 
       this.session.delegate = {
-        onInvite: request => {
+        onInvite: () => {
           this._remoteIdentity = this.extractRemoteIdentity();
           this.emit('remoteIdentityUpdate', this, this.remoteIdentity);
         }
@@ -42,11 +43,11 @@ export class Invitation extends SessionImpl {
     return this.session.reject().then(() => this.acceptedRef({ accepted: false }));
   }
 
-  public async tried() {
+  public async tried(): Promise<void> {
     throw new Error('Not applicable for incoming calls.');
   }
 
-  public async cancel() {
+  public async cancel(): Promise<void> {
     throw new Error('Cannot cancel an incoming call.');
   }
 }

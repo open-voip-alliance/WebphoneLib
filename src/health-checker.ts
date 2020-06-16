@@ -1,8 +1,5 @@
 import pTimeout from 'p-timeout';
-
 import { C, Core } from 'sip.js';
-import { Utils } from 'sip.js';
-
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 
 export class HealthChecker {
@@ -13,7 +10,7 @@ export class HealthChecker {
     this.logger = userAgent.userAgentCore.loggerFactory.getLogger('socket-health-checker');
   }
 
-  public stop(): any {
+  public stop(): void {
     clearTimeout(this.optionsTimeout);
   }
 
