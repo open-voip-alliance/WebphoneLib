@@ -75,9 +75,13 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
       return this.requestPermissionPromise;
     }
 
-    const { state } = await navigator.permissions.query({ name: 'microphone' });
-    if (state === 'granted') {
-      return;
+    try {
+      const { state } = await navigator.permissions.query({ name: 'microphone' });
+      if (state === 'granted') {
+        return;
+      }
+    } catch (err) {
+      console.error('permissions query mic not supported in firefox, doing fallback', err);
     }
 
     // eslint-disable-next-line no-async-promise-executor
