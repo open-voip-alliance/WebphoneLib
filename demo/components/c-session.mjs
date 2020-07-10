@@ -83,19 +83,22 @@ window.customElements.define(
             break;
           case 'reinvite':
             this.session &&
-              (await this.session.reinvite([
-                sdp => {
-                  //const newSdp = sdp.sdp.replace(
-                  //  'a=rtpmap:111 opus/48000/2',
-                  //  'a=rtpmap:111 opus/24000/2'
-                  //);
-                  //
+              (await this.session.reinvite(
+                [
+                  sdp => {
+                    //const newSdp = sdp.sdp.replace(
+                    //  'a=rtpmap:111 opus/48000/2',
+                    //  'a=rtpmap:111 opus/24000/2'
+                    //);
+                    //
 
-                  const newThingy = { ...sdp, sdp: this.getNewSDP(sdp) };
+                    const newThingy = { ...sdp, sdp: this.getNewSDP(sdp) };
 
-                  return newThingy;
-                }
-              ]));
+                    return newThingy;
+                  }
+                ],
+                'maxaveragebitrate=6000'
+              ));
             break;
           case 'hangup':
             this.session && (await this.session.terminate());

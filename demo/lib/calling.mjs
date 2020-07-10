@@ -171,8 +171,7 @@ export async function invite(phoneNumber) {
     });
 
     session.on('callQualityUpdate', (sessionId, stats) => {
-      const { mos } = stats;
-      callingEvents.dispatchEvent(new CustomEvent('changeMosValues', { detail: mos }));
+      callingEvents.dispatchEvent(new CustomEvent('callQualityUpdate', { detail: stats }));
     });
 
     return session;

@@ -304,11 +304,23 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.terminatedPromise;
   }
 
-  public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
+  public async reinvite(
+    modifiers: SessionDescriptionHandlerModifiers = [],
+    description = undefined
+  ): Promise<void> {
     await new Promise((resolve, reject) => {
       this.session.invite(
         this.makeInviteOptions({
-          onAccept: resolve,
+          onAccept: () => {
+            // When there is a description for the reinvite a reinvite has
+            // been done to update the call configuration. In that case we
+            // want to update the session stats to separate the period with
+            // the new configuration.
+            if (description) {
+              this.stats.update(description);
+            }
+            resolve();
+          },
           onReject: reject,
           onRejectThrow: reject,
           onProgress: resolve,

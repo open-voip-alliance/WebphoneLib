@@ -243,15 +243,18 @@
     <div data-selector="additionalInterface" class="additional-interface"></div>
   </template>
 
+  <template data-component="c-call-quality">
+    <div data-selector="callQualityList"></div>
+  </template>
+
   <template data-component="c-mos-values">
     <section>
       <h2>Mos values</h2>
-      <div data-selector="mosValues" hidden>
-        <span data-selector="lowest"></span>
-        <span data-selector="highest"></span>
-        <span data-selector="average"></span>
-        <span data-selector="last"></span>
-      </div>
+      <span data-selector="config"></span>
+      <span data-selector="lowest"></span>
+      <span data-selector="highest"></span>
+      <span data-selector="average"></span>
+      <span data-selector="last"></span>
     </section>
   </template>
 
@@ -270,8 +273,8 @@
       <c-voip-account></c-voip-account>
       <c-dialer></c-dialer>
       <c-contacts></c-contacts>
-      <c-mos-values></c-mos-values>
       <c-audio-visualiser></c-audio-visualiser>
+      <c-call-quality></c-call-quality>
     </div>
 
     <div class="right-part">

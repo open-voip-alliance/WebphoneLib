@@ -8,15 +8,15 @@ class StatsAggregation {
   private stats: {
     count: number;
     highest: number;
-    last: number;
     lowest: number;
+    values: number[];
     sum: number;
   } = {
     count: 0,
     highest: undefined,
-    last: undefined,
     lowest: undefined,
-    sum: 0
+    sum: 0,
+    values: []
   };
 
   public add(sample: number) {
@@ -27,13 +27,18 @@ class StatsAggregation {
       this.stats.lowest = Math.min(this.stats.lowest, sample);
       this.stats.highest = Math.max(this.stats.highest, sample);
     }
-    this.stats.count += 1;
+
+    if (this.stats.values.length === 12) {
+      this.stats.values.shift();
+    }
+    this.stats.values.push(sample);
+
     this.stats.sum += sample;
-    this.stats.last = sample;
+    this.stats.count += 1;
   }
 
   public get last(): number {
-    return this.stats.last;
+    return this.stats.values.slice(-1).pop();
   }
 
   public get count(): number {
@@ -59,10 +64,23 @@ class StatsAggregation {
 
     return this.sum / this.count;
   }
+
+  public get rollingAverage(): number {
+    if (this.stats.values.length < 12) {
+      return undefined;
+    }
+
+    return this.stats.values.reduce((sum, val) => sum + val) / this.stats.values.length;
+  }
+}
+
+interface IStats {
+  config: string; // This could contain chosen maxaveragebitrate etc.
+  mos: StatsAggregation;
 }
 
 export class SessionStats extends EventEmitter {
-  public readonly mos: StatsAggregation = new StatsAggregation();
+  public readonly stats: IStats[] = [{ config: 'default', mos: new StatsAggregation() }];
 
   private statsTimer: number;
   private statsInterval: number;
@@ -95,11 +113,19 @@ export class SessionStats extends EventEmitter {
     });
   }
 
-  public clearStatsTimer() {
+  public clearStatsTimer(): void {
     if (this.statsTimer) {
       window.clearInterval(this.statsTimer);
       delete this.statsTimer;
     }
+  }
+
+  /**
+   * Update the session stats list to start tracking the call quality again
+   * because i.e. the call has updated its call configuration.
+   */
+  public update(config) {
+    this.stats.push({ config, mos: new StatsAggregation() });
   }
 
   /**
@@ -135,7 +161,7 @@ export class SessionStats extends EventEmitter {
         rtt: candidatePair.currentRoundTripTime || 0.05
       };
 
-      this.mos.add(calculateMOS(measurement));
+      this.stats[this.stats.length - 1]['mos'].add(calculateMOS(measurement));
       // this.app.logger.info(`${this}MOS=${measurements.mos.toFixed(2)}`, measurements);
       return true;
     }
