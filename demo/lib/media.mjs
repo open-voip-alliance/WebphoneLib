@@ -1,5 +1,6 @@
 import { Media, Sound } from '../../dist/index.mjs';
 import { client, getSessions } from './calling.mjs';
+import { getDocumentElement } from './dom.mjs';
 import { Logger } from './logging.mjs';
 
 const logger = new Logger('media');
@@ -69,10 +70,6 @@ function updateDevicesLists(mediaDevices, list) {
     .forEach(listItem => {
       list.appendChild(listItem);
     });
-}
-
-function getDocumentElement(elementName) {
-  return document.querySelector(`[data-selector=${elementName}]`);
 }
 
 Media.on('permissionGranted', () => {

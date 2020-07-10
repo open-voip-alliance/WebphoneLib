@@ -1,6 +1,7 @@
 import { Client, Media, Sound, log } from '../../dist/index.mjs';
-import eventTarget from '../utils/eventTarget.mjs';
 import * as CONF from '../config.mjs';
+import { setUpAnalyser } from '../lib/audioVisualiser.mjs';
+import eventTarget from '../utils/eventTarget.mjs';
 import { Logger } from './logging.mjs';
 import { media } from './media.mjs';
 
@@ -31,7 +32,6 @@ const transport = {
   iceServers: []
 };
 
-export let activeSession = null;
 export const client = new Client({
   account,
   transport,
@@ -124,6 +124,7 @@ export function sessionAccepted(session) {
       .accepted()
       .then(({ accepted }) => {
         if (accepted) {
+          setUpAnalyser(session);
           resolve();
         }
       })
@@ -157,6 +158,7 @@ export async function invite(phoneNumber) {
 
     sessionAccepted(session).then(() => {
       logger.info('outgoing session is accepted', session.id);
+
       callingEvents.dispatchEvent(new CustomEvent('sessionUpdate'), { detail: session });
     });
 
