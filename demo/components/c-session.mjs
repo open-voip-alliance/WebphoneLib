@@ -1,8 +1,10 @@
-import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
-import * as sipClient from '../lib/calling.mjs';
 import './c-transfer.mjs';
-import { Logger } from '../lib/logging.mjs';
+
+import { setUpAnalyser } from '../lib/audioVisualiser.mjs';
+import * as sipClient from '../lib/calling.mjs';
 import { empty } from '../lib/dom.mjs';
+import { Logger } from '../lib/logging.mjs';
+import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
 
 const logger = new Logger('c-session');
 

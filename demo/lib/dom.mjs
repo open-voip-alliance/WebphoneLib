@@ -7,3 +7,7 @@ export function empty(node) {
     node.removeChild(node.firstChild);
   }
 }
+
+export function getDocumentElement(elementName) {
+  return document.querySelector(`[data-selector=${elementName}]`);
+}
