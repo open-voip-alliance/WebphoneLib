@@ -1,3 +1,5 @@
+import { getDocumentElement } from './dom.mjs';
+
 let bufferLength;
 
 const WIDTH = 1024;
@@ -13,8 +15,8 @@ let localStream;
 let remoteStream;
 
 export function createAnalysers(session) {
-  localAudioCanvas = document.querySelector('.local-audio');
-  remoteAudioCanvas = document.querySelector('.remote-audio');
+  localAudioCanvas = getDocumentElement('local-audio');
+  remoteAudioCanvas = getDocumentElement('remote-audio');
   localStream = session.localStream.stream;
   remoteStream = session.remoteStream;
 
@@ -58,7 +60,9 @@ function drawVisualiser(analyser, canvas) {
   for (let i = 0; i < bufferLength; i++) {
     barHeight = dataArray[i];
 
-    canvasCtx.fillStyle = 'rgb(' + (barHeight + 100) + ',50,50)';
+    //TODO choose between a nice watermelon pink or red
+    // canvasCtx.fillStyle = 'rgb(' + (barHeight + 100) + ',50,50)';
+    canvasCtx.fillStyle = '#FE7F9C';
     canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
 
     x += barWidth + 1;
