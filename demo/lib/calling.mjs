@@ -1,12 +1,11 @@
 import { Client, Media, Sound, log } from '../../dist/index.mjs';
 import * as CONF from '../config.mjs';
-import { setUpAnalyser } from '../lib/audioVisualiser.mjs';
+import { createAnalysers } from '../lib/audioVisualiser.mjs';
 import eventTarget from '../utils/eventTarget.mjs';
 import { Logger } from './logging.mjs';
 import { media } from './media.mjs';
 
 const logger = new Logger('calling');
-//TODO is this still necessary?
 log.level = 'info';
 log.connector = ({ level, context, message }) => {
   const print = {
@@ -124,7 +123,7 @@ export function sessionAccepted(session) {
       .accepted()
       .then(({ accepted }) => {
         if (accepted) {
-          setUpAnalyser(session);
+          createAnalysers(session);
           resolve();
         }
       })

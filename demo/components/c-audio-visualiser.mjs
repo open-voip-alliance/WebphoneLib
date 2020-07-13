@@ -1,13 +1,8 @@
-import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
-
 window.customElements.define(
   'c-audio-visualiser',
   class extends HTMLElement {
     constructor() {
       super();
-
-      this.actions = new ActionsProxy(this);
-      this.nodes = new NodesProxy(this);
     }
 
     connectedCallback() {

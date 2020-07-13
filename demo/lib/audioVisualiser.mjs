@@ -1,38 +1,53 @@
-const audioCtx = new AudioContext();
-const analyser = audioCtx.createAnalyser();
-analyser.fftSize = 512 * 2;
-const bufferLength = analyser.frequencyBinCount;
-const dataArray = new Uint8Array(bufferLength);
-
-let playbackDest = analyser;
-
-analyser.connect(audioCtx.destination);
-
-let canvas;
-let canvasCtx;
+let bufferLength;
 
 const WIDTH = 1024;
 const HEIGHT = 128;
 
-export function setUpAnalyser(session) {
-  debugger;
-  canvas = document.querySelector('canvas');
-  canvasCtx = canvas.getContext('2d');
-  // canvasCtx.clearRect(0, 0, WIDTH, LENGTH);
+let localAnalyser;
+let remoteAnalyser;
 
-  const localStream = session.localStream.stream;
-  const remoteStream = session.remoteStream;
+let localAudioCanvas;
+let remoteAudioCanvas;
 
-  const source = audioCtx.createMediaStreamSource(localStream);
-  source.connect(analyser);
+let localStream;
+let remoteStream;
+
+export function createAnalysers(session) {
+  localAudioCanvas = document.querySelector('.local-audio');
+  remoteAudioCanvas = document.querySelector('.remote-audio');
+  localStream = session.localStream.stream;
+  remoteStream = session.remoteStream;
+
+  setUpAnalysers();
   draw();
 }
 
-function draw() {
-  requestAnimationFrame(draw);
+function setUpAnalysers() {
+  const localAudioCtx = new AudioContext();
+  const remoteAudioCtx = new AudioContext();
+
+  localAnalyser = localAudioCtx.createAnalyser();
+  remoteAnalyser = remoteAudioCtx.createAnalyser();
+
+  localAnalyser.connect(localAudioCtx.destination);
+  localAnalyser.fftSize = 512 * 2;
+  remoteAnalyser.connect(remoteAudioCtx.destination);
+  remoteAnalyser.fftSize = 512 * 2;
+
+  const localSource = localAudioCtx.createMediaStreamSource(localStream);
+  const remoteSource = remoteAudioCtx.createMediaStreamSource(remoteStream);
+  localSource.connect(localAnalyser);
+  remoteSource.connect(remoteAnalyser);
+}
+
+function drawVisualiser(analyser, canvas) {
+  bufferLength = analyser.frequencyBinCount;
+
+  const dataArray = new Uint8Array(bufferLength);
 
   analyser.getByteFrequencyData(dataArray);
 
+  let canvasCtx = canvas.getContext('2d');
   canvasCtx.fillStyle = 'rgb(0, 0, 0)';
   canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -48,4 +63,10 @@ function draw() {
 
     x += barWidth + 1;
   }
+}
+
+function draw() {
+  drawVisualiser(localAnalyser, localAudioCanvas);
+  drawVisualiser(remoteAnalyser, remoteAudioCanvas);
+  requestAnimationFrame(draw);
 }
