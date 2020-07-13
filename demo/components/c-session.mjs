@@ -1,6 +1,5 @@
 import './c-transfer.mjs';
 
-import { setUpAnalyser } from '../lib/audioVisualiser.mjs';
 import * as sipClient from '../lib/calling.mjs';
 import { empty } from '../lib/dom.mjs';
 import { Logger } from '../lib/logging.mjs';
