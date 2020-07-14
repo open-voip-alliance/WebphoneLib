@@ -1,6 +1,5 @@
-import { Client, Media, Sound, log } from '../../dist/index.mjs';
+import { Client, log } from '../../dist/index.mjs';
 import * as CONF from '../config.mjs';
-import { createAnalysers } from '../lib/audioVisualiser.mjs';
 import eventTarget from '../utils/eventTarget.mjs';
 import { Logger } from './logging.mjs';
 import { media } from './media.mjs';
@@ -123,7 +122,7 @@ export function sessionAccepted(session) {
       .accepted()
       .then(({ accepted }) => {
         if (accepted) {
-          createAnalysers(session);
+          callingEvents.dispatchEvent(new CustomEvent('sessionAccepted', { detail: session }));
           resolve();
         }
       })
@@ -158,17 +157,17 @@ export async function invite(phoneNumber) {
     sessionAccepted(session).then(() => {
       logger.info('outgoing session is accepted', session.id);
 
-      callingEvents.dispatchEvent(new CustomEvent('sessionUpdate'), { detail: session });
+      callingEvents.dispatchEvent(new CustomEvent('sessionUpdate', { detail: session }));
     });
 
     sessionRejected(session).then(({ rejectCause }) => {
       logger.info('outgoing session was rejected', session.id, 'because', rejectCause);
-      callingEvents.dispatchEvent(new CustomEvent('sessionUpdate'), { detail: session });
+      callingEvents.dispatchEvent(new CustomEvent('sessionUpdate', { detail: session }));
     });
 
     session.terminated().finally(() => {
       logger.info('outgoing call was terminated', session.id);
-      callingEvents.dispatchEvent(new CustomEvent('sessionUpdate'), { detail: session });
+      callingEvents.dispatchEvent(new CustomEvent('sessionUpdate', { detail: session }));
     });
 
     session.on('callQualityUpdate', (sessionId, stats) => {
