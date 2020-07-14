@@ -209,15 +209,6 @@ c-debug-console label {
   margin-bottom: 0.5rem;
 }
 
-c-mos-values section span {
-  background-color: #555;
-  border-radius: 0.5rem;
-  padding: 0.5em;
-  margin: 0.2rem 0;
-  color: #ffffff;
-  display: inline-block;
-}
-
 .volume-container {
   display: flex;
   margin-bottom: 0.5rem;

@@ -1,6 +1,6 @@
 import { Client, log } from '../../dist/index.mjs';
-import * as CONF from '../config.mjs';
 import eventTarget from '../utils/eventTarget.mjs';
+import * as CONF from '../config.mjs';
 import { Logger } from './logging.mjs';
 import { media } from './media.mjs';
 

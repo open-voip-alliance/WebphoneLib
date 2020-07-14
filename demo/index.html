@@ -244,17 +244,20 @@
   </template>
 
   <template data-component="c-call-quality">
-    <div data-selector="callQualityList"></div>
-  </template>
-
-  <template data-component="c-mos-values">
     <section>
       <h2>Mos values</h2>
-      <span data-selector="config"></span>
-      <span data-selector="lowest"></span>
-      <span data-selector="highest"></span>
-      <span data-selector="average"></span>
-      <span data-selector="last"></span>
+      <table>
+        <thead>
+          <tr>
+            <td>Config</td>
+            <td>Average</td>
+            <td>Lowest</td>
+            <td>Highest</td>
+            <td>Last</td>
+          </tr>
+        </thead>
+        <tbody data-selector="callQualityTableBody"></tbody>
+      </table>
     </section>
   </template>
 
