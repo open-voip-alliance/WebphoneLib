@@ -122,7 +122,7 @@ export function sessionAccepted(session) {
       .accepted()
       .then(({ accepted }) => {
         if (accepted) {
-          callingEvents.dispatchEvent(new CustomEvent('sessionAccepted', { detail: session }));
+          callingEvents.dispatchEvent(new CustomEvent('sessionAccepted', { detail: { session } }));
           resolve();
         }
       })

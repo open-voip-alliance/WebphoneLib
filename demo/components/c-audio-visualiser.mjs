@@ -1,16 +1,8 @@
 import * as sipClient from '../lib/calling.mjs';
 import { NodesProxy } from '../utils/elementProxies.mjs';
 
-let bufferLength;
-
 const WIDTH = 1024;
 const HEIGHT = 128;
-
-let localAnalyser;
-let remoteAnalyser;
-
-let localStream;
-let remoteStream;
 
 window.customElements.define(
   'c-audio-visualiser',
@@ -20,45 +12,41 @@ window.customElements.define(
       this.nodes = new NodesProxy(this);
     }
 
-    handleEvent({ detail }) {
-      const session = detail;
-      this.createAnalysers(session);
+    handleEvent({ detail: { session } }) {
+      this.setUpAnalysers(session);
     }
 
-    createAnalysers(session) {
-      localStream = session.localStream.stream;
-      remoteStream = session.remoteStream;
+    setUpAnalysers(session) {
+      const localStream = session.localStream.stream;
+      const remoteStream = session.remoteStream;
 
-      this.setUpAnalysers();
-      this.draw();
-    }
-
-    setUpAnalysers() {
       const localAudioCtx = new AudioContext();
       const remoteAudioCtx = new AudioContext();
 
-      localAnalyser = localAudioCtx.createAnalyser();
-      remoteAnalyser = remoteAudioCtx.createAnalyser();
+      this.localAnalyser = localAudioCtx.createAnalyser();
+      this.remoteAnalyser = remoteAudioCtx.createAnalyser();
 
-      localAnalyser.connect(localAudioCtx.destination);
-      localAnalyser.fftSize = 512 * 2;
-      remoteAnalyser.connect(remoteAudioCtx.destination);
-      remoteAnalyser.fftSize = 512 * 2;
+      this.localAnalyser.connect(localAudioCtx.destination);
+      this.localAnalyser.fftSize = 512 * 2;
+      this.remoteAnalyser.connect(remoteAudioCtx.destination);
+      this.remoteAnalyser.fftSize = 512 * 2;
 
       const localSource = localAudioCtx.createMediaStreamSource(localStream);
       const remoteSource = remoteAudioCtx.createMediaStreamSource(remoteStream);
-      localSource.connect(localAnalyser);
-      remoteSource.connect(remoteAnalyser);
+      localSource.connect(this.localAnalyser);
+      remoteSource.connect(this.remoteAnalyser);
+
+      this.draw();
     }
 
     draw() {
-      this.drawVisualiser(localAnalyser, this.nodes.localAudio);
-      this.drawVisualiser(remoteAnalyser, this.nodes.remoteAudio);
+      this.drawVisualiser(this.localAnalyser, this.nodes.localAudio);
+      this.drawVisualiser(this.remoteAnalyser, this.nodes.remoteAudio);
       requestAnimationFrame(this.draw.bind(this));
     }
 
     drawVisualiser(analyser, canvas) {
-      bufferLength = analyser.frequencyBinCount;
+      const bufferLength = analyser.frequencyBinCount;
 
       const dataArray = new Uint8Array(bufferLength);
 
