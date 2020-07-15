@@ -11,7 +11,6 @@ function handleSessionStatusUpdate({ status }) {
   this.status = status;
 }
 
-let toggled = 0;
 window.customElements.define(
   'c-session',
   class extends HTMLElement {
@@ -81,25 +80,6 @@ window.customElements.define(
           case 'unhold':
             this.session && this.session.unhold();
             break;
-          case 'reinvite':
-            this.session &&
-              (await this.session.reinvite(
-                [
-                  sdp => {
-                    //const newSdp = sdp.sdp.replace(
-                    //  'a=rtpmap:111 opus/48000/2',
-                    //  'a=rtpmap:111 opus/24000/2'
-                    //);
-                    //
-
-                    const newThingy = { ...sdp, sdp: this.getNewSDP(sdp) };
-
-                    return newThingy;
-                  }
-                ],
-                'maxaveragebitrate=6000'
-              ));
-            break;
           case 'hangup':
             this.session && (await this.session.terminate());
             break;
@@ -110,26 +90,6 @@ window.customElements.define(
         logger.info(`Pressed: ${dataset.key}`);
         this.session && this.session.dtmf(dataset.key);
       }
-    }
-
-    getNewSDP(sdp) {
-      console.log(toggled);
-      if (toggled >= 2) {
-        toggled += 1;
-
-        if (toggled === 4) {
-          toggled = 0;
-        }
-        console.log(sdp.sdp);
-        //return sdp.sdp;
-        return sdp.sdp.replace('maxaveragebitrate=6000', ' ');
-      }
-
-      toggled += 1;
-      return sdp.sdp.replace(
-        'a=fmtp:111 minptime=10;useinbandfec=1',
-        'a=fmtp:111 minptime=10;maxaveragebitrate=6000;useinbandfec=1'
-      );
     }
 
     connectedCallback() {
