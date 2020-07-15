@@ -28,7 +28,7 @@ class StatsAggregation {
       this.stats.highest = Math.max(this.stats.highest, sample);
     }
 
-    if (this.stats.values.length === 12) {
+    if (this.stats.values.length === 6) {
       this.stats.values.shift();
     }
     this.stats.values.push(sample);
@@ -66,7 +66,7 @@ class StatsAggregation {
   }
 
   public get rollingAverage(): number {
-    if (this.stats.values.length < 12) {
+    if (this.stats.values.length < 6) {
       return undefined;
     }
 
