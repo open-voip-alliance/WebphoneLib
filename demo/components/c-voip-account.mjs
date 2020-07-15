@@ -1,5 +1,6 @@
-import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
+import * as CONF from '../config.mjs';
 import * as sipClient from '../lib/calling.mjs';
+import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
 
 window.customElements.define(
   'c-voip-account',
@@ -23,6 +24,10 @@ window.customElements.define(
           if (dataset.action) {
             switch (dataset.action) {
               case 'register':
+                const userId = this.nodes.userIdInput.value;
+                const password = this.nodes.passwordInput.value;
+                sipClient.setAccount(userId, password);
+                sipClient.setClient();
                 sipClient.registerAccount();
                 console.log('register');
                 break;
@@ -49,6 +54,8 @@ window.customElements.define(
           console.log(e);
       }
     }
+    passwordInput;
+    userIdInput;
 
     connectedCallback() {
       const template = document.querySelector('[data-component=c-voip-account]');
@@ -57,6 +64,9 @@ window.customElements.define(
       [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach(n => {
         n.addEventListener('click', this);
       });
+
+      this.nodes.passwordInput.value = CONF.password;
+      this.nodes.userIdInput.value = CONF.authorizationUserId;
 
       sipClient.callingEvents.addEventListener('clientStatusUpdate', this);
     }
