@@ -32,7 +32,7 @@ window.customElements.define(
       detail.stats.forEach(({ config, mos }) => {
         const row = this.nodes.callQualityTableBody.insertRow();
         row.insertCell().appendChild(document.createTextNode(config));
-        ['average', 'lowest', 'highest', 'last'].forEach(name => {
+        ['average', 'lowest', 'highest', 'last', 'rollingAverage'].forEach(name => {
           row.insertCell().appendChild(document.createTextNode((mos[name] || 0).toFixed(2)));
         });
       });
