@@ -15,19 +15,16 @@ const REGISTER_BUTTON = 'c-voip-account [data-action="register"]';
 describe('examples', () => {
   let browser;
   let page;
-  let context;
 
   beforeEach(async function() {
     browser = await puppeteer.launch({
-      args: ['--use-fake-device-for-media-stream'],
+      args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
       headless: false,
       slowMo: 10,
       devtools: false
     });
     const url = new URL('localhost:1235/demo/');
-    context = browser.defaultBrowserContext();
-    context.overridePermissions(url.origin, ['microphone']);
-    page = await context.newPage();
+    page = await browser.newPage();
     page.on('error', msg => console.log('PAGE LOG:', msg));
     await page.setDefaultTimeout(1000);
   });
@@ -59,7 +56,7 @@ describe('examples', () => {
     await page.waitFor(2000);
     await page.screenshot({ path: 'screenshots/page1.png', fullPage: true });
 
-    const page2 = await context.newPage();
+    const page2 = await browser.newPage();
     page2.on('console', msg => console.log('PAGE LOG:', msg.text));
 
     await page2.setDefaultTimeout(500);
