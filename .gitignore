@@ -4,10 +4,9 @@ build
 dist
 docs
 demo/config.mjs
-puppeteer/test/config.js
+puppeteer/config.js
 .dir-locals.el
 .nyc_output
 coverage
-
 # IDE specific files
 .idea/
