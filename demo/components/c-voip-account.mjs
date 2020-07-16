@@ -54,8 +54,6 @@ window.customElements.define(
           console.log(e);
       }
     }
-    passwordInput;
-    userIdInput;
 
     connectedCallback() {
       const template = document.querySelector('[data-component=c-voip-account]');
