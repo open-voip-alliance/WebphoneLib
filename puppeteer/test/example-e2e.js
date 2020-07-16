@@ -20,7 +20,7 @@ describe('examples', () => {
     await browser.close();
   });
 
-  it('Should lauch a browser', async function() {
+  it('Should launch a browser', async function() {
     // Assert if the page is visible
     await page.goto('localhost:1235/demo/');
     // expect(page).to.include('c-voip-account')
