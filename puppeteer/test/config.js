@@ -1,3 +1,2 @@
-const USER_A;
-const USER_B;
-//checkcheckcheck
+const USER_A = 497920100;
+const USER_B = 497920101;
