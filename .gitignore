@@ -3,7 +3,7 @@ node_modules
 build
 dist
 docs
-screenshots/*
+screenshots/**
 demo/config.mjs
 puppeteer/config.js
 .dir-locals.el
