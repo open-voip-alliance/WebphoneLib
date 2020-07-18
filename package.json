@@ -17,7 +17,7 @@
     "prepare": "npm run lint && npm run build",
     "test": "ava",
     "test-coverage": "nyc ava",
-    "test:example": "./node_modules/mocha/bin/mocha --timeout=20000 ./puppeteer/test/callingOut-e2e.js",
+    "test:example": "./node_modules/mocha/bin/mocha --timeout=120000 ./puppeteer/test/callingOut-e2e.js",
     "test-watch": "ava --watch",
     "docs": "typedoc --out docs src"
   },
