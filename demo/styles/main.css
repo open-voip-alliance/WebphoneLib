@@ -52,7 +52,8 @@ select {
   padding: 0.5rem 2rem 0.5rem 0.5rem;
 }
 
-input[type='text'] {
+input[type='text'],
+input[type='password'] {
   font-size: 1rem;
   font-family: Roboto, sans-serif;
   color: #555;
@@ -62,6 +63,11 @@ input[type='text'] {
   padding: 0.75rem;
   margin-bottom: 1rem;
   box-sizing: border-box;
+}
+
+c-voip-account input[type='text'],
+c-voip-account input[type='password'] {
+  width: 50%;
 }
 
 h2 {
