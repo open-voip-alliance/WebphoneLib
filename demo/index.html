@@ -278,19 +278,24 @@
   </template>
 
   <template data-component="p-demo">
-    <div class="left-part">
-      <c-voip-account></c-voip-account>
-      <c-dialer></c-dialer>
-      <c-contacts></c-contacts>
-      <c-mos-values></c-mos-values>
-      <c-audio-visualiser></c-audio-visualiser>
+    <div class="top-content">
+      <div class="left-part">
+        <c-voip-account></c-voip-account>
+        <c-dialer></c-dialer>
+        <c-contacts></c-contacts>
+        <c-mos-values></c-mos-values>
+      </div>
+
+      <div class="right-part">
+        <c-debug-console></c-debug-console>
+        <c-sessions></c-sessions>
+        <c-computer-settings></c-computer-settings>
+        <c-publisher></c-publisher>
+      </div>
     </div>
 
-    <div class="right-part">
-      <c-debug-console></c-debug-console>
-      <c-sessions></c-sessions>
-      <c-computer-settings></c-computer-settings>
-      <c-publisher></c-publisher>
+    <div class="bottom-content">
+      <c-audio-visualiser></c-audio-visualiser>
     </div>
   </template>
 </html>
