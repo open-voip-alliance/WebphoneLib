@@ -1,3 +1,5 @@
+const { errors } = require('puppeteer');
+
 module.exports = {
   click: async function(page, selector) {
     try {
@@ -25,14 +27,51 @@ module.exports = {
     }
   },
   waitForText: async function(page, selector, text) {
+    let node;
     try {
-      await page.waitForSelector(selector);
-      await page.waitForFunction((selector, text) => {
-        document.querySelector(selector).innerHTML.includes(text), {}, selector, text;
-      });
-    } catch (error) {
-      throw new Error(`Could not find ${text} for selector: ${selector}`);
+      node = await page.waitForSelector(selector);
+    } catch (err) {
+      if (err instanceof errors.TimeoutError) {
+        throw new Error(`Timeout waiting for selector: "${selector}"`);
+      }
+      throw err;
     }
+
+    let isFound;
+    try {
+      isFound = await page.waitForFunction(
+        (node, text) => {
+          if (node && node.innerText.includes(text)) {
+            return true;
+          }
+          return false;
+        },
+        {},
+        node,
+        text
+      );
+    } catch (err) {
+      if (err instanceof errors.TimeoutError) {
+        throw new Error(`Timeout while retrying to find "${text}" in selector "${selector}"`);
+      }
+      throw err;
+    }
+
+    return isFound.jsonValue();
+  },
+  waitForSelector: async function(page, selector) {
+    let node;
+    try {
+      node = await page.waitForSelector(selector);
+    } catch (err) {
+      if (err instanceof errors.TimeoutError) {
+        throw new Error(`Timeout waiting for selector: "${selector}"`);
+      }
+      throw err;
+    }
+
+    console.log(node.jsonValue());
+    return node.jsonValue();
   },
   clearText: async function(page, selector) {
     try {
