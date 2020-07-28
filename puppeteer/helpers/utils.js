@@ -22,7 +22,6 @@ module.exports = {
       await page.waitForSelector(selector);
       await page.type(selector, text);
     } catch (error) {
-      console.log(error);
       throw new Error(`Could not type into selector: ${selector}`);
     }
   },
@@ -70,7 +69,6 @@ module.exports = {
       throw err;
     }
 
-    console.log(node.jsonValue());
     return node.jsonValue();
   },
   clearText: async function(page, selector) {
