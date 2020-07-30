@@ -12,7 +12,7 @@ module.exports = {
   getText: async function(page, selector) {
     try {
       await page.waitForSelector(selector);
-      return await page.$$eval(selector, element => element.innerHTML);
+      return page.$$eval(selector, element => element.innerHTML);
     } catch (error) {
       throw new Error(`Could not get text from selector: ${selector}`);
     }
