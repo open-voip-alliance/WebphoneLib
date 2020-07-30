@@ -11,3 +11,15 @@ export function empty(node) {
 export function getDocumentElement(elementName) {
   return document.querySelector(`[data-selector=${elementName}]`);
 }
+
+export function getFormValues(form) {
+  return Array.from(form).reduce((prev, { name, value }) => {
+    if (name) {
+      return Object.assign(prev, {
+        [name]: value
+      });
+    } else {
+      return prev;
+    }
+  }, {});
+}

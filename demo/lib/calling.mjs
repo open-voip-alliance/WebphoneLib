@@ -18,7 +18,7 @@ log.connector = ({ level, context, message }) => {
   print(`${level} [${context}] ${message}`);
 };
 
-const account = {
+let account = {
   user: CONF.authorizationUserId,
   password: CONF.password,
   uri: CONF.accountUri,
@@ -30,12 +30,31 @@ const transport = {
   iceServers: []
 };
 
-export const client = new Client({
+export let client = new Client({
   account,
   transport,
   media,
   userAgentString: 'WebphoneLib Demo'
 });
+
+export function setAccount(user, password) {
+  const uri = `sip:${user}@${CONF.yourPlatformURL}`;
+  account = {
+    user,
+    password,
+    uri,
+    name: 'test'
+  };
+}
+
+export function setClient() {
+  client = new Client({
+    account,
+    transport,
+    media,
+    userAgentString: 'WebphoneLib Demo'
+  });
+}
 
 export const callingEvents = eventTarget();
 

@@ -132,7 +132,6 @@ window.customElements.define(
       ].forEach(n => {
         n.removeEventListener('click', this);
       });
-
       this.session.removeListener('statusUpdate', handleSessionStatusUpdate.bind(this));
     }
 

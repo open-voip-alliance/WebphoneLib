@@ -52,16 +52,21 @@ select {
   padding: 0.5rem 2rem 0.5rem 0.5rem;
 }
 
-input[type='text'] {
+input[type='text'],
+input[type='password'] {
   font-size: 1rem;
   font-family: Roboto, sans-serif;
   color: #555;
   background-color: #fff;
   border: 1px solid #e6e8eb;
-  width: 100%;
+  width: 50%;
   padding: 0.75rem;
   margin-bottom: 1rem;
   box-sizing: border-box;
+}
+
+c-dialer input[type='text'] {
+  width: 100%;
 }
 
 h2 {
@@ -119,16 +124,13 @@ button.session-button:focus {
   color: #d45400;
 }
 
-p-demo {
+.top-content {
   display: flex;
 }
 
-.left-part {
-  flex: 1;
-}
-
+.left-part,
 .right-part {
-  flex: 1.5;
+  flex: auto;
 }
 
 .debug-console {

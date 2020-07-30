@@ -1,12 +1,14 @@
 node_modules
+.DS_Store
 .cache
 build
 dist
 docs
+screenshots/**
 demo/config.mjs
+puppeteer/config.js
 .dir-locals.el
 .nyc_output
 coverage
-
 # IDE specific files
 .idea/
