@@ -15,6 +15,7 @@ import {
 import { Invitation } from 'sip.js/lib/api/invitation';
 import { Inviter } from 'sip.js/lib/api/inviter';
 import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options';
+import { InvitationRejectOptions } from 'sip.js/lib/api/invitation-reject-options';
 import { Referrer } from 'sip.js/lib/api/referrer';
 import { Session as UserAgentSession } from 'sip.js/lib/api/session';
 import { SessionState } from 'sip.js/lib/api/session-state';
@@ -77,7 +78,7 @@ export interface ISession {
   endTime: any;
 
   accept(): Promise<ISessionAccept | void>;
-  reject(): Promise<void>;
+  reject(rejectOptions?: InvitationRejectOptions): Promise<void>;
   /**
    * Terminate the session.
    */

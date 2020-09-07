@@ -1,4 +1,5 @@
 import { Invitation as SIPInvitation } from 'sip.js/lib/api/invitation';
+import { InvitationRejectOptions } from 'sip.js/lib/api/invitation-reject-options';
 
 import { SessionStatus } from './enums';
 import { ISessionAccept, SessionImpl } from './session';
@@ -39,8 +40,8 @@ export class Invitation extends SessionImpl {
     return this.acceptedPromise;
   }
 
-  public reject(): Promise<void> {
-    return this.session.reject().then(() => this.acceptedRef({ accepted: false }));
+  public reject(rejectOptions?: InvitationRejectOptions): Promise<void> {
+    return this.session.reject(rejectOptions).then(() => this.acceptedRef({ accepted: false }));
   }
 
   public async tried(): Promise<void> {

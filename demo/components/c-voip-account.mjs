@@ -17,39 +17,49 @@ window.customElements.define(
 
       switch (e.type) {
         case 'click':
-          const {
-            target: { dataset }
-          } = e;
+          {
+            const {
+              target: { dataset }
+            } = e;
 
-          if (dataset.action) {
-            switch (dataset.action) {
-              case 'register':
-                const userId = this.nodes.userIdInput.value;
-                const password = this.nodes.passwordInput.value;
-                sipClient.setAccount(userId, password);
-                sipClient.setClient();
-                sipClient.registerAccount();
-                console.log('register');
-                break;
-              case 'unregister':
-                sipClient.unregisterAccount();
-                console.log('unregister');
-                break;
-              case 'reconfigure':
-                sipClient.reconfigure();
-                console.log('reconfigure');
-                break;
-              default:
-                break;
+            if (dataset.action) {
+              switch (dataset.action) {
+                case 'register':
+                  {
+                    const userId = this.nodes.userIdInput.value;
+                    const password = this.nodes.passwordInput.value;
+                    sipClient.setAccount(userId, password);
+                    sipClient.setClient();
+                    sipClient.registerAccount();
+                    console.log('register');
+                  }
+                  break;
+                case 'unregister':
+                  sipClient.unregisterAccount();
+                  console.log('unregister');
+                  break;
+                case 'reconfigure':
+                  sipClient.reconfigure();
+                  console.log('reconfigure');
+                  break;
+              }
             }
           }
           break;
+
         case 'clientStatusUpdate':
-          const {
-            detail: { status }
-          } = e;
-          this.nodes.clientStatus.textContent = status;
+          {
+            const {
+              detail: { status }
+            } = e;
+            this.nodes.clientStatus.textContent = status;
+          }
           break;
+
+        case 'change':
+          localStorage.setItem('dndEnabled', this.actions.dndToggle.checked);
+          break;
+
         default:
           console.log(e);
       }
@@ -63,6 +73,12 @@ window.customElements.define(
         n.addEventListener('click', this);
       });
 
+      this.actions.dndToggle.addEventListener('change', this);
+
+      if (localStorage.getItem('dndEnabled') === 'true') {
+        this.actions.dndToggle.setAttribute('checked', '');
+      }
+
       this.nodes.passwordInput.value = CONF.password;
       this.nodes.userIdInput.value = CONF.authorizationUserId;
 
@@ -73,6 +89,9 @@ window.customElements.define(
       [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach(n => {
         n.removeEventListener('click', this);
       });
+
+      this.actions.dndToggle.removeEventListener('change', this);
+
       sipClient.callingEvents.removeEventListener('clientStatusUpdate', this);
     }
   }
