@@ -19,7 +19,8 @@
     "test-coverage": "nyc ava",
     "test:e2e": "./node_modules/mocha/bin/mocha --timeout=120000 ./puppeteer/test/*.js",
     "test-watch": "ava --watch",
-    "docs": "typedoc --out docs src"
+    "docs": "typedoc --out docs src",
+    "run-e2e-tests-in-docker": "npm run serve & npm run test:e2e"
   },
   "husky": {
     "hooks": {
