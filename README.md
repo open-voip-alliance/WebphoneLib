@@ -210,3 +210,30 @@ session.media.setInput({
 documentation from the `jsdoc` comments in the source code. See [this
 link](https://typedoc.org/guides/doccomments/) for more information on which
 `jsdoc` tags are supported.
+
+## Run puppeteer tests
+
+### Using docker
+
+To be able to run the tests with docker you can add a .env file and use the `npm run docker-build` command followed by the `npm run docker-run` command to run the puppeteer tests.
+
+Add a .env file with the following:
+
+```javascript
+USER_A = '<user-a>';
+USER_B = '<user-b>';
+PASSWORD_A = '<password-user-a>';
+PASSWORD_B = '<password-user-b>';
+NUMBER_A = '<number-user-a>';
+NUMBER_B = '<number-user-b>';
+```
+
+Or you could use the following command (if you don't want to use a .env file) after building the docker image (`npm run docker-build`):
+
+```bash
+docker run -it --network host -v $PWD:/home/pptruser -w /home/pptruser -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e USER_A='<user-a>' -e USER_B='<user-b>' -e PASSWORD_A='<password-user-a>' -e PASSWORD_B='<password-user-b>' -e NUMBER_A='<number-user-a>' -e NUMBER_B='<number-user-b>' puppeteer-tests
+```
+
+### Without docker
+
+If you don't want to use docker, you will need to run the demo with the `npm run demo` command (and keep it running) and run the tests with `npm run test:e2e`. For this you will need the .env file with your settings.
