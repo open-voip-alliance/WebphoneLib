@@ -1,6 +1,5 @@
 const dotenv = require('dotenv');
 
-// not using docker fallback?
 dotenv.config();
 
 module.exports = {
