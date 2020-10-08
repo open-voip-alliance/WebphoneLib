@@ -64,6 +64,7 @@
   ],
   "dependencies": {
     "chai": "^4.2.0",
+    "dotenv": "^8.2.0",
     "mocha": "^7.1.1",
     "p-retry": "^4.1.0",
     "p-timeout": "^3.2.0",
