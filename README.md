@@ -228,7 +228,7 @@ NUMBER_A = '<number-user-a>';
 NUMBER_B = '<number-user-b>';
 ```
 
-Or you could use the following command (if you don't want to use a .env file) after building the docker image (`npm run docker-build`):
+Or if you don't want to use a .env file you could pass your configuration to the docker container:
 
 ```bash
 docker run -it --network host -v $PWD:/home/pptruser -w /home/pptruser -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e USER_A='<user-a>' -e USER_B='<user-b>' -e PASSWORD_A='<password-user-a>' -e PASSWORD_B='<password-user-b>' -e NUMBER_A='<number-user-a>' -e NUMBER_B='<number-user-b>' puppeteer-tests
