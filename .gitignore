@@ -6,7 +6,6 @@ dist
 docs
 screenshots/**
 demo/config.mjs
-puppeteer/config.js
 .dir-locals.el
 .nyc_output
 coverage

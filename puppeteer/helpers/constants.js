@@ -3,6 +3,8 @@ module.exports = {
   DEMO_URL: 'http://localhost:1235/demo/',
   LAUNCH_OPTIONS: {
     args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
       '--start-maximized'
