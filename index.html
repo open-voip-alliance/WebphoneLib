@@ -283,6 +283,26 @@ session.media.setInput({
 					documentation from the <code>jsdoc</code> comments in the source code. See <a href="https://typedoc.org/guides/doccomments/">this
 					link</a> for more information on which
 				<code>jsdoc</code> tags are supported.</p>
+				<a href="#run-puppeteer-tests" id="run-puppeteer-tests" style="color: inherit; text-decoration: none;">
+					<h2>Run puppeteer tests</h2>
+				</a>
+				<a href="#using-docker" id="using-docker" style="color: inherit; text-decoration: none;">
+					<h3>Using docker</h3>
+				</a>
+				<p>To be able to run the tests with docker you can add a .env file and use the <code>npm run docker-build</code> command followed by the <code>npm run docker-run</code> command to run the puppeteer tests.</p>
+				<p>Add a .env file with the following:</p>
+				<pre><code class="language-javascript">USER_A = <span class="hljs-string">'&lt;user-a&gt;'</span>;
+USER_B = <span class="hljs-string">'&lt;user-b&gt;'</span>;
+PASSWORD_A = <span class="hljs-string">'&lt;password-user-a&gt;'</span>;
+PASSWORD_B = <span class="hljs-string">'&lt;password-user-b&gt;'</span>;
+NUMBER_A = <span class="hljs-string">'&lt;number-user-a&gt;'</span>;
+NUMBER_B = <span class="hljs-string">'&lt;number-user-b&gt;'</span>;</code></pre>
+				<p>Or if you don&#39;t want to use a .env file you could pass your configuration to the docker container:</p>
+				<pre><code class="language-bash">docker run -it --network host -v <span class="hljs-variable">$PWD</span>:/home/pptruser -w /home/pptruser -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e USER_A=<span class="hljs-string">'&lt;user-a&gt;'</span> -e USER_B=<span class="hljs-string">'&lt;user-b&gt;'</span> -e PASSWORD_A=<span class="hljs-string">'&lt;password-user-a&gt;'</span> -e PASSWORD_B=<span class="hljs-string">'&lt;password-user-b&gt;'</span> -e NUMBER_A=<span class="hljs-string">'&lt;number-user-a&gt;'</span> -e NUMBER_B=<span class="hljs-string">'&lt;number-user-b&gt;'</span> puppeteer-tests</code></pre>
+				<a href="#without-docker" id="without-docker" style="color: inherit; text-decoration: none;">
+					<h3>Without docker</h3>
+				</a>
+				<p>If you don&#39;t want to use docker, you will need to run the demo with the <code>npm run demo</code> command (and keep it running) and run the tests with <code>npm run test:e2e</code>. For this you will need the .env file with your settings.</p>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
