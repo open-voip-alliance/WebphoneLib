@@ -32,8 +32,6 @@ Add the following to `demo/config.mjs`
 export const authorizationUserId = <your-voip-account-id>;
 export const password = '<your-voip-password>';
 export const yourPlatformURL = '<your-platform-url>'
-export const accountUri = `sip:${authorizationUserId}@${yourPlatformURL}`;
-export const subscribeTo = `sip:<account-id>@${yourPlatformURL}`;
 ```
 
 Run the demo-server:
@@ -217,13 +215,14 @@ link](https://typedoc.org/guides/doccomments/) for more information on which
 
 Add a .env file with the following:
 
-```javascript
-USER_A = '<user-a>';
-USER_B = '<user-b>';
-PASSWORD_A = '<password-user-a>';
-PASSWORD_B = '<password-user-b>';
-NUMBER_A = '<number-user-a>';
-NUMBER_B = '<number-user-b>';
+```
+USER_A = <user-a>
+USER_B = <user-b>
+PASSWORD_A = <password-user-a>
+PASSWORD_B = <password-user-b>
+NUMBER_A = <number-user-a>
+NUMBER_B = <number-user-b>
+PLATFORM_URL = <your-platform-url>
 ```
 
 Then call `docker-compose up` to run the tests.
