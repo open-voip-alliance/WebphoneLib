@@ -3,7 +3,6 @@ import './c-session.mjs';
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
 import * as sipClient from '../lib/calling.mjs';
 import { Logger } from '../lib/logging.mjs';
-import { accountUri } from '../config.mjs';
 
 const logger = new Logger('c-publisher');
 

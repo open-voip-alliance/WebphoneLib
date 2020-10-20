@@ -22,6 +22,7 @@ module.exports = {
   },
   USER_ID_INPUT: 'c-voip-account [data-selector="userIdInput"]',
   USER_PASSWORD_INPUT: 'c-voip-account [data-selector="passwordInput"]',
+  PLATFORM_URL_INPUT: 'c-voip-account [data-selector="platformUrlInput"]',
   DIALER_INPUT: 'c-dialer [data-selector="input"]',
   DIALER_CALL_BUTTON: 'c-dialer [data-action="call"]',
   REGISTER_BUTTON: 'c-voip-account [data-action="register"]',

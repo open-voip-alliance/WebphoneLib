@@ -1,5 +1,4 @@
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
-import { subscribeTo } from '../config.mjs';
 import * as sipClient from '../lib/calling.mjs';
 import { Logger } from '../lib/logging.mjs';
 
@@ -60,9 +59,6 @@ window.customElements.define(
 
       this.actions.subscribe.addEventListener('click', this);
       this.actions.unsubscribe.addEventListener('click', this);
-
-      // Adding a first value from config to make it easier to debug subscribing.
-      this.nodes.input.value = subscribeTo;
     }
 
     disconnectedCallback() {

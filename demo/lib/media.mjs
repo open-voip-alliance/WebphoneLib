@@ -97,7 +97,9 @@ export function changeInputSelect(_inputSelect) {
       session.media.input.id = selected.value;
     });
 
-    client.defaultMedia.input.id = selected.value;
+    if (client) {
+      client.defaultMedia.input.id = selected.value;
+    }
   }
   logger.info('Input select changed to: ' + selected.text);
 }
@@ -108,7 +110,9 @@ export function changeOutputSelect(_outputSelect) {
     getSessions().forEach(session => {
       session.media.output.id = selected.value;
     });
-    client.defaultMedia.output.id = selected.value;
+    if (client) {
+      client.defaultMedia.output.id = selected.value;
+    }
   }
   logger.info('Output select changed to: ' + selected.text);
 }

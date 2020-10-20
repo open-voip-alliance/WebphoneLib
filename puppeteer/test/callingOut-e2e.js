@@ -1,12 +1,21 @@
 const puppeteer = require('puppeteer');
 const { expect } = require('chai');
 const { click, typeText, clearText, waitForText, waitForSelector } = require('../helpers/utils');
-const { USER_A, USER_B, PASSWORD_A, PASSWORD_B, NUMBER_A, NUMBER_B } = require('../config');
+const {
+  USER_A,
+  USER_B,
+  PASSWORD_A,
+  PASSWORD_B,
+  NUMBER_A,
+  NUMBER_B,
+  PLATFORM_URL
+} = require('../config');
 const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
   USER_ID_INPUT,
   USER_PASSWORD_INPUT,
+  PLATFORM_URL_INPUT,
   DIALER_INPUT,
   DIALER_CALL_BUTTON,
   REGISTER_BUTTON,
@@ -52,6 +61,9 @@ describe('Calling out', () => {
     await clearText(page, USER_PASSWORD_INPUT);
     await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
 
+    await clearText(page, PLATFORM_URL_INPUT);
+    await typeText(page, PLATFORM_URL_INPUT, PLATFORM_URL);
+
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -63,6 +75,9 @@ describe('Calling out', () => {
 
     await clearText(page2, USER_PASSWORD_INPUT);
     await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
+
+    await clearText(page2, PLATFORM_URL_INPUT);
+    await typeText(page2, PLATFORM_URL_INPUT, PLATFORM_URL);
 
     await click(page2, REGISTER_BUTTON);
     expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
@@ -95,6 +110,9 @@ describe('Calling out', () => {
     await clearText(page, USER_PASSWORD_INPUT);
     await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
 
+    await clearText(page, PLATFORM_URL_INPUT);
+    await typeText(page, PLATFORM_URL_INPUT, PLATFORM_URL);
+
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -107,6 +125,9 @@ describe('Calling out', () => {
 
     await clearText(page2, USER_PASSWORD_INPUT);
     await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
+
+    await clearText(page2, PLATFORM_URL_INPUT);
+    await typeText(page2, PLATFORM_URL_INPUT, PLATFORM_URL);
 
     await click(page2, REGISTER_BUTTON);
     expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
@@ -142,6 +163,9 @@ describe('Calling out', () => {
     await clearText(page, USER_PASSWORD_INPUT);
     await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
 
+    await clearText(page, PLATFORM_URL_INPUT);
+    await typeText(page, PLATFORM_URL_INPUT, PLATFORM_URL);
+
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -154,6 +178,9 @@ describe('Calling out', () => {
 
     await clearText(page2, USER_PASSWORD_INPUT);
     await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
+
+    await clearText(page2, PLATFORM_URL_INPUT);
+    await typeText(page2, PLATFORM_URL_INPUT, PLATFORM_URL);
 
     await click(page2, REGISTER_BUTTON);
     expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
@@ -183,6 +210,9 @@ describe('Calling out', () => {
     await clearText(page, USER_PASSWORD_INPUT);
     await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
 
+    await clearText(page, PLATFORM_URL_INPUT);
+    await typeText(page, PLATFORM_URL_INPUT, PLATFORM_URL);
+
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -195,6 +225,9 @@ describe('Calling out', () => {
 
     await clearText(page2, USER_PASSWORD_INPUT);
     await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
+
+    await clearText(page2, PLATFORM_URL_INPUT);
+    await typeText(page2, PLATFORM_URL_INPUT, PLATFORM_URL);
 
     await click(page2, REGISTER_BUTTON);
     expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
@@ -224,6 +257,9 @@ describe('Calling out', () => {
     await clearText(page, USER_PASSWORD_INPUT);
     await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
 
+    await clearText(page, PLATFORM_URL_INPUT);
+    await typeText(page, PLATFORM_URL_INPUT, PLATFORM_URL);
+
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -248,6 +284,9 @@ describe('Calling out', () => {
 
     await clearText(page, USER_PASSWORD_INPUT);
     await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
+
+    await clearText(page, PLATFORM_URL_INPUT);
+    await typeText(page, PLATFORM_URL_INPUT, PLATFORM_URL);
 
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
