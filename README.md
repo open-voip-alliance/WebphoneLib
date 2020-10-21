@@ -31,7 +31,8 @@ Add the following to `demo/config.mjs`
 ```javascript
 export const authorizationUserId = <your-voip-account-id>;
 export const password = '<your-voip-password>';
-export const yourPlatformURL = '<your-platform-url>'
+export const yourPlatformURL = '<your-platform-url>';
+export const yourPlatformHost = '<your-platform-host>';
 ```
 
 Run the demo-server:
@@ -222,6 +223,7 @@ PASSWORD_A = <password-user-a>
 PASSWORD_B = <password-user-b>
 NUMBER_A = <number-user-a>
 NUMBER_B = <number-user-b>
+PLATFORM_HOST = <your-platform-host>
 PLATFORM_URL = <your-platform-url>
 ```
 
