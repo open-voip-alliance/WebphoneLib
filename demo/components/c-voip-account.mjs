@@ -28,10 +28,10 @@ window.customElements.define(
                   {
                     const userId = this.nodes.userIdInput.value;
                     const password = this.nodes.passwordInput.value;
-                    const platformHost = this.nodes.platformHostInput.value;
+                    const websocketUrl = this.nodes.websocketUrlInput.value;
                     const platformUrl = this.nodes.platformUrlInput.value;
                     sipClient.setAccount(userId, password, platformUrl);
-                    sipClient.setTransport(platformHost, platformUrl);
+                    sipClient.setTransport(websocketUrl);
                     sipClient.setClient();
                     sipClient.registerAccount();
                     console.log('register');
@@ -85,7 +85,7 @@ window.customElements.define(
       this.nodes.passwordInput.value = CONF.password;
       this.nodes.userIdInput.value = CONF.authorizationUserId;
       this.nodes.platformUrlInput.value = CONF.yourPlatformURL;
-      this.nodes.platformHostInput.value = CONF.yourPlatformHost;
+      this.nodes.websocketUrlInput.value = CONF.yourWebsocketUrl;
 
       sipClient.callingEvents.addEventListener('clientStatusUpdate', this);
     }

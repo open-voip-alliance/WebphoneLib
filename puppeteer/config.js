@@ -9,6 +9,6 @@ module.exports = {
   PASSWORD_B: process.env.PASSWORD_B,
   NUMBER_A: process.env.NUMBER_A,
   NUMBER_B: process.env.NUMBER_B,
-  PLATFORM_HOST: process.env.PLATFORM_HOST,
+  WEBSOCKET_URL: process.env.WEBSOCKET_URL,
   PLATFORM_URL: process.env.PLATFORM_URL
 };

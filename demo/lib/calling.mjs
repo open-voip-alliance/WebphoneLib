@@ -22,9 +22,9 @@ let transport;
 
 export let client;
 
-export function setTransport(platformHost, platformUrl) {
+export function setTransport(websocketUrl) {
   transport = {
-    wsServers: `${platformHost}.${platformUrl}`,
+    wsServers: `${websocketUrl}`,
     iceServers: []
   };
 }

@@ -3,9 +3,9 @@ const {
   USER_ID_INPUT,
   USER_PASSWORD_INPUT,
   PLATFORM_URL_INPUT,
-  PLATFORM_HOST_INPUT
+  WEBSOCKET_URL_INPUT
 } = require('../helpers/constants');
-const { PLATFORM_URL, PLATFORM_HOST } = require('../config');
+const { PLATFORM_URL, WEBSOCKET_URL } = require('../config');
 
 module.exports = {
   click: async function(page, selector) {
@@ -92,8 +92,8 @@ module.exports = {
     await module.exports.clearText(page, USER_PASSWORD_INPUT);
     await module.exports.typeText(page, USER_PASSWORD_INPUT, userPw);
 
-    await module.exports.clearText(page, PLATFORM_HOST_INPUT);
-    await module.exports.typeText(page, PLATFORM_HOST_INPUT, PLATFORM_HOST);
+    await module.exports.clearText(page, WEBSOCKET_URL_INPUT);
+    await module.exports.typeText(page, WEBSOCKET_URL_INPUT, WEBSOCKET_URL);
 
     await module.exports.clearText(page, PLATFORM_URL_INPUT);
     await module.exports.typeText(page, PLATFORM_URL_INPUT, PLATFORM_URL);
