@@ -1,5 +1,6 @@
 import * as CONF from '../config.mjs';
 import * as sipClient from '../lib/calling.mjs';
+import { setOndevicesChanged, setInputsAndOutputs } from '../lib/media.mjs';
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
 
 window.customElements.define(
@@ -33,6 +34,8 @@ window.customElements.define(
                     sipClient.setAccount(userId, password, platformUrl);
                     sipClient.setTransport(websocketUrl);
                     sipClient.setClient();
+                    setOndevicesChanged();
+                    setInputsAndOutputs();
                     sipClient.registerAccount();
                     console.log('register');
                   }
