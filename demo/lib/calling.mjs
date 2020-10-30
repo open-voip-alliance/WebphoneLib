@@ -29,8 +29,8 @@ export function setTransport(websocketUrl) {
   };
 }
 
-export function setAccount(user, password, platformUrl) {
-  const uri = `sip:${user}@${platformUrl}`;
+export function setAccount(user, password, realm) {
+  const uri = `sip:${user}@${realm}`;
   account = {
     user,
     password,

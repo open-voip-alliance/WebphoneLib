@@ -31,8 +31,8 @@ Add the following to `demo/config.mjs`
 ```javascript
 export const authorizationUserId = <your-voip-account-id>;
 export const password = '<your-voip-password>';
-export const yourPlatformURL = '<your-platform-url>';
-export const yourWebsocketUrl = '<your-websocket-url>';
+export const realm = '<realm>';
+export const websocketUrl = '<websocketUrl>';
 ```
 
 Run the demo-server:
@@ -53,12 +53,12 @@ import { Client } from 'webphone-lib';
 const account = {
   user: 'accountId',
   password: 'password',
-  uri: 'sip:accountId@<your-platform-url>',
+  uri: 'sip:accountId@<realm>',
   name: 'test'
 };
 
 const transport = {
-  wsServers: 'wss://websocket.<your-platform-url>', // or replace with your
+  wsServers: '<websocket-url>', // or replace with your
   iceServers: [] // depending on if your provider needs STUN/TURN.
 };
 
@@ -108,7 +108,7 @@ client.on('invite', (session) => {
 ### Outgoing call
 
 ```javascript
-const session = client.invite('sip:518@<your-platform-url>');
+const session = client.invite('sip:518@<realm>');
 
 try {
   showOutgoingCallInProgress();
@@ -134,7 +134,7 @@ try {
 if (await sessionA.accepted()) {
   await sessionA.hold();
 
-  const sessionB = client.invite('sip:519@<your-platform-url>');
+  const sessionB = client.invite('sip:519@<realm>');
   if (await sessionB.accepted()) {
     // immediately transfer after the other party picked up :p
     await client.attendedTransfer(sessionA, sessionB);
@@ -224,7 +224,7 @@ PASSWORD_B = <password-user-b>
 NUMBER_A = <number-user-a>
 NUMBER_B = <number-user-b>
 WEBSOCKET_URL = <your-websocket-url>
-PLATFORM_URL = <your-platform-url>
+REALM = <realm>
 ```
 
 Then call `docker-compose up` to run the tests.

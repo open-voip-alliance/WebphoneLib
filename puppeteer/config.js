@@ -10,5 +10,5 @@ module.exports = {
   NUMBER_A: process.env.NUMBER_A,
   NUMBER_B: process.env.NUMBER_B,
   WEBSOCKET_URL: process.env.WEBSOCKET_URL,
-  PLATFORM_URL: process.env.PLATFORM_URL
+  REALM: process.env.REALM
 };

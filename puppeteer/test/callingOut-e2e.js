@@ -8,22 +8,10 @@ const {
   waitForSelector,
   registerUser
 } = require('../helpers/utils');
-const {
-  USER_A,
-  USER_B,
-  PASSWORD_A,
-  PASSWORD_B,
-  NUMBER_A,
-  NUMBER_B,
-  PLATFORM_URL,
-  PLATFORM_HOST
-} = require('../config');
+const { USER_A, USER_B, PASSWORD_A, PASSWORD_B, NUMBER_A, NUMBER_B } = require('../config');
 const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
-  USER_ID_INPUT,
-  USER_PASSWORD_INPUT,
-  PLATFORM_URL_INPUT,
   DIALER_INPUT,
   DIALER_CALL_BUTTON,
   REGISTER_BUTTON,
