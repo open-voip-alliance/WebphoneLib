@@ -8,5 +8,7 @@ module.exports = {
   PASSWORD_A: process.env.PASSWORD_A,
   PASSWORD_B: process.env.PASSWORD_B,
   NUMBER_A: process.env.NUMBER_A,
-  NUMBER_B: process.env.NUMBER_B
+  NUMBER_B: process.env.NUMBER_B,
+  WEBSOCKET_URL: process.env.WEBSOCKET_URL,
+  REALM: process.env.REALM
 };

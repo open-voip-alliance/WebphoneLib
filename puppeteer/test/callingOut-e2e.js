@@ -1,12 +1,17 @@
 const puppeteer = require('puppeteer');
 const { expect } = require('chai');
-const { click, typeText, clearText, waitForText, waitForSelector } = require('../helpers/utils');
+const {
+  click,
+  typeText,
+  clearText,
+  waitForText,
+  waitForSelector,
+  registerUser
+} = require('../helpers/utils');
 const { USER_A, USER_B, PASSWORD_A, PASSWORD_B, NUMBER_A, NUMBER_B } = require('../config');
 const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
-  USER_ID_INPUT,
-  USER_PASSWORD_INPUT,
   DIALER_INPUT,
   DIALER_CALL_BUTTON,
   REGISTER_BUTTON,
@@ -46,24 +51,14 @@ describe('Calling out', () => {
     const url = await page.url();
     expect(url).to.include('/demo/');
 
-    await clearText(page, USER_ID_INPUT);
-    await typeText(page, USER_ID_INPUT, USER_A);
-
-    await clearText(page, USER_PASSWORD_INPUT);
-    await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
-
+    await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
-    await clearText(page2, USER_ID_INPUT);
-    await typeText(page2, USER_ID_INPUT, USER_B);
-
-    await clearText(page2, USER_PASSWORD_INPUT);
-    await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
-
+    await registerUser(page2, USER_B, PASSWORD_B);
     await click(page2, REGISTER_BUTTON);
     expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -89,12 +84,7 @@ describe('Calling out', () => {
     expect(url).to.include('/demo/');
 
     // register on the first page
-    await clearText(page, USER_ID_INPUT);
-    await typeText(page, USER_ID_INPUT, USER_A);
-
-    await clearText(page, USER_PASSWORD_INPUT);
-    await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
-
+    await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -102,14 +92,9 @@ describe('Calling out', () => {
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
-    await clearText(page2, USER_ID_INPUT);
-    await typeText(page2, USER_ID_INPUT, USER_B);
-
-    await clearText(page2, USER_PASSWORD_INPUT);
-    await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
-
+    await registerUser(page2, USER_B, PASSWORD_B);
     await click(page2, REGISTER_BUTTON);
-    expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
+    expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
     // setup a call from page2 to the other one
     await clearText(page2, DIALER_INPUT);
@@ -136,12 +121,7 @@ describe('Calling out', () => {
     expect(url).to.include('/demo/');
 
     // Register on the first page
-    await clearText(page, USER_ID_INPUT);
-    await typeText(page, USER_ID_INPUT, USER_A);
-
-    await clearText(page, USER_PASSWORD_INPUT);
-    await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
-
+    await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -149,14 +129,9 @@ describe('Calling out', () => {
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
-    await clearText(page2, USER_ID_INPUT);
-    await typeText(page2, USER_ID_INPUT, USER_B);
-
-    await clearText(page2, USER_PASSWORD_INPUT);
-    await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
-
+    await registerUser(page2, USER_B, PASSWORD_B);
     await click(page2, REGISTER_BUTTON);
-    expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
+    expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
     // setup a call from the second page
     await clearText(page2, DIALER_INPUT);
@@ -177,12 +152,7 @@ describe('Calling out', () => {
     expect(url).to.include('/demo/');
 
     // Register on the first page
-    await clearText(page, USER_ID_INPUT);
-    await typeText(page, USER_ID_INPUT, USER_A);
-
-    await clearText(page, USER_PASSWORD_INPUT);
-    await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
-
+    await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -190,14 +160,9 @@ describe('Calling out', () => {
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
-    await clearText(page2, USER_ID_INPUT);
-    await typeText(page2, USER_ID_INPUT, USER_B);
-
-    await clearText(page2, USER_PASSWORD_INPUT);
-    await typeText(page2, USER_PASSWORD_INPUT, PASSWORD_B);
-
+    await registerUser(page2, USER_B, PASSWORD_B);
     await click(page2, REGISTER_BUTTON);
-    expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
+    expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
     // setup a call from the second page
     await clearText(page2, DIALER_INPUT);
@@ -218,12 +183,7 @@ describe('Calling out', () => {
     expect(url).to.include('/demo/');
 
     // Register on the first page
-    await clearText(page, USER_ID_INPUT);
-    await typeText(page, USER_ID_INPUT, USER_A);
-
-    await clearText(page, USER_PASSWORD_INPUT);
-    await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
-
+    await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
@@ -243,12 +203,7 @@ describe('Calling out', () => {
     expect(url).to.include('/demo/');
 
     // Register on the first page
-    await clearText(page, USER_ID_INPUT);
-    await typeText(page, USER_ID_INPUT, USER_A);
-
-    await clearText(page, USER_PASSWORD_INPUT);
-    await typeText(page, USER_PASSWORD_INPUT, PASSWORD_A);
-
+    await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 

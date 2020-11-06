@@ -1,5 +1,6 @@
 import * as CONF from '../config.mjs';
 import * as sipClient from '../lib/calling.mjs';
+import { setOndevicesChanged, setInputsAndOutputs } from '../lib/media.mjs';
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
 
 window.customElements.define(
@@ -28,8 +29,13 @@ window.customElements.define(
                   {
                     const userId = this.nodes.userIdInput.value;
                     const password = this.nodes.passwordInput.value;
-                    sipClient.setAccount(userId, password);
+                    const websocketUrl = this.nodes.websocketUrlInput.value;
+                    const realm = this.nodes.realmInput.value;
+                    sipClient.setAccount(userId, password, realm);
+                    sipClient.setTransport(websocketUrl);
                     sipClient.setClient();
+                    setOndevicesChanged();
+                    setInputsAndOutputs();
                     sipClient.registerAccount();
                     console.log('register');
                   }
@@ -81,6 +87,8 @@ window.customElements.define(
 
       this.nodes.passwordInput.value = CONF.password;
       this.nodes.userIdInput.value = CONF.authorizationUserId;
+      this.nodes.realmInput.value = CONF.realm;
+      this.nodes.websocketUrlInput.value = CONF.websocketUrl;
 
       sipClient.callingEvents.addEventListener('clientStatusUpdate', this);
     }

@@ -76,19 +76,27 @@ Media.on('permissionGranted', () => {
   console.log('Permission granted');
 });
 Media.on('permissionRevoked', () => console.log('Permission revoked'));
-Media.on('devicesChanged', () => {
-  logger.info('Devices changed');
-  makeOptions(getDocumentElement('inputSelect'), Media.inputs); //updatplease
+
+export function setOndevicesChanged() {
+  Media.on('devicesChanged', () => {
+    logger.info('Devices changed');
+    setInputsAndOutputs();
+
+    updateDevicesLists(Media.inputs, getDocumentElement('inputDevicesList'));
+    updateDevicesLists(Media.outputs, getDocumentElement('outputDevicesList'));
+  });
+}
+Media.init();
+
+export function setInputsAndOutputs() {
+  // call on functions for the missed devicesChanged event
+  makeOptions(getDocumentElement('inputSelect'), Media.inputs);
   makeOptions(getDocumentElement('outputSelect'), Media.outputs);
 
-  // for the first time set default media. Can be improved.
+  // for the first time set default media.
   changeInputSelect(getDocumentElement('inputSelect'));
   changeOutputSelect(getDocumentElement('outputSelect'));
-
-  updateDevicesLists(Media.inputs, getDocumentElement('inputDevicesList'));
-  updateDevicesLists(Media.outputs, getDocumentElement('outputDevicesList'));
-});
-Media.init();
+}
 
 export function changeInputSelect(_inputSelect) {
   const selected = getSelectedOption(_inputSelect);
@@ -108,6 +116,7 @@ export function changeOutputSelect(_outputSelect) {
     getSessions().forEach(session => {
       session.media.output.id = selected.value;
     });
+
     client.defaultMedia.output.id = selected.value;
   }
   logger.info('Output select changed to: ' + selected.text);

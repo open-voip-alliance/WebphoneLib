@@ -1,4 +1,11 @@
 const { errors } = require('puppeteer');
+const {
+  USER_ID_INPUT,
+  USER_PASSWORD_INPUT,
+  REALM_INPUT,
+  WEBSOCKET_URL_INPUT
+} = require('../helpers/constants');
+const { REALM, WEBSOCKET_URL } = require('../config');
 
 module.exports = {
   click: async function(page, selector) {
@@ -77,5 +84,18 @@ module.exports = {
       await page.click(selector, { clickCount: 3 });
       await page.press('Backspace');
     } catch (error) {}
+  },
+  registerUser: async function(page, userAuthId, userPw) {
+    await module.exports.clearText(page, USER_ID_INPUT);
+    await module.exports.typeText(page, USER_ID_INPUT, userAuthId);
+
+    await module.exports.clearText(page, USER_PASSWORD_INPUT);
+    await module.exports.typeText(page, USER_PASSWORD_INPUT, userPw);
+
+    await module.exports.clearText(page, WEBSOCKET_URL_INPUT);
+    await module.exports.typeText(page, WEBSOCKET_URL_INPUT, WEBSOCKET_URL);
+
+    await module.exports.clearText(page, REALM_INPUT);
+    await module.exports.typeText(page, REALM_INPUT, REALM);
   }
 };

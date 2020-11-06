@@ -1,5 +1,4 @@
 import { Client, log } from '../../dist/index.mjs';
-import * as CONF from '../config.mjs';
 import eventTarget from '../utils/eventTarget.mjs';
 import { Logger } from './logging.mjs';
 import { media } from './media.mjs';
@@ -18,27 +17,20 @@ log.connector = ({ level, context, message }) => {
   print(`${level} [${context}] ${message}`);
 };
 
-let account = {
-  user: CONF.authorizationUserId,
-  password: CONF.password,
-  uri: CONF.accountUri,
-  name: 'test'
-};
+let account;
+let transport;
 
-const transport = {
-  wsServers: `wss://websocket.${CONF.yourPlatformURL}`,
-  iceServers: []
-};
+export let client;
 
-export let client = new Client({
-  account,
-  transport,
-  media,
-  userAgentString: 'WebphoneLib Demo'
-});
+export function setTransport(websocketUrl) {
+  transport = {
+    wsServers: websocketUrl,
+    iceServers: []
+  };
+}
 
-export function setAccount(user, password) {
-  const uri = `sip:${user}@${CONF.yourPlatformURL}`;
+export function setAccount(user, password, realm) {
+  const uri = `sip:${user}@${realm}`;
   account = {
     user,
     password,
