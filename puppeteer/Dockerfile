@@ -5,10 +5,6 @@ RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
     && mkdir -p /home/pptruser/Downloads \
     && chown -R pptruser:pptruser /home/pptruser
 
-# Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
-# ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-    # PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
 COPY package.json /home/pptruser/package.json
 COPY package-lock.json /home/pptruser/package-lock.json
 
