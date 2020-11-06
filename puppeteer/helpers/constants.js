@@ -8,18 +8,14 @@ module.exports = {
   LAUNCH_OPTIONS: {
     args: [
       '--no-sandbox',
-      // '--disable-setuid-sandbox',
+      '--disable-setuid-sandbox',
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
       '--start-maximized',
-      '--privet-ipv6-only',
-      // '--disable-dev-shm-usage'
-      // '--user-data-dir=/tmp/pptruser',
-      '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
-      // '--allow-running-insecure-content'
+      '--unsafely-treat-insecure-origin-as-secure=http://web:1235/demo'
     ],
     ignoreHTTPSErrors: true,
-    headless: false,
+    headless: true,
     devtools: false,
     timeout: 0,
     defaultViewport: null
