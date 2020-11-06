@@ -289,7 +289,6 @@ session.media.setInput({
 				<a href="#using-docker" id="using-docker" style="color: inherit; text-decoration: none;">
 					<h3>Using docker</h3>
 				</a>
-				<p>To be able to run the tests with docker you can add a .env file and use the <code>npm run docker-build</code> command followed by the <code>npm run docker-run</code> command to run the puppeteer tests.</p>
 				<p>Add a .env file with the following:</p>
 				<pre><code class="language-javascript">USER_A = <span class="hljs-string">'&lt;user-a&gt;'</span>;
 USER_B = <span class="hljs-string">'&lt;user-b&gt;'</span>;
@@ -297,8 +296,8 @@ PASSWORD_A = <span class="hljs-string">'&lt;password-user-a&gt;'</span>;
 PASSWORD_B = <span class="hljs-string">'&lt;password-user-b&gt;'</span>;
 NUMBER_A = <span class="hljs-string">'&lt;number-user-a&gt;'</span>;
 NUMBER_B = <span class="hljs-string">'&lt;number-user-b&gt;'</span>;</code></pre>
-				<p>Or if you don&#39;t want to use a .env file you could pass your configuration to the docker container:</p>
-				<pre><code class="language-bash">docker run -it --network host -v <span class="hljs-variable">$PWD</span>:/home/pptruser -w /home/pptruser -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e USER_A=<span class="hljs-string">'&lt;user-a&gt;'</span> -e USER_B=<span class="hljs-string">'&lt;user-b&gt;'</span> -e PASSWORD_A=<span class="hljs-string">'&lt;password-user-a&gt;'</span> -e PASSWORD_B=<span class="hljs-string">'&lt;password-user-b&gt;'</span> -e NUMBER_A=<span class="hljs-string">'&lt;number-user-a&gt;'</span> -e NUMBER_B=<span class="hljs-string">'&lt;number-user-b&gt;'</span> puppeteer-tests</code></pre>
+				<p>Then call <code>docker-compose up</code> to run the tests.</p>
+				<p>Note: Don&#39;t forget to call <code>npm ci</code> in the puppeteer folder. :)</p>
 				<a href="#without-docker" id="without-docker" style="color: inherit; text-decoration: none;">
 					<h3>Without docker</h3>
 				</a>
