@@ -92,9 +92,8 @@ $ touch demo/config.mjs</code></pre>
 				<p>Add the following to <code>demo/config.mjs</code></p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> authorizationUserId = &lt;your-voip-account-id&gt;;
 export const password = '&lt;your-voip-password&gt;';
-export const yourPlatformURL = '&lt;your-platform-url&gt;'
-export const accountUri = `sip:${authorizationUserId}@${yourPlatformURL}`;
-export const subscribeTo = `sip:&lt;account-id&gt;@${yourPlatformURL}`;</code></pre>
+export const realm = '&lt;realm&gt;';
+export const websocketUrl = '&lt;websocketUrl&gt;';</code></pre>
 				<p>Run the demo-server:</p>
 				<pre><code class="language-bash">$ npm i &amp;&amp; npm run demo</code></pre>
 				<p>And then play around at <a href="http://localhost:1235/demo/">http://localhost:1235/demo/</a>.</p>
@@ -109,12 +108,12 @@ export const subscribeTo = `sip:&lt;account-id&gt;@${yourPlatformURL}`;</code></
 <span class="hljs-keyword">const</span> account = {
   <span class="hljs-attr">user</span>: <span class="hljs-string">'accountId'</span>,
   <span class="hljs-attr">password</span>: <span class="hljs-string">'password'</span>,
-  <span class="hljs-attr">uri</span>: <span class="hljs-string">'sip:accountId@&lt;your-platform-url&gt;'</span>,
+  <span class="hljs-attr">uri</span>: <span class="hljs-string">'sip:accountId@&lt;realm&gt;'</span>,
   <span class="hljs-attr">name</span>: <span class="hljs-string">'test'</span>
 };
 
 <span class="hljs-keyword">const</span> transport = {
-  <span class="hljs-attr">wsServers</span>: <span class="hljs-string">'wss://websocket.&lt;your-platform-url&gt;'</span>, <span class="hljs-comment">// or replace with your</span>
+  <span class="hljs-attr">wsServers</span>: <span class="hljs-string">'&lt;websocket-url&gt;'</span>, <span class="hljs-comment">// or replace with your</span>
   iceServers: [] <span class="hljs-comment">// depending on if your provider needs STUN/TURN.</span>
 };
 
@@ -160,7 +159,7 @@ client.on(<span class="hljs-string">'invite'</span>, (session) =&gt; {
 				<a href="#outgoing-call" id="outgoing-call" style="color: inherit; text-decoration: none;">
 					<h3>Outgoing call</h3>
 				</a>
-				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> session = client.invite(<span class="hljs-string">'sip:518@&lt;your-platform-url&gt;'</span>);
+				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> session = client.invite(<span class="hljs-string">'sip:518@&lt;realm&gt;'</span>);
 
 <span class="hljs-keyword">try</span> {
   showOutgoingCallInProgress();
@@ -184,7 +183,7 @@ client.on(<span class="hljs-string">'invite'</span>, (session) =&gt; {
 				<pre><code class="language-javascript"><span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> sessionA.accepted()) {
   <span class="hljs-keyword">await</span> sessionA.hold();
 
-  <span class="hljs-keyword">const</span> sessionB = client.invite(<span class="hljs-string">'sip:519@&lt;your-platform-url&gt;'</span>);
+  <span class="hljs-keyword">const</span> sessionB = client.invite(<span class="hljs-string">'sip:519@&lt;realm&gt;'</span>);
   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">await</span> sessionB.accepted()) {
     <span class="hljs-comment">// immediately transfer after the other party picked up :p</span>
     <span class="hljs-keyword">await</span> client.attendedTransfer(sessionA, sessionB);
@@ -290,13 +289,14 @@ session.media.setInput({
 					<h3>Using docker</h3>
 				</a>
 				<p>Add a .env file with the following:</p>
-				<pre><code class="language-javascript">USER_A = <span class="hljs-string">'&lt;user-a&gt;'</span>;
-USER_B = <span class="hljs-string">'&lt;user-b&gt;'</span>;
-PASSWORD_A = <span class="hljs-string">'&lt;password-user-a&gt;'</span>;
-PASSWORD_B = <span class="hljs-string">'&lt;password-user-b&gt;'</span>;
-NUMBER_A = <span class="hljs-string">'&lt;number-user-a&gt;'</span>;
-NUMBER_B = <span class="hljs-string">'&lt;number-user-b&gt;'</span>;</code></pre>
-				<p>Then call <code>docker-compose up</code> to run the tests.</p>
+				<pre><code><span class="hljs-attr">USER_A</span> = &lt;user-a&gt;
+<span class="hljs-attr">USER_B</span> = &lt;user-b&gt;
+<span class="hljs-attr">PASSWORD_A</span> = &lt;password-user-a&gt;
+<span class="hljs-attr">PASSWORD_B</span> = &lt;password-user-b&gt;
+<span class="hljs-attr">NUMBER_A</span> = &lt;number-user-a&gt;
+<span class="hljs-attr">NUMBER_B</span> = &lt;number-user-b&gt;
+<span class="hljs-attr">WEBSOCKET_URL</span> = &lt;your-websocket-url&gt;
+<span class="hljs-attr">REALM</span> = &lt;realm&gt;</code></pre><p>Then call <code>docker-compose up</code> to run the tests.</p>
 				<p>Note: Don&#39;t forget to call <code>npm ci</code> in the puppeteer folder. :)</p>
 				<a href="#without-docker" id="without-docker" style="color: inherit; text-decoration: none;">
 					<h3>Without docker</h3>
