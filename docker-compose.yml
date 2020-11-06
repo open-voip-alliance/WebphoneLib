@@ -20,4 +20,6 @@ services:
     environment:
       - DISPLAY
       - DEMO_URL= http://web:1235/demo
+    env_file:
+      - .env
     command: scripts/wait-for-it.sh web:1235/demo -- npm run test:e2e

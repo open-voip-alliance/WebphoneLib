@@ -20,7 +20,6 @@ module.exports = {
     ],
     ignoreHTTPSErrors: true,
     headless: false,
-    slowMo: 200,
     devtools: false,
     timeout: 0,
     defaultViewport: null
