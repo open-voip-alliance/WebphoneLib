@@ -4,6 +4,7 @@ node_modules
 build
 dist
 docs
+.env
 screenshots/**
 demo/config.mjs
 .dir-locals.el
