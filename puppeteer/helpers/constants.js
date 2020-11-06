@@ -1,16 +1,21 @@
+const dotenv = require('dotenv');
+
+dotenv.config();
+
 module.exports = {
   NON_EXISTING_NUMBER: '989',
-  DEMO_URL: 'http://localhost:1235/demo/',
+  DEMO_URL: process.env.DEMO_URL,
   LAUNCH_OPTIONS: {
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
-      '--start-maximized'
+      '--start-maximized',
+      '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
     ],
+    ignoreHTTPSErrors: true,
     headless: false,
-    slowMo: 10,
     devtools: false,
     timeout: 0,
     defaultViewport: null

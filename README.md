@@ -215,8 +215,6 @@ link](https://typedoc.org/guides/doccomments/) for more information on which
 
 ### Using docker
 
-To be able to run the tests with docker you can add a .env file and use the `npm run docker-build` command followed by the `npm run docker-run` command to run the puppeteer tests.
-
 Add a .env file with the following:
 
 ```javascript
@@ -228,11 +226,9 @@ NUMBER_A = '<number-user-a>';
 NUMBER_B = '<number-user-b>';
 ```
 
-Or if you don't want to use a .env file you could pass your configuration to the docker container:
+Then call `docker-compose up` to run the tests.
 
-```bash
-docker run -it --network host -v $PWD:/home/pptruser -w /home/pptruser -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY -e USER_A='<user-a>' -e USER_B='<user-b>' -e PASSWORD_A='<password-user-a>' -e PASSWORD_B='<password-user-b>' -e NUMBER_A='<number-user-a>' -e NUMBER_B='<number-user-b>' puppeteer-tests
-```
+Note: Don't forget to call `npm ci` in the puppeteer folder. :)
 
 ### Without docker
 
