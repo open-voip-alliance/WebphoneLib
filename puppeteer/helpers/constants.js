@@ -12,10 +12,10 @@ module.exports = {
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
       '--start-maximized',
-      '--unsafely-treat-insecure-origin-as-secure=http://web:1235/demo'
+      '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
     ],
     ignoreHTTPSErrors: true,
-    headless: true,
+    headless: false,
     devtools: false,
     timeout: 0,
     defaultViewport: null
