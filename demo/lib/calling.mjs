@@ -24,7 +24,7 @@ export let client;
 
 export function setTransport(websocketUrl) {
   transport = {
-    wsServers: `${websocketUrl}`,
+    wsServers: websocketUrl,
     iceServers: []
   };
 }
