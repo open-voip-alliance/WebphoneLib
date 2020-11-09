@@ -29,6 +29,4 @@ jobs:
           WEBSOCKET_URL: ${{ secrets.WEBSOCKET_URL }}
           REALM: ${{ secrets.REALM }}
         run: |
-          if [ -f docker-compose.yml ]; then
-            docker-compose --file docker-compose.yml up
-          fi
+          docker-compose -f docker-compose.yml -f docker-compose.e2e.yml up --exit-code-from e2e
