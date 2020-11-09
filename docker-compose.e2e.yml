@@ -1,0 +1,18 @@
+version: '3.4'
+services:
+  e2e:
+    build: ./puppeteer
+    container_name: puppeteer
+    volumes:
+      - ./scripts:/home/pptruser/scripts
+      - ./puppeteer:/home/pptruser
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /home/pptruser/node_modules
+    depends_on:
+      - web
+    environment:
+      - DISPLAY
+      - DEMO_URL= http://web:1235/demo
+    env_file:
+      - .env
+    command: scripts/wait-for-it.sh web:1235/demo -- npm run test:e2e
