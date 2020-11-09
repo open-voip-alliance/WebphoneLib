@@ -1,8 +1,7 @@
 FROM node:latest
 
 RUN mkdir -p /home/webuser \
-    && chown -R node:node /home/webuser \
-    && chown -R node:node /home/webuser/dist
+    && chown -R node:node /home/webuser
 
 COPY package.json /home/webuser/package.json
 COPY package-lock.json /home/webuser/package-lock.json
