@@ -5,6 +5,7 @@ services:
     container_name: demo-page
     volumes:
       - .:/home/webuser
+      - /home/webuser/node_modules
     ports:
       - '1235:1235'
     command: npm run demo
@@ -15,6 +16,7 @@ services:
       - ./scripts:/home/pptruser/scripts
       - ./puppeteer:/home/pptruser
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - /home/pptruser/node_modules
     depends_on:
       - web
     environment:

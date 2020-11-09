@@ -17,6 +17,7 @@ module.exports = {
     ignoreHTTPSErrors: true,
     headless: false,
     devtools: false,
+    slowMo: 10,
     timeout: 0,
     defaultViewport: null
   },
