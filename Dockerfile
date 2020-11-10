@@ -1,14 +1,12 @@
 FROM node:latest
 
-RUN mkdir -p /home/webuser \
-    && chown -R node:node /home/webuser
+COPY . /home/webuser/
 
-COPY package.json /home/webuser/package.json
-COPY package-lock.json /home/webuser/package-lock.json
-
-USER node
+RUN chown -R node:node /home/webuser
 
 WORKDIR /home/webuser
+
+USER node
 
 RUN npm ci
 
