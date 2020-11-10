@@ -15,7 +15,7 @@ module.exports = {
       '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
     ],
     ignoreHTTPSErrors: true,
-    headless: false,
+    headless: true,
     devtools: false,
     slowMo: 10,
     timeout: 0,

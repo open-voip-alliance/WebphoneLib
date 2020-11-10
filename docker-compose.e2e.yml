@@ -3,6 +3,7 @@ services:
   e2e:
     build: ./puppeteer
     container_name: puppeteer
+    network_mode: 'host'
     volumes:
       - ./scripts:/home/pptruser/scripts
       - ./puppeteer:/home/pptruser
@@ -12,7 +13,7 @@ services:
       - web
     environment:
       - DISPLAY
-      - DEMO_URL= http://web:1235/demo
+      - DEMO_URL= http://localhost:1235/demo
     env_file:
       - .env
     command: scripts/wait-for-it.sh web:1235/demo -- npm run test:e2e
