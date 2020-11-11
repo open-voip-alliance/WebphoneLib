@@ -45,9 +45,6 @@ describe('Calling out', () => {
   });
 
   it('calling out & having the other party answer & let the other party end the call (terminate)', async function() {
-    console.log(USER_A);
-    console.log(USER_B);
-    console.log(NUMBER_A);
     page.bringToFront();
     await page.goto(DEMO_URL);
 
