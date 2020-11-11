@@ -20,9 +20,7 @@
     "test:e2e": "mocha --timeout=120000 ./puppeteer/test/*.js",
     "test-watch": "ava --watch",
     "docs": "typedoc --out docs src",
-    "run-e2e-tests-in-docker": "npm run serve & npm run test:e2e",
-    "docker-build": "docker build . -t puppeteer-tests",
-    "docker-run": "docker run -it --network host -v $PWD:/home/pptruser -w /home/pptruser -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY puppeteer-tests"
+    "run-e2e-tests-in-docker": "docker-compose -f docker-compose.yml -f docker-compose.e2e.override.yml up --exit-code-from e2e"
   },
   "husky": {
     "hooks": {

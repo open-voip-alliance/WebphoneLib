@@ -6,9 +6,9 @@ name: CI
 # events but only for the master branch
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [master]
+  pull_request_target:
+    types: [assigned, opened]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -17,9 +17,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
       - name: Run tests
+        env:
+          USER_A: ${{ secrets.USER_A }}
+          USER_B: ${{ secrets.USER_B }}
+          PASSWORD_A: ${{ secrets.PASSWORD_A }}
+          PASSWORD_B: ${{ secrets.PASSWORD_B }}
+          NUMBER_A: ${{ secrets.NUMBER_A }}
+          NUMBER_B: ${{ secrets.NUMBER_B }}
+          WEBSOCKET_URL: ${{ secrets.WEBSOCKET_URL }}
+          REALM: ${{ secrets.REALM }}
         run: |
-          if [ -f docker-compose.yml ]; then
-            docker-compose --file docker-compose.yml up
-          fi
+          docker-compose -f docker-compose.yml -f docker-compose.e2e.yml up --exit-code-from e2e
