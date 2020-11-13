@@ -1,0 +1,7 @@
+version: '3.4'
+services:
+  e2e:
+    volumes:
+      - ./puppeteer:/home/pptruser
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /home/pptruser/node_modules

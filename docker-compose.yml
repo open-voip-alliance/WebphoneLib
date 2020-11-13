@@ -10,15 +10,11 @@ services:
     build: ./puppeteer
     container_name: puppeteer
     network_mode: 'host'
-    volumes:
-      - ./puppeteer:/home/pptruser
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - /home/pptruser/node_modules
     depends_on:
       - web
     environment:
       - DISPLAY
-      - DEMO_URL= http://localhost:1235/demo
+      - DEMO_URL=http://localhost:1235/demo
       - USER_A
       - USER_B
       - PASSWORD_A
