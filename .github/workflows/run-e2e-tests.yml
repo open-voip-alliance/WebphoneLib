@@ -28,4 +28,4 @@ jobs:
           WEBSOCKET_URL: ${{secrets.WEBSOCKET_URL}}
           REALM: ${{secrets.REALM}}
         run: |
-          docker-compose -f docker-compose.yml -f docker-compose.e2e.yml up --exit-code-from e2e
+          docker-compose up --exit-code-from e2e
