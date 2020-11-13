@@ -10,6 +10,16 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  USER_A: ${{secrets.USER_A}}
+  USER_B: ${{secrets.USER_B}}
+  PASSWORD_A: ${{secrets.PASSWORD_A}}
+  PASSWORD_B: ${{secrets.PASSWORD_B}}
+  NUMBER_A: ${{secrets.NUMBER_A}}
+  NUMBER_B: ${{secrets.NUMBER_B}}
+  WEBSOCKET_URL: ${{secrets.WEBSOCKET_URL}}
+  REALM: ${{secrets.REALM}}
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   test:
@@ -17,16 +27,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Populate with environment variables
-        run: |
-          echo USER_A="${{secrets.USER_A}}" >> $GITHUB_ENV
-          echo USER_B="${{secrets.USER_B}}" >> $GITHUB_ENV
-          echo PASSWORD_A="${{secrets.PASSWORD_A}}" >> $GITHUB_ENV
-          echo PASSWORD_B="${{secrets.PASSWORD_B}}" >> $GITHUB_ENV
-          echo NUMBER_A="${{secrets.NUMBER_A}}" >> $GITHUB_ENV
-          echo NUMBER_B="${{secrets.NUMBER_B}}" >> $GITHUB_ENV
-          echo WEBSOCKET_URL="${{secrets.WEBSOCKET_URL}}" >> $GITHUB_ENV
-          echo REALM="${{secrets.REALM}}" >> $GITHUB_ENV
       - name: Run tests
         run: |
           docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
