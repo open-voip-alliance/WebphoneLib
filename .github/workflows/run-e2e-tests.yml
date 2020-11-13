@@ -18,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run tests
+        run: |
+          docker-compose up --exit-code-from e2e
         env:
           USER_A: ${{secrets.USER_A}}
           USER_B: ${{secrets.USER_B}}
@@ -27,5 +29,3 @@ jobs:
           NUMBER_B: ${{secrets.NUMBER_B}}
           WEBSOCKET_URL: ${{secrets.WEBSOCKET_URL}}
           REALM: ${{secrets.REALM}}
-        run: |
-          docker-compose up --exit-code-from e2e
