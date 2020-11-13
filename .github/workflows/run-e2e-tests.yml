@@ -17,17 +17,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Populate with environment variables
-        run: |
-          touch .env
-          echo export USER_A="${{secrets.USER_A}}" >> .env
-          echo export USER_B="${{secrets.USER_B}}" >> .env
-          echo export PASSWORD_A="${{secrets.PASSWORD_A}}" >> .env
-          echo export PASSWORD_B="${{secrets.PASSWORD_B}}" >> .env
-          echo export NUMBER_A="${{secrets.NUMBER_A}}" >> .env
-          echo export NUMBER_B="${{secrets.NUMBER_B}}" >> .env
-          echo export WEBSOCKET_URL="${{secrets.WEBSOCKET_URL}}" >> .env
-          echo export REALM="${{secrets.REALM}}" >> .env
       - name: Run tests
+        env:
+          USER_A: ${{ secrets.USER_A }}
+          USER_B: ${{ secrets.USER_B }}
+          PASSWORD_A: ${{ secrets.PASSWORD_A }}
+          PASSWORD_B: ${{ secrets.PASSWORD_B }}
+          NUMBER_A: ${{ secrets.NUMBER_A }}
+          NUMBER_B: ${{ secrets.NUMBER_B }}
+          WEBSOCKET_URL: ${{ secrets.WEBSOCKET_URL }}
+          REALM: ${{ secrets.REALM }}
         run: |
-          source .env && docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
+          docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
