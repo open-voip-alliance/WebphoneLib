@@ -24,6 +24,8 @@ const {
   LAUNCH_OPTIONS
 } = require('../helpers/constants');
 
+const screenshotDirectory = '/home/pptruser/screenshots/';
+
 describe('Calling out', () => {
   let browser;
   let page;
@@ -50,6 +52,8 @@ describe('Calling out', () => {
 
     const url = await page.url();
     expect(url).to.include('/demo/');
+    // await page.screenshot({ path: '/home/pptruser/screenshots/clickError.jpg', type: 'jpeg' });
+    await page.screenshot({ path: `${screenshotDirectory}clickError.jpg`, type: 'jpeg' });
 
     await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);

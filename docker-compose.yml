@@ -23,4 +23,4 @@ services:
       - NUMBER_B
       - WEBSOCKET_URL
       - REALM
-    command: sh -c "sleep 10 && npm run test:e2e"
+    command: sh -c "sleep 10 && npm run test:e2e && docker cp e2e:/home/pptruser/screenshots /screenshots"
