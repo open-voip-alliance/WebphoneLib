@@ -43,3 +43,13 @@ export function statusFromDialog(notification: any): SubscriptionStatus | string
 
   return state;
 }
+
+/**
+ * Parse an incoming notification request header and return
+ * the CSeq number from it.
+ * @param {any} notification - A SIP.js Request object.
+ * @returns {Number} - The CSeq number of a notification.
+ */
+export function cseqFromDialog(notification: any): number {
+  return notification.request.headers.CSeq[0].parsed.value;
+}

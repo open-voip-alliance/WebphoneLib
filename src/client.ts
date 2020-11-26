@@ -16,7 +16,7 @@ import { Inviter } from './inviter';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
 import { ISession, SessionImpl } from './session';
-import { statusFromDialog } from './subscription';
+import { statusFromDialog, cseqFromDialog } from './subscription';
 import { second } from './time';
 import { ITransport, ReconnectableTransport, TransportFactory, UAFactory } from './transport';
 import { IClientOptions, IMedia } from './types';
@@ -149,6 +149,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
   private readonly sessions: { [index: string]: SessionImpl } = {};
   private subscriptions: { [index: string]: Subscriber } = {};
+  private subscriptionSequenceNumbers: { [index: string]: number } = {};
   private connected = false;
 
   private transportFactory: TransportFactory;
@@ -251,7 +252,14 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri].delegate = {
         onNotify: (notification: Notification) => {
           notification.accept();
-          this.emit('subscriptionNotify', uri, statusFromDialog(notification));
+          // oldSequenceNumber will be defaulted to -1 if it is not set yet.
+          const oldSequenceNumber = this.subscriptionSequenceNumbers[uri] || -1;
+          const currentSequenceNumber = cseqFromDialog(notification);
+
+          if (currentSequenceNumber > oldSequenceNumber) {
+            this.subscriptionSequenceNumbers[uri] = currentSequenceNumber;
+            this.emit('subscriptionNotify', uri, statusFromDialog(notification));
+          }
         }
       };
 
@@ -457,6 +465,7 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri].dispose();
     }
 
+    delete this.subscriptionSequenceNumbers[uri];
     delete this.subscriptions[uri];
   }
 
