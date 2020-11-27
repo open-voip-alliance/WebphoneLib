@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Puppeteer tests
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -29,3 +29,4 @@ jobs:
           REALM: ${{ secrets.REALM }}
         run: |
           docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
+          docker cp $(docker-compose ps -q e2e):/home/pptruser/screenshots ./puppeteer/screenshots

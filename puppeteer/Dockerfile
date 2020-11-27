@@ -3,7 +3,6 @@ FROM cypress/browsers:node14.7.0-chrome84
 
 RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
     && mkdir -p /home/pptruser/screenshots \
-    && chown -R pptruser:pptruser /home/pptruser/screenshots \
     && chown -R pptruser:pptruser /home/pptruser
 
 COPY . /home/pptruser
