@@ -35,3 +35,4 @@ jobs:
         with:
           name: screenshots
           path: ./puppeteer/screenshots
+          if-no-files-found: error
