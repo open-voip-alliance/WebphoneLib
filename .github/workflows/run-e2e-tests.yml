@@ -28,11 +28,10 @@ jobs:
           WEBSOCKET_URL: ${{ secrets.WEBSOCKET_URL }}
           REALM: ${{ secrets.REALM }}
         run: |
-          mkdir -p ./puppeteer/screenshots
+          echo "blah" > ./puppeteer/screenshots/blah.txt
           docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
       - name: copy files
         run: |
-          echo "blah" > ./puppeteer/screenshots/blah.txt
           docker cp $(docker-compose ps -q e2e):/home/pptruser/screenshots ./puppeteer/screenshots
       - uses: actions/upload-artifact@v2
         if: failure()
