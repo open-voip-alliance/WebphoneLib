@@ -30,3 +30,7 @@ jobs:
         run: |
           docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
           docker cp $(docker-compose ps -q e2e):/home/pptruser/screenshots ./puppeteer/screenshots
+      - uses: actions/upload-artifact@v2
+        with:
+          name: screenshots
+          path: ./puppeteer/screenshots
