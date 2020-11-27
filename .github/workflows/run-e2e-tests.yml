@@ -28,6 +28,7 @@ jobs:
           WEBSOCKET_URL: ${{ secrets.WEBSOCKET_URL }}
           REALM: ${{ secrets.REALM }}
         run: |
+          mkdir -p ./puppeteer/screenshots
           docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
           docker cp $(docker-compose ps -q e2e):/home/pptruser/screenshots ./puppeteer/screenshots
       - uses: actions/upload-artifact@v2
