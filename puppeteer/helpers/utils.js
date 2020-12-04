@@ -8,7 +8,7 @@ const {
 } = require('../helpers/constants');
 const { REALM, WEBSOCKET_URL } = require('../config');
 
-const screenshotDirectory = '/home/pptruser/screenshots/';
+const screenshotDirectory = '/home/pptruser/pictures/';
 
 module.exports = {
   click: async function(page, selector) {

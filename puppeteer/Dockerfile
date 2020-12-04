@@ -2,7 +2,7 @@ FROM cypress/browsers:node14.7.0-chrome84
 # Secretly using cypress browser base bec we're too lazy to make it ourselves
 
 RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
-    && mkdir -p /home/pptruser/screenshots \
+    && mkdir -p /home/pptruser/pictures \
     && chown -R pptruser:pptruser /home/pptruser
 
 COPY . /home/pptruser

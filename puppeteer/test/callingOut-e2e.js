@@ -24,7 +24,7 @@ const {
   LAUNCH_OPTIONS
 } = require('../helpers/constants');
 
-const screenshotDirectory = '/home/pptruser/screenshots/';
+const screenshotDirectory = '/home/pptruser/pictures/';
 
 describe('Calling out', () => {
   let browser;
