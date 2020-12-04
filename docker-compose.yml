@@ -5,7 +5,7 @@ services:
     container_name: demo-page
     ports:
       - '1235:1235'
-    command: sh -c "npm run demo"
+    command: npm run demo
   e2e:
     build: ./puppeteer
     container_name: puppeteer

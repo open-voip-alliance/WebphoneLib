@@ -28,7 +28,7 @@ jobs:
           WEBSOCKET_URL: ${{ secrets.WEBSOCKET_URL }}
           REALM: ${{ secrets.REALM }}
         run: |
-          docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
+          docker-compose -f docker-compose.yml up --abort-on-container-exit
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
