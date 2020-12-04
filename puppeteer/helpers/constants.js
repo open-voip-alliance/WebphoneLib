@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 module.exports = {
+  SCREENSHOTS_PATH: '/home/pptruser/screenshots/',
   NON_EXISTING_NUMBER: '989',
   DEMO_URL: process.env.DEMO_URL,
   LAUNCH_OPTIONS: {

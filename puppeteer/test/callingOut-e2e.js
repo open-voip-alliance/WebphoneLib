@@ -21,10 +21,9 @@ const {
   SESSION_HANGUP_BUTTON,
   SESSION_STATUS,
   CLIENT_STATUS,
-  LAUNCH_OPTIONS
+  LAUNCH_OPTIONS,
+  SCREENSHOTS_PATH
 } = require('../helpers/constants');
-
-const screenshotDirectory = '/home/pptruser/pictures/';
 
 describe('Calling out', () => {
   let browser;
@@ -52,8 +51,12 @@ describe('Calling out', () => {
 
     const url = await page.url();
     expect(url).to.include('/demo/');
-    // await page.screenshot({ path: '/home/pptruser/screenshots/clickError.jpg', type: 'jpeg' });
-    await page.screenshot({ path: `${screenshotDirectory}clickError.jpg`, type: 'jpeg' });
+
+    await page.screenshot({
+      path: `${SCREENSHOTS_PATH}clickError.jpg`,
+      type: 'jpeg',
+      fullPage: true
+    });
 
     await registerUser(page, USER_A, PASSWORD_A);
     await click(page, REGISTER_BUTTON);

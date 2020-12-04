@@ -29,7 +29,6 @@ jobs:
           REALM: ${{ secrets.REALM }}
         run: |
           docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
-          docker cp puppeteer:/home/pptruser/pictures ./puppeteer/screenshots
       - uses: actions/upload-artifact@v2
         with:
           name: screenshots

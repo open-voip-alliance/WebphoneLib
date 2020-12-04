@@ -4,11 +4,10 @@ const {
   USER_ID_INPUT,
   USER_PASSWORD_INPUT,
   REALM_INPUT,
-  WEBSOCKET_URL_INPUT
+  WEBSOCKET_URL_INPUT,
+  SCREENSHOTS_PATH
 } = require('../helpers/constants');
 const { REALM, WEBSOCKET_URL } = require('../config');
-
-const screenshotDirectory = '/home/pptruser/pictures/';
 
 module.exports = {
   click: async function(page, selector) {
@@ -16,7 +15,11 @@ module.exports = {
       await page.waitForSelector(selector);
       await page.click(selector);
     } catch (error) {
-      await page.screenshot({ path: `${screenshotDirectory}clickError.jpg`, type: 'jpeg' });
+      await page.screenshot({
+        path: `${SCREENSHOTS_PATH}clickError.jpg`,
+        type: 'jpeg',
+        fullPage: true
+      });
       throw new Error(`Could not click on selector: ${selector}`);
     }
   },
@@ -25,7 +28,11 @@ module.exports = {
       await page.waitForSelector(selector);
       return page.$$eval(selector, element => element.innerHTML);
     } catch (error) {
-      await page.screenshot({ path: `${screenshotDirectory}getTextError.jpg`, type: 'jpeg' });
+      await page.screenshot({
+        path: `${SCREENSHOTS_PATH}getTextError.jpg`,
+        type: 'jpeg',
+        fullPage: true
+      });
       throw new Error(`Could not get text from selector: ${selector}`);
     }
   },
@@ -34,7 +41,11 @@ module.exports = {
       await page.waitForSelector(selector);
       await page.type(selector, text);
     } catch (error) {
-      await page.screenshot({ path: `${screenshotDirectory}typeTextError.jpg`, type: 'jpeg' });
+      await page.screenshot({
+        path: `${SCREENSHOTS_PATH}typeTextError.jpg`,
+        type: 'jpeg',
+        fullPage: true
+      });
       throw new Error(`Could not type into selector: ${selector}`);
     }
   },
@@ -64,8 +75,9 @@ module.exports = {
       );
     } catch (err) {
       await page.screenshot({
-        path: `${screenshotDirectory}waitForTextError.jpg`,
-        type: 'jpeg'
+        path: `${SCREENSHOTS_PATH}waitForTextError.jpg`,
+        type: 'jpeg',
+        fullPage: true
       });
       if (err instanceof errors.TimeoutError) {
         throw new Error(`Timeout while retrying to find "${text}" in selector "${selector}"`);
@@ -81,8 +93,9 @@ module.exports = {
       node = await page.waitForSelector(selector);
     } catch (err) {
       await page.screenshot({
-        path: `${screenshotDirectory}waitForSelectorError.jpg`,
-        type: 'jpeg'
+        path: `${SCREENSHOTS_PATH}waitForSelectorError.jpg`,
+        type: 'jpeg',
+        fullPage: true
       });
       if (err instanceof errors.TimeoutError) {
         throw new Error(`Timeout waiting for selector: "${selector}"`);
@@ -99,8 +112,9 @@ module.exports = {
       await page.press('Backspace');
     } catch (error) {
       await page.screenshot({
-        path: `${screenshotDirectory}clearTextError.jpg`,
-        type: 'jpeg'
+        path: `${SCREENSHOTS_PATH}clearTextError.jpg`,
+        type: 'jpeg',
+        fullPage: true
       });
     }
   },
