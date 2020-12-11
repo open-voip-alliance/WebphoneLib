@@ -46,7 +46,7 @@ describe('Calling out', () => {
 
   it('calling out & having the other party answer & let the other party end the call (terminate)', async function() {
     page.bringToFront();
-    await page.goto(DEMO_URL);
+    await page.goto('http://localhost:1235/demo');
 
     const url = await page.url();
     expect(url).to.include('/demo/');

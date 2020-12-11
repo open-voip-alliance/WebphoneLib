@@ -15,11 +15,12 @@ module.exports = {
       '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
     ],
     ignoreHTTPSErrors: true,
-    headless: true,
+    headless: false,
     devtools: false,
-    slowMo: 10,
+    slowMo: 50,
     timeout: 0,
     defaultViewport: null
+    // executablePath: '/usr/bin/google-chrome-stable'
   },
   USER_ID_INPUT: 'c-voip-account [data-selector="userIdInput"]',
   USER_PASSWORD_INPUT: 'c-voip-account [data-selector="passwordInput"]',
@@ -32,6 +33,12 @@ module.exports = {
   SESSION_REJECT_BUTTON: 'c-session [data-action="reject"]',
   SESSION_CANCEL_BUTTON: 'c-session [data-action="cancel"]',
   SESSION_HANGUP_BUTTON: 'c-session [data-action="hangup"]',
+  SESSION_TRANSFER_BUTTON: 'c-session [data-action="toggleTransfer"]',
+  SESSION_TRANSFER_METHOD_DROPDOWN: 'c-transfer [data-selector="selectTransferMethod"]',
+  SESSION_COLD_TRANSFER_SELECT: 'blind',
+  SESSION_WARM_TRANSFER_SELECT: 'attended',
+  SESSION_TRANSFER_INPUT: 'c-transfer [data-selector="input"]',
+  SESSION_COMPLETE_TRANSFER_BUTTON: 'c-transfer [data-action="transferCall"]',
   SESSION_STATUS: 'c-session [data-selector="sessionStatus"]',
   CLIENT_STATUS: '[data-selector="clientStatus"]'
 };
