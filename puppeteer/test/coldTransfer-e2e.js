@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const { expect } = require('chai');
 const {
+  callNumber,
   click,
   typeText,
   clearText,
@@ -22,8 +23,6 @@ const {
 const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
-  DIALER_INPUT,
-  DIALER_CALL_BUTTON,
   REGISTER_BUTTON,
   SESSIONS_LIST,
   SESSION_ACCEPT_BUTTON,
@@ -67,14 +66,12 @@ describe('Cold Transfer', () => {
     await page2.goto(DEMO_URL);
 
     await registerUser(page2, USER_B, PASSWORD_B);
-    await click(page2, REGISTER_BUTTON);
     expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
 
     page3.bringToFront();
     await page3.goto(DEMO_URL);
 
     await registerUser(page3, USER_C, PASSWORD_C);
-    await click(page3, REGISTER_BUTTON);
     expect(await waitForText(page3, CLIENT_STATUS, 'connected')).to.be.true;
 
     page.bringToFront();
@@ -84,20 +81,15 @@ describe('Cold Transfer', () => {
     expect(url).to.include('/demo/');
 
     await registerUser(page, USER_A, PASSWORD_A);
-    await click(page, REGISTER_BUTTON);
     expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
 
-    await clearText(page, DIALER_INPUT);
-    await typeText(page, DIALER_INPUT, NUMBER_B);
-    await click(page, DIALER_CALL_BUTTON);
+    await callNumber(page, NUMBER_B);
 
     page2.bringToFront();
-    await waitForSelector(page2, SESSION_ACCEPT_BUTTON);
     await click(page2, SESSION_ACCEPT_BUTTON);
     expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;
 
     page.bringToFront();
-    await waitForSelector(page, SESSION_TRANSFER_BUTTON);
     await click(page, SESSION_TRANSFER_BUTTON);
 
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
@@ -106,12 +98,10 @@ describe('Cold Transfer', () => {
     expect(await waitForSelector(page, SESSIONS_LIST)).to.be.empty;
 
     page3.bringToFront();
-    await waitForSelector(page3, SESSION_ACCEPT_BUTTON);
     await click(page3, SESSION_ACCEPT_BUTTON);
     expect(await waitForText(page3, SESSION_STATUS, 'active')).to.be.true;
 
     page2.bringToFront();
-    await waitForSelector(page2, SESSION_ACCEPT_BUTTON);
     await click(page2, SESSION_ACCEPT_BUTTON);
     expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;
   });

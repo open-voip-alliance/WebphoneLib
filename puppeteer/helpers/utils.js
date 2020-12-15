@@ -3,7 +3,10 @@ const {
   USER_ID_INPUT,
   USER_PASSWORD_INPUT,
   REALM_INPUT,
-  WEBSOCKET_URL_INPUT
+  WEBSOCKET_URL_INPUT,
+  REGISTER_BUTTON,
+  DIALER_INPUT,
+  DIALER_CALL_BUTTON
 } = require('../helpers/constants');
 const { REALM, WEBSOCKET_URL } = require('../config');
 
@@ -24,15 +27,17 @@ async function typeText(page, selector, text) {
   }
 }
 
+async function click(page, selector) {
+  try {
+    await page.waitForSelector(selector);
+    await page.click(selector);
+  } catch (error) {
+    throw new Error(`Could not click on selector: ${selector}`);
+  }
+}
+
 module.exports = {
-  async click(page, selector) {
-    try {
-      await page.waitForSelector(selector);
-      await page.click(selector);
-    } catch (error) {
-      throw new Error(`Could not click on selector: ${selector}`);
-    }
-  },
+  click,
   async getText(page, selector) {
     try {
       await page.waitForSelector(selector);
@@ -101,5 +106,12 @@ module.exports = {
 
     await clearText(page, REALM_INPUT);
     await typeText(page, REALM_INPUT, REALM);
+
+    await click(page, REGISTER_BUTTON);
+  },
+  async callNumber(page, number) {
+    await clearText(page, DIALER_INPUT);
+    await typeText(page, DIALER_INPUT, number);
+    await click(page, DIALER_CALL_BUTTON);
   }
 };
