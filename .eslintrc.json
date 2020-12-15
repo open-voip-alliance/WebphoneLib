@@ -23,7 +23,6 @@
     "curly": ["error", "all"],
     "brace-style": ["error", "1tbs"],
     "no-console": "off",
-    "prettier/prettier": "error",
-    "no-explicit-any": false
+    "prettier/prettier": "error"
   }
 }
