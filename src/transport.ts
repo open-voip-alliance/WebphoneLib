@@ -399,27 +399,31 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       }
     };
 
-    const onInvite = this.userAgent.userAgentCore.delegate.onInvite;
+    if (this.userAgent.userAgentCore) {
+      const onInvite = this.userAgent.userAgentCore.delegate.onInvite;
 
-    // Patch the onInvite of the userAgentCore to interfere when DND
-    // is enabled so we can stop the invitation early before it sends
-    // other SIP messages such as progress messages (i.e. 180 RINGING)
-    this.userAgent.userAgentCore.delegate.onInvite = (
-      incomingInviteRequest: IncomingInviteRequest
-    ) => {
-      if (this.doNotDisturb) {
-        log.info(
-          'Incoming invite request has been rejected because Do-Not-Disturb (DND) is on',
-          this.constructor.name
-        );
-        incomingInviteRequest.trying(); // Still sending Trying SIP message to follow normal SIP flow.
-        incomingInviteRequest.reject({ statusCode: 486 }); // Reject with a 'Busy here'
-        return;
-      }
+      // Patch the onInvite of the userAgentCore to interfere when DND
+      // is enabled so we can stop the invitation early before it sends
+      // other SIP messages such as progress messages (i.e. 180 RINGING)
+      this.userAgent.userAgentCore.delegate.onInvite = (
+        incomingInviteRequest: IncomingInviteRequest
+      ) => {
+        if (this.doNotDisturb) {
+          log.info(
+            'Incoming invite request has been rejected because Do-Not-Disturb (DND) is on',
+            this.constructor.name
+          );
+          incomingInviteRequest.trying(); // Still sending Trying SIP message to follow normal SIP flow.
+          incomingInviteRequest.reject({ statusCode: 486 }); // Reject with a 'Busy here'
+          return;
+        }
 
-      // Otherwise execute normal onInvite flow when DND is off.
-      onInvite(incomingInviteRequest);
-    };
+        // Otherwise execute normal onInvite flow when DND is off.
+        onInvite(incomingInviteRequest);
+      };
+    } else {
+      log.error('UserAgent does not seem to have a UserAgentCore', this.constructor.name);
+    }
 
     this.userAgent.transport.on('disconnected', this.onTransportDisconnected.bind(this));
   }

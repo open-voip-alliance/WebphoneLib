@@ -1,17 +1,15 @@
 import test from 'ava';
 import pTimeout from 'p-timeout';
 import * as sinon from 'sinon';
-import { Subscription, UA as UABase } from 'sip.js';
+import { Subscription } from 'sip.js';
 
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
-import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
-import { Client, IClientOptions } from '../src/index';
 import { log } from '../src/logger';
-import { ReconnectableTransport, TransportFactory, UAFactory } from '../src/transport';
+import { ReconnectableTransport } from '../src/transport';
 
 import { createClientImpl, defaultTransportFactory, defaultUAFactory } from './_helpers';
 
@@ -170,6 +168,7 @@ test.serial('not waiting for unregistered if hasRegistered = false', async t => 
   };
 
   const client = createClientImpl(ua, defaultTransportFactory());
+  // eslint-disable-next-line require-atomic-updates
   client.disconnect = async () => {
     await (client as any).transport.disconnect({ hasRegistered: false });
   };

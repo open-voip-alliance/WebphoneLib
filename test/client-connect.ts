@@ -1,23 +1,15 @@
 import test from 'ava';
 import * as sinon from 'sinon';
-import { Core, UA as UABase } from 'sip.js';
 
 import { Registerer } from 'sip.js/lib/api/registerer';
-import { RegistererState } from 'sip.js/lib/api/registerer-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 
-import { ClientImpl } from '../src/client';
 import { ClientStatus } from '../src/enums';
 import * as Features from '../src/features';
 import { HealthChecker } from '../src/health-checker';
-import { Client, IClientOptions } from '../src/index';
-import {
-  ReconnectableTransport,
-  TransportFactory,
-  UAFactory,
-  WrappedTransport
-} from '../src/transport';
+import { IClientOptions } from '../src/index';
+import { ReconnectableTransport, UAFactory, WrappedTransport } from '../src/transport';
 
 import { createClientImpl, defaultTransportFactory, defaultUAFactory } from './_helpers';
 
