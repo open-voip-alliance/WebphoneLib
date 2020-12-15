@@ -25,6 +25,7 @@ const {
   DIALER_INPUT,
   DIALER_CALL_BUTTON,
   REGISTER_BUTTON,
+  SESSIONS_LIST,
   SESSION_ACCEPT_BUTTON,
   SESSION_REJECT_BUTTON,
   SESSION_CANCEL_BUTTON,
@@ -61,7 +62,7 @@ describe('Cold Transfer', () => {
     await browser.close();
   });
 
-  it('Have user A call user B and transfer user C to user B', async function() {
+  it('Have user A call user B and transfer user B to user C via a cold transfer in User A', async function() {
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
@@ -88,6 +89,7 @@ describe('Cold Transfer', () => {
 
     await clearText(page, DIALER_INPUT);
     await typeText(page, DIALER_INPUT, NUMBER_B);
+    await click(page, DIALER_CALL_BUTTON);
 
     page2.bringToFront();
     await waitForSelector(page2, SESSION_ACCEPT_BUTTON);
@@ -98,10 +100,23 @@ describe('Cold Transfer', () => {
     await waitForSelector(page, SESSION_TRANSFER_BUTTON);
     await click(page, SESSION_TRANSFER_BUTTON);
 
-    //TODO select blind transfer from dropdown menu.
+    await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
+    await typeText(page, SESSION_TRANSFER_INPUT, NUMBER_C);
+    await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
+    expect(await waitForSelector(page, SESSIONS_LIST)).to.be.empty;
+
+    page3.bringToFront();
+    await waitForSelector(page3, SESSION_ACCEPT_BUTTON);
+    await click(page3, SESSION_ACCEPT_BUTTON);
+    expect(await waitForText(page3, SESSION_STATUS, 'active')).to.be.true;
+
+    page2.bringToFront();
+    await waitForSelector(page2, SESSION_ACCEPT_BUTTON);
+    await click(page2, SESSION_ACCEPT_BUTTON);
+    expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;
   });
 
-  it('Have user A call user B and transfer user C to user B', async function() {
+  xit('Have user A call user B and transfer user C to user B', async function() {
     page.bringToFront();
     await page.goto(DEMO_URL);
 
@@ -127,7 +142,7 @@ describe('Cold Transfer', () => {
     expect(await waitForText(page3, CLIENT_STATUS, 'connected')).to.be.true;
   });
 
-  it('Have user A call user B and transfer user C to user B but have user C hang up and let user A accept ringback', async function() {
+  xit('Have user A call user B and transfer user C to user B but have user C hang up and let user A accept ringback', async function() {
     page.bringToFront();
     await page.goto(DEMO_URL);
 
@@ -153,7 +168,7 @@ describe('Cold Transfer', () => {
     expect(await waitForText(page3, CLIENT_STATUS, 'connected')).to.be.true;
   });
 
-  it('Have user A call user B and transfer user C to user B', async function() {
+  xit('Have user A call user B and transfer user C to user B', async function() {
     page.bringToFront();
     await page.goto(DEMO_URL);
 

@@ -24,7 +24,7 @@ const {
   LAUNCH_OPTIONS
 } = require('../helpers/constants');
 
-describe('Calling out', () => {
+describe.skip('Calling out', () => {
   let browser;
   let page;
   let page2;

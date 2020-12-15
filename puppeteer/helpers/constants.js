@@ -17,10 +17,9 @@ module.exports = {
     ignoreHTTPSErrors: true,
     headless: false,
     devtools: false,
-    slowMo: 50,
+    slowMo: 10,
     timeout: 0,
     defaultViewport: null
-    // executablePath: '/usr/bin/google-chrome-stable'
   },
   USER_ID_INPUT: 'c-voip-account [data-selector="userIdInput"]',
   USER_PASSWORD_INPUT: 'c-voip-account [data-selector="passwordInput"]',
@@ -40,5 +39,6 @@ module.exports = {
   SESSION_TRANSFER_INPUT: 'c-transfer [data-selector="input"]',
   SESSION_COMPLETE_TRANSFER_BUTTON: 'c-transfer [data-action="transferCall"]',
   SESSION_STATUS: 'c-session [data-selector="sessionStatus"]',
+  SESSIONS_LIST: '[data-selector="sessionsList"]',
   CLIENT_STATUS: '[data-selector="clientStatus"]'
 };
