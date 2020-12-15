@@ -31,12 +31,14 @@ window.customElements.define(
                     const password = this.nodes.passwordInput.value;
                     const websocketUrl = this.nodes.websocketUrlInput.value;
                     const realm = this.nodes.realmInput.value;
+                    const dnd = localStorage.getItem('dndEnabled') === 'true';
                     sipClient.setAccount(userId, password, realm);
                     sipClient.setTransport(websocketUrl);
                     sipClient.setClient();
                     setOndevicesChanged();
                     setInputsAndOutputs();
                     sipClient.registerAccount();
+                    sipClient.setDoNotDisturb(dnd);
                     console.log('register');
                   }
                   break;
@@ -65,14 +67,8 @@ window.customElements.define(
         case 'change':
           {
             const { checked } = this.actions.dndToggle;
-
             localStorage.setItem('dndEnabled', checked);
-
-            if (sipClient.client) {
-              sipClient.client.setDoNotDisturb(checked);
-            } else {
-              throw new Error("Can't set DND because there is no client");
-            }
+            sipClient.setDoNotDisturb(checked);
           }
           break;
 

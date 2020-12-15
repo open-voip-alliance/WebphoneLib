@@ -135,6 +135,14 @@ export function unsubscribe(uri) {
   return client.unsubscribe(uri);
 }
 
+export async function setDoNotDisturb(enabled) {
+  try {
+    return client.setDoNotDisturb(enabled);
+  } catch (e) {
+    logger.error(e);
+  }
+}
+
 // Placeholder until web-calling lib has implemented separate rejected promise
 export function sessionAccepted(session) {
   return new Promise((resolve, reject) => {
