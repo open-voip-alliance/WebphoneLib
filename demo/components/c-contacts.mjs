@@ -23,28 +23,32 @@ window.customElements.define(
 
       switch (e.type) {
         case 'click':
-          const {
-            target: { dataset }
-          } = e;
+          {
+            const {
+              target: { dataset }
+            } = e;
 
-          if (dataset.action) {
-            const accountId = this.nodes.input.value;
-            switch (dataset.action) {
-              case 'subscribe':
-                logger.info(`Subscribing to ${accountId}`);
+            if (dataset.action) {
+              const accountId = this.nodes.input.value;
+              switch (dataset.action) {
+                case 'subscribe':
+                  {
+                    logger.info(`Subscribing to ${accountId}`);
 
-                await sipClient.subscribe(this.nodes.input.value);
+                    await sipClient.subscribe(this.nodes.input.value);
 
-                const contactNode = document.createElement('c-contact');
-                contactNode.data = { contactUri: this.nodes.input.value };
-                this.nodes.contactsList.appendChild(contactNode);
-                break;
-              case 'unsubscribe':
-                logger.info(`Unsubscribing from ${accountId}`);
-                sipClient.unsubscribe(accountId);
-                break;
-              default:
-                break;
+                    const contactNode = document.createElement('c-contact');
+                    contactNode.data = { contactUri: this.nodes.input.value };
+                    this.nodes.contactsList.appendChild(contactNode);
+                  }
+                  break;
+                case 'unsubscribe':
+                  logger.info(`Unsubscribing from ${accountId}`);
+                  sipClient.unsubscribe(accountId);
+                  break;
+                default:
+                  break;
+              }
             }
           }
           break;

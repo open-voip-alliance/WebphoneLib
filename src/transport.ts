@@ -2,17 +2,17 @@ import { EventEmitter } from 'events';
 
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
-import { Core, Subscription, UA as UABase, Web } from 'sip.js';
+import { Core, Web } from 'sip.js';
 import { Invitation } from 'sip.js/lib/api/invitation';
 import { Inviter } from 'sip.js/lib/api/inviter';
 import { Publisher } from 'sip.js/lib/api/publisher';
 import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
-import { Session } from 'sip.js/lib/api/session';
 import { Subscriber } from 'sip.js/lib/api/subscriber';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
+import { IncomingInviteRequest } from 'sip.js/lib/core';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
@@ -31,6 +31,7 @@ export type UAFactory = (options: UserAgentOptions) => UserAgent;
 export interface ITransport extends EventEmitter {
   registeredPromise: Promise<any>;
   registered: boolean;
+  doNotDisturb: boolean;
   status: ClientStatus;
 
   configure(options: IClientOptions): void;
@@ -42,6 +43,7 @@ export interface ITransport extends EventEmitter {
   createInviter(phoneNumber: string): Inviter;
   createSubscriber(contact: string): Subscriber;
   createPublisher(contact: string, options: PublisherOptions): Publisher;
+  setDoNotDisturb(enabled: boolean);
 }
 
 /**
@@ -61,7 +63,7 @@ export class WrappedTransport extends Web.Transport {
    * with a new websocket, we call the function that normally causes the
    * disconnectPromise to be resolved after a timeout.
    */
-  protected disconnectPromise(options: any = {}): Promise<any> {
+  protected disconnectPromise(): Promise<any> {
     return pTimeout(super.disconnectPromise(), 1000, () => {
       log.debug('Fake-closing the the socket by ourselves.', this.constructor.name);
       (this as any).onClose({ code: 'fake', reason: 'Artificial timeout' });
@@ -93,11 +95,11 @@ const CANCELLED_REASON = {
 export class ReconnectableTransport extends EventEmitter implements ITransport {
   public registeredPromise: Promise<any>;
   public registered = false;
+  public doNotDisturb = false;
   public status: ClientStatus = ClientStatus.DISCONNECTED;
   private priority = false;
   private unregisteredPromise: Promise<any>;
   private uaFactory: UAFactory;
-  private ua: UserAgent;
   private uaOptions: UserAgentOptions;
   private userAgent: UserAgent;
   private dyingCounter = 60000;
@@ -124,7 +126,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     window.addEventListener('online', this.boundOnWindowOnline);
   }
 
-  public configure(options: IClientOptions) {
+  public configure(options: IClientOptions): void {
     const { account, transport, userAgentString } = options;
     const uri = UserAgent.makeURI(account.uri);
 
@@ -164,7 +166,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   }
 
   // Connect (and subsequently register) to server
-  public async connect() {
+  public async connect(): Promise<any> {
     if (this.status === ClientStatus.RECOVERING) {
       return Promise.reject(new Error('Can not connect while trying to recover.'));
     }
@@ -211,7 +213,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   }
 
   // Unregister (and subsequently disconnect) to server.
-  public async disconnect({ hasRegistered = true }): Promise<void> {
+  public async disconnect({ hasRegistered = true }: any): Promise<void> {
     if (!this.userAgent || this.status === ClientStatus.DISCONNECTED) {
       log.info('Already disconnected.', this.constructor.name);
       return;
@@ -269,11 +271,16 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     });
   }
 
-  public createPublisher(contact: string, options: PublisherOptions) {
+  public createPublisher(contact: string, options: PublisherOptions): Publisher {
     return new Publisher(this.userAgent, UserAgent.makeURI(contact), 'dialog', options);
   }
 
-  public isRegistered() {
+  public setDoNotDisturb(enabled: boolean) {
+    log.info(`DND has been ${enabled ? 'enabled' : 'disabled'}.`, this.constructor.name);
+    this.doNotDisturb = enabled;
+  }
+
+  public isRegistered(): Promise<any> {
     return this.registeredPromise;
   }
 
@@ -371,6 +378,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
   private configureUA(options: UserAgentOptions) {
     this.userAgent = this.uaFactory(options);
+
     this.userAgent.delegate = {
       onInvite: (invitation: Invitation) => {
         // Patch the onCancel delegate function to parse the reason of
@@ -378,6 +386,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         // a Session to return the reason when a session is terminated.
         const cancelled = { reason: undefined };
         const onCancel = (invitation as any).incomingInviteRequest.delegate.onCancel;
+
         (invitation as any).incomingInviteRequest.delegate.onCancel = (
           message: Core.IncomingRequestMessage
         ) => {
@@ -385,8 +394,31 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
           cancelled.reason = reason ? CANCELLED_REASON[reason.get('text')] : undefined;
           onCancel(message);
         };
+
         this.emit('invite', { invitation, cancelled });
       }
+    };
+
+    const onInvite = this.userAgent.userAgentCore.delegate.onInvite;
+
+    // Patch the onInvite of the userAgentCore to interfere when DND
+    // is enabled so we can stop the invitation early before it sends
+    // other SIP messages such as progress messages (i.e. 180 RINGING)
+    this.userAgent.userAgentCore.delegate.onInvite = (
+      incomingInviteRequest: IncomingInviteRequest
+    ) => {
+      if (this.doNotDisturb) {
+        log.info(
+          'Incoming invite request has been rejected because Do-Not-Disturb (DND) is on',
+          this.constructor.name
+        );
+        incomingInviteRequest.trying(); // Still sending Trying SIP message to follow normal SIP flow.
+        incomingInviteRequest.reject({ statusCode: 486 }); // Reject with a 'Busy here'
+        return;
+      }
+
+      // Otherwise execute normal onInvite flow when DND is off.
+      onInvite(incomingInviteRequest);
     };
 
     this.userAgent.transport.on('disconnected', this.onTransportDisconnected.bind(this));

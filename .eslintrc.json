@@ -22,8 +22,8 @@
   "rules": {
     "curly": ["error", "all"],
     "brace-style": ["error", "1tbs"],
-    "indent": ["warn", 2],
     "no-console": "off",
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "no-explicit-any": false
   }
 }

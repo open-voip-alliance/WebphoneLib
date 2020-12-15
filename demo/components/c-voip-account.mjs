@@ -63,7 +63,17 @@ window.customElements.define(
           break;
 
         case 'change':
-          localStorage.setItem('dndEnabled', this.actions.dndToggle.checked);
+          {
+            const { checked } = this.actions.dndToggle;
+
+            localStorage.setItem('dndEnabled', checked);
+
+            if (sipClient.client) {
+              sipClient.client.setDoNotDisturb(checked);
+            } else {
+              throw new Error("Can't set DND because there is no client");
+            }
+          }
           break;
 
         default:

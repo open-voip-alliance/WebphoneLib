@@ -82,6 +82,8 @@ export interface IClient {
 
   createPublisher(contact: string, options: PublisherOptions): Publisher;
 
+  setDoNotDisturb(enabled: boolean);
+
   /* tslint:disable:unified-signatures */
   /**
    * When receiving an invite, a (frozen) proxy session is returned which can be
@@ -135,10 +137,6 @@ export interface IClient {
    */
   on(event: 'sessionRemoved', listener: ({ id }) => void): this;
   /* tslint:enable:unified-signatures */
-}
-
-interface ISubscriptionNotification {
-  request: Core.IncomingRequestMessage;
 }
 
 /**
@@ -355,6 +353,10 @@ export class ClientImpl extends EventEmitter implements IClient {
     return this.transport.createPublisher(contact, options);
   }
 
+  public setDoNotDisturb(enabled: boolean): void {
+    this.transport.setDoNotDisturb(enabled);
+  }
+
   private configureTransport(uaFactory: UAFactory, options: IClientOptions) {
     this.transport = this.transportFactory(uaFactory, options);
 
@@ -528,6 +530,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
     'removeListener',
     'subscribe',
     'resubscribe',
+    'setDoNotDisturb',
     'unsubscribe',
     'defaultMedia'
   ]);
