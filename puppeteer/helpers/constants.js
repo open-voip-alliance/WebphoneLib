@@ -14,6 +14,7 @@ module.exports = {
       '--start-maximized',
       '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
     ],
+    dumpio: true,
     ignoreHTTPSErrors: true,
     headless: false,
     devtools: false,
