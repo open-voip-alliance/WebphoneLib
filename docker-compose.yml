@@ -13,14 +13,17 @@ services:
     depends_on:
       - web
     environment:
-      - DISPLAY
+      - DISPLAY=$unix$DISPLAY
       - DEMO_URL=http://localhost:1235/demo
       - USER_A
       - USER_B
+      - USER_C
       - PASSWORD_A
       - PASSWORD_B
+      - PASSWORD_C
       - NUMBER_A
       - NUMBER_B
+      - NUMBER_C
       - WEBSOCKET_URL
       - REALM
     command: sh -c "sleep 10 && npm run test:e2e"

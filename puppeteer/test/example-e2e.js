@@ -3,7 +3,7 @@ const expect = require('chai').expect;
 const { click } = require('../helpers/utils');
 const { REGISTER_BUTTON, DEMO_URL, LAUNCH_OPTIONS } = require('../helpers/constants');
 
-describe('examples', () => {
+describe.skip('examples', () => {
   let browser;
   let page;
 

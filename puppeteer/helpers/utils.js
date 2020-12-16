@@ -3,20 +3,42 @@ const {
   USER_ID_INPUT,
   USER_PASSWORD_INPUT,
   REALM_INPUT,
-  WEBSOCKET_URL_INPUT
+  WEBSOCKET_URL_INPUT,
+  REGISTER_BUTTON,
+  DIALER_INPUT,
+  DIALER_CALL_BUTTON
 } = require('../helpers/constants');
 const { REALM, WEBSOCKET_URL } = require('../config');
 
+async function clearText(page, selector) {
+  try {
+    await page.waitForSelector(selector);
+    await page.click(selector, { clickCount: 3 });
+    await page.press('Backspace');
+  } catch (error) {}
+}
+
+async function typeText(page, selector, text) {
+  try {
+    await page.waitForSelector(selector);
+    await page.type(selector, text);
+  } catch (error) {
+    throw new Error(`Could not type into selector: ${selector}`);
+  }
+}
+
+async function click(page, selector) {
+  try {
+    await page.waitForSelector(selector);
+    await page.click(selector);
+  } catch (error) {
+    throw new Error(`Could not click on selector: ${selector}`);
+  }
+}
+
 module.exports = {
-  click: async function(page, selector) {
-    try {
-      await page.waitForSelector(selector);
-      await page.click(selector);
-    } catch (error) {
-      throw new Error(`Could not click on selector: ${selector}`);
-    }
-  },
-  getText: async function(page, selector) {
+  click,
+  async getText(page, selector) {
     try {
       await page.waitForSelector(selector);
       return page.$$eval(selector, element => element.innerHTML);
@@ -24,15 +46,8 @@ module.exports = {
       throw new Error(`Could not get text from selector: ${selector}`);
     }
   },
-  typeText: async function(page, selector, text) {
-    try {
-      await page.waitForSelector(selector);
-      await page.type(selector, text);
-    } catch (error) {
-      throw new Error(`Could not type into selector: ${selector}`);
-    }
-  },
-  waitForText: async function(page, selector, text) {
+  typeText,
+  async waitForText(page, selector, text) {
     let node;
     try {
       node = await page.waitForSelector(selector);
@@ -65,7 +80,7 @@ module.exports = {
 
     return isFound.jsonValue();
   },
-  waitForSelector: async function(page, selector) {
+  async waitForSelector(page, selector) {
     let node;
     try {
       node = await page.waitForSelector(selector);
@@ -78,24 +93,25 @@ module.exports = {
 
     return node.jsonValue();
   },
-  clearText: async function(page, selector) {
-    try {
-      await page.waitForSelector(selector);
-      await page.click(selector, { clickCount: 3 });
-      await page.press('Backspace');
-    } catch (error) {}
+  clearText,
+  async registerUser(page, userAuthId, userPw) {
+    await clearText(page, USER_ID_INPUT);
+    await typeText(page, USER_ID_INPUT, userAuthId);
+
+    await clearText(page, USER_PASSWORD_INPUT);
+    await typeText(page, USER_PASSWORD_INPUT, userPw);
+
+    await clearText(page, WEBSOCKET_URL_INPUT);
+    await typeText(page, WEBSOCKET_URL_INPUT, WEBSOCKET_URL);
+
+    await clearText(page, REALM_INPUT);
+    await typeText(page, REALM_INPUT, REALM);
+
+    await click(page, REGISTER_BUTTON);
   },
-  registerUser: async function(page, userAuthId, userPw) {
-    await module.exports.clearText(page, USER_ID_INPUT);
-    await module.exports.typeText(page, USER_ID_INPUT, userAuthId);
-
-    await module.exports.clearText(page, USER_PASSWORD_INPUT);
-    await module.exports.typeText(page, USER_PASSWORD_INPUT, userPw);
-
-    await module.exports.clearText(page, WEBSOCKET_URL_INPUT);
-    await module.exports.typeText(page, WEBSOCKET_URL_INPUT, WEBSOCKET_URL);
-
-    await module.exports.clearText(page, REALM_INPUT);
-    await module.exports.typeText(page, REALM_INPUT, REALM);
+  async callNumber(page, number) {
+    await clearText(page, DIALER_INPUT);
+    await typeText(page, DIALER_INPUT, number);
+    await click(page, DIALER_CALL_BUTTON);
   }
 };
