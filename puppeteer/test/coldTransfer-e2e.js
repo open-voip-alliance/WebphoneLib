@@ -22,7 +22,6 @@ const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
   SESSIONS,
-  SESSIONS_LIST,
   SESSION_ACCEPT_BUTTON,
   SESSION_REJECT_BUTTON,
   SESSION_HANGUP_BUTTON,
@@ -36,7 +35,7 @@ const {
   LAUNCH_OPTIONS
 } = require('../helpers/constants');
 
-xdescribe('Cold Transfer', () => {
+describe('Cold Transfer', () => {
   let browser;
   let page;
   let page2;
@@ -138,6 +137,7 @@ xdescribe('Cold Transfer', () => {
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
     await typeText(page, SESSION_TRANSFER_INPUT, NUMBER_C);
     await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
+
     expect(await page.$$(SESSIONS)).to.be.empty;
 
     page3.bringToFront();

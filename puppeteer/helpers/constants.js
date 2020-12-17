@@ -16,7 +16,7 @@ module.exports = {
     ],
     dumpio: false,
     ignoreHTTPSErrors: true,
-    headless: false,
+    headless: true,
     devtools: false,
     slowMo: 10,
     timeout: 0,

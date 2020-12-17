@@ -97,7 +97,7 @@ describe('Warm Transfer', () => {
     expect(await page3.$$(SESSIONS)).to.have.length(1);
 
     page.bringToFront();
-    await page.waitFor(3000);
+    await page.waitForTimeout(3000);
     expect(await page.$$(SESSIONS)).to.have.length(0);
 
     page2.bringToFront();
@@ -107,7 +107,7 @@ describe('Warm Transfer', () => {
     await click(page2, SESSION_HANGUP_BUTTON);
   });
 
-  it('Have user A call user B and transfer user C to user B but have user C hang up and let user A accept ringback', async function() {
+  it('Have user A call user B and transfer user C to user B but have user C hang up and have user A activate call to B again', async function() {
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
@@ -159,7 +159,7 @@ describe('Warm Transfer', () => {
     await click(page, SESSION_HANGUP_BUTTON);
   });
 
-  it('Have user A call user B and transfer a non existing number to user B', async function() {
+  it('Have user A call user B and transfer B to a non existing number', async function() {
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
@@ -192,7 +192,7 @@ describe('Warm Transfer', () => {
     expect(await page.$$(SESSIONS)).to.have.length(2);
 
     // session will get rejected so lets wait a bit for that
-    await page.waitFor(5000);
+    await page.waitForTimeout(5000);
 
     expect(await page.$$(SESSIONS)).to.have.length(1);
     expect(await waitForText(page, SESSION_STATUS, 'on_hold')).to.be.true;

@@ -25,7 +25,7 @@ describe.skip('examples', () => {
 
     // Click on Register
     await click(page, REGISTER_BUTTON);
-    await page.waitFor(2000);
+    await page.waitForTimeout(2000);
   });
 
   it('Should be possible to launch two browser pages', async function() {
