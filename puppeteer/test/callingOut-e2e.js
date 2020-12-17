@@ -1,14 +1,6 @@
 const puppeteer = require('puppeteer');
 const { expect } = require('chai');
-const {
-  callNumber,
-  click,
-  typeText,
-  clearText,
-  waitForText,
-  waitForSelector,
-  registerUser
-} = require('../helpers/utils');
+const { callNumber, click, waitForText, registerUser } = require('../helpers/utils');
 const { USER_A, USER_B, PASSWORD_A, PASSWORD_B, NUMBER_A, NUMBER_B } = require('../config');
 const {
   NON_EXISTING_NUMBER,
@@ -22,7 +14,7 @@ const {
   LAUNCH_OPTIONS
 } = require('../helpers/constants');
 
-describe('Calling out', () => {
+describe.skip('Calling out', () => {
   let browser;
   let page;
   let page2;

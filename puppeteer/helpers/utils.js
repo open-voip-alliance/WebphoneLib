@@ -80,19 +80,6 @@ module.exports = {
 
     return isFound.jsonValue();
   },
-  async waitForSelector(page, selector) {
-    let node;
-    try {
-      node = await page.waitForSelector(selector);
-    } catch (err) {
-      if (err instanceof errors.TimeoutError) {
-        throw new Error(`Timeout waiting for selector: "${selector}"`);
-      }
-      throw err;
-    }
-
-    return node.jsonValue();
-  },
   clearText,
   async registerUser(page, userAuthId, userPw) {
     await clearText(page, USER_ID_INPUT);

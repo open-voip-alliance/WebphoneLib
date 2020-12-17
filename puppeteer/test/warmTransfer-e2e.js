@@ -1,13 +1,6 @@
 const puppeteer = require('puppeteer');
 const { expect } = require('chai');
-const {
-  callNumber,
-  click,
-  typeText,
-  waitForText,
-  waitForSelector,
-  registerUser
-} = require('../helpers/utils');
+const { callNumber, click, typeText, waitForText, registerUser } = require('../helpers/utils');
 const {
   USER_A,
   USER_B,
@@ -22,7 +15,6 @@ const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
   SESSIONS,
-  SESSIONS_LIST,
   SESSION_ACCEPT_BUTTON,
   SESSION_UNHOLD_BUTTON,
   SESSION_REJECT_BUTTON,
@@ -158,7 +150,7 @@ describe('Warm Transfer', () => {
     await click(page3, SESSION_REJECT_BUTTON);
     expect(await page3.$$(SESSIONS)).to.be.empty;
 
-    // Go back to user A to accept the ringback
+    // Go back to user A to "continue" the session with user B.
     page.bringToFront();
     expect(await page.$$(SESSIONS)).to.have.length(1);
     expect(await waitForText(page, SESSION_STATUS, 'on_hold')).to.be.true;
@@ -167,7 +159,7 @@ describe('Warm Transfer', () => {
     await click(page, SESSION_HANGUP_BUTTON);
   });
 
-  xit('Have user A call user B and transfer a non existing number to user B', async function() {
+  it('Have user A call user B and transfer a non existing number to user B', async function() {
     page2.bringToFront();
     await page2.goto(DEMO_URL);
 
@@ -187,22 +179,24 @@ describe('Warm Transfer', () => {
 
     page2.bringToFront();
     await click(page2, SESSION_ACCEPT_BUTTON);
+    expect(await page2.$$(SESSIONS)).to.have.length(1);
     expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;
 
     page.bringToFront();
+    expect(await page.$$(SESSIONS)).to.have.length(1);
     await click(page, SESSION_TRANSFER_BUTTON);
 
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_WARM_TRANSFER_SELECT);
     await typeText(page, SESSION_TRANSFER_INPUT, NON_EXISTING_NUMBER);
     await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
-    expect(await waitForSelector(page, SESSIONS_LIST)).to.be.empty;
+    expect(await page.$$(SESSIONS)).to.have.length(2);
 
-    page2.bringToFront();
-    expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;
+    // session will get rejected so lets wait a bit for that
+    await page.waitFor(5000);
 
-    //Accept the ringback
-    page.bringToFront();
-    await click(page, SESSION_ACCEPT_BUTTON);
+    expect(await page.$$(SESSIONS)).to.have.length(1);
+    expect(await waitForText(page, SESSION_STATUS, 'on_hold')).to.be.true;
+    await click(page, SESSION_UNHOLD_BUTTON);
     expect(await waitForText(page, SESSION_STATUS, 'active')).to.be.true;
     await click(page, SESSION_HANGUP_BUTTON);
   });
