@@ -168,10 +168,7 @@ test.serial('not waiting for unregistered if hasRegistered = false', async t => 
   };
 
   const client = createClientImpl(ua, defaultTransportFactory());
-  // eslint-disable-next-line require-atomic-updates
-  client.disconnect = async () => {
-    await (client as any).transport.disconnect({ hasRegistered: false });
-  };
+  client.disconnect = () => (client as any).transport.disconnect({ hasRegistered: false });
 
   const status = [];
   client.on('statusUpdate', clientStatus => status.push(clientStatus));

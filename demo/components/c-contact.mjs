@@ -1,8 +1,5 @@
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
 import { subscriptionEvents, subscriptions } from '../lib/calling.mjs';
-import { Logger } from '../lib/logging.mjs';
-
-const logger = new Logger('c-contact');
 
 window.customElements.define(
   'c-contact',
@@ -22,7 +19,7 @@ window.customElements.define(
       this.nodes = new NodesProxy(this);
     }
 
-    async handleEvent({ type, detail, currentTarget }) {
+    async handleEvent({ type, detail }) {
       switch (type) {
         case `notify-${this.data.contactUri}`:
           this.nodes.contactStatus.textContent = detail.status;
