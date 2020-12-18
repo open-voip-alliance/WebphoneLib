@@ -6,7 +6,6 @@ const {
   typeText,
   clearText,
   waitForText,
-  waitForSelector,
   registerUser
 } = require('../helpers/utils');
 const {
@@ -22,7 +21,7 @@ const {
 const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
-  SESSIONS_LIST,
+  SESSIONS,
   SESSION_ACCEPT_BUTTON,
   SESSION_REJECT_BUTTON,
   SESSION_HANGUP_BUTTON,
@@ -92,7 +91,8 @@ describe('Cold Transfer', () => {
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
     await typeText(page, SESSION_TRANSFER_INPUT, NUMBER_C);
     await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
-    expect(await waitForSelector(page, SESSIONS_LIST)).to.be.empty;
+    await page.waitForTimeout(200);
+    expect(await page.$$(SESSIONS)).to.be.empty;
 
     page3.bringToFront();
     await click(page3, SESSION_ACCEPT_BUTTON);
@@ -138,12 +138,13 @@ describe('Cold Transfer', () => {
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
     await typeText(page, SESSION_TRANSFER_INPUT, NUMBER_C);
     await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
-    expect(await waitForSelector(page, SESSIONS_LIST)).to.be.empty;
+
+    expect(await page.$$(SESSIONS)).to.be.empty;
 
     page3.bringToFront();
     // Rejecting the incoming transfer call
     await click(page3, SESSION_REJECT_BUTTON);
-    expect(await waitForSelector(page, SESSIONS_LIST)).to.be.empty;
+    expect(await page.$$(SESSIONS)).to.be.empty;
 
     // Go back to user A to accept the ringback
     page.bringToFront();
@@ -180,7 +181,8 @@ describe('Cold Transfer', () => {
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
     await typeText(page, SESSION_TRANSFER_INPUT, NON_EXISTING_NUMBER);
     await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
-    expect(await waitForSelector(page, SESSIONS_LIST)).to.be.empty;
+    await page.waitForTimeout(200);
+    expect(await page.$$(SESSIONS)).to.be.empty;
 
     page2.bringToFront();
     expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;

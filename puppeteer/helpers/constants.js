@@ -14,8 +14,9 @@ module.exports = {
       '--start-maximized',
       '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
     ],
+    dumpio: false,
     ignoreHTTPSErrors: true,
-    headless: false,
+    headless: true,
     devtools: false,
     slowMo: 10,
     timeout: 0,
@@ -29,6 +30,7 @@ module.exports = {
   DIALER_CALL_BUTTON: 'c-dialer [data-action="call"]',
   REGISTER_BUTTON: 'c-voip-account [data-action="register"]',
   SESSION_ACCEPT_BUTTON: 'c-session [data-action="accept"]',
+  SESSION_UNHOLD_BUTTON: 'c-session [data-action="unhold"]',
   SESSION_REJECT_BUTTON: 'c-session [data-action="reject"]',
   SESSION_CANCEL_BUTTON: 'c-session [data-action="cancel"]',
   SESSION_HANGUP_BUTTON: 'c-session [data-action="hangup"]',
@@ -40,5 +42,6 @@ module.exports = {
   SESSION_COMPLETE_TRANSFER_BUTTON: 'c-transfer [data-action="transferCall"]',
   SESSION_STATUS: 'c-session [data-selector="sessionStatus"]',
   SESSIONS_LIST: '[data-selector="sessionsList"]',
+  SESSIONS: 'c-session',
   CLIENT_STATUS: '[data-selector="clientStatus"]'
 };

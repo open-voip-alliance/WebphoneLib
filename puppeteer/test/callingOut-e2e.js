@@ -1,18 +1,11 @@
 const puppeteer = require('puppeteer');
 const { expect } = require('chai');
-const {
-  callNumber,
-  click,
-  typeText,
-  clearText,
-  waitForText,
-  waitForSelector,
-  registerUser
-} = require('../helpers/utils');
+const { callNumber, click, waitForText, registerUser } = require('../helpers/utils');
 const { USER_A, USER_B, PASSWORD_A, PASSWORD_B, NUMBER_A, NUMBER_B } = require('../config');
 const {
   NON_EXISTING_NUMBER,
   DEMO_URL,
+  SESSIONS,
   SESSION_ACCEPT_BUTTON,
   SESSION_REJECT_BUTTON,
   SESSION_CANCEL_BUTTON,
@@ -121,7 +114,7 @@ describe('Calling out', () => {
 
     // and end the call when we can
     await click(page2, SESSION_CANCEL_BUTTON);
-    await page2.waitFor(100);
+    await page2.waitForTimeout(100);
   });
 
   it('calling out while other party rejects the call', async function() {
@@ -164,8 +157,8 @@ describe('Calling out', () => {
     // setup a call to the non-logged in account
     await callNumber(page, NUMBER_B);
 
-    //TODO have somewaht of an assertion here.
-    await page.waitFor(500);
+    await page.waitForTimeout(500);
+    expect(await page.$$(SESSIONS)).to.have.length(0);
   });
 
   it('calling out while other party does not exist', async function() {
@@ -182,7 +175,7 @@ describe('Calling out', () => {
     // Setup a call to an internal number we know does not exist
     await callNumber(page, NON_EXISTING_NUMBER);
 
-    //TODO have somewhat of an assertion here as well :)
-    await page.waitFor(500);
+    await page.waitForTimeout(5000);
+    expect(await page.$$(SESSIONS)).to.have.length(0);
   });
 });
