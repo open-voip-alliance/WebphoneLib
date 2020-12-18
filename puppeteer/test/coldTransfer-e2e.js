@@ -91,6 +91,7 @@ describe('Cold Transfer', () => {
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
     await typeText(page, SESSION_TRANSFER_INPUT, NUMBER_C);
     await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
+    await page.waitForTimeout(200);
     expect(await page.$$(SESSIONS)).to.be.empty;
 
     page3.bringToFront();
@@ -180,6 +181,7 @@ describe('Cold Transfer', () => {
     await page.select(SESSION_TRANSFER_METHOD_DROPDOWN, SESSION_COLD_TRANSFER_SELECT);
     await typeText(page, SESSION_TRANSFER_INPUT, NON_EXISTING_NUMBER);
     await click(page, SESSION_COMPLETE_TRANSFER_BUTTON);
+    await page.waitForTimeout(200);
     expect(await page.$$(SESSIONS)).to.be.empty;
 
     page2.bringToFront();
