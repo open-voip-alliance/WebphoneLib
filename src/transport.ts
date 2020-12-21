@@ -44,6 +44,7 @@ export interface ITransport extends EventEmitter {
   createSubscriber(contact: string): Subscriber;
   createPublisher(contact: string, options: PublisherOptions): Publisher;
   setDoNotDisturb(enabled: boolean);
+  ignoreDoNotDisturbRule(incomingInviteRequest: IncomingInviteRequest): boolean;
 }
 
 /**
@@ -275,7 +276,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     return new Publisher(this.userAgent, UserAgent.makeURI(contact), 'dialog', options);
   }
 
-  public setDoNotDisturb(enabled: boolean) {
+  public setDoNotDisturb(enabled: boolean): void {
     log.info(`DND has been ${enabled ? 'enabled' : 'disabled'}.`, this.constructor.name);
     this.doNotDisturb = enabled;
   }
@@ -336,6 +337,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   public close(): void {
     window.removeEventListener('online', this.boundOnWindowOnline);
     window.removeEventListener('offline', this.boundOnWindowOffline);
+  }
+
+  public ignoreDoNotDisturbRule(incomingInviteRequest: IncomingInviteRequest): boolean {
+    return false;
   }
 
   private updateStatus(status: ClientStatus): void {
@@ -405,12 +410,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       // Patch the onInvite of the userAgentCore to interfere when DND
       // is enabled so we can stop the invitation early before it sends
       // other SIP messages such as progress messages (i.e. 180 RINGING)
+      //
+      // Override the ignoreDoNotDisturbRule function to set an ignore
+      // rule when you want to bypass DND for the given invite request.
       this.userAgent.userAgentCore.delegate.onInvite = (
         incomingInviteRequest: IncomingInviteRequest
       ) => {
-        if (this.doNotDisturb) {
+        if (this.doNotDisturb && !this.ignoreDoNotDisturbRule(incomingInviteRequest)) {
           log.info(
-            'Incoming invite request has been rejected because Do-Not-Disturb (DND) is on',
+            'Incoming invite request has been rejected because DND is on',
             this.constructor.name
           );
           incomingInviteRequest.trying(); // Still sending Trying SIP message to follow normal SIP flow.
