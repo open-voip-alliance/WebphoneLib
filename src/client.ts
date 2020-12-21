@@ -84,6 +84,8 @@ export interface IClient {
 
   setDoNotDisturb(enabled: boolean);
 
+  setShouldIgnoreDoNotDisturb(func: any);
+
   /* tslint:disable:unified-signatures */
   /**
    * When receiving an invite, a (frozen) proxy session is returned which can be
@@ -357,6 +359,10 @@ export class ClientImpl extends EventEmitter implements IClient {
     this.transport.setDoNotDisturb(enabled);
   }
 
+  public setShouldIgnoreDoNotDisturb(func: any): void {
+    this.transport.shouldIgnoreDoNotDisturb = func;
+  }
+
   private configureTransport(uaFactory: UAFactory, options: IClientOptions) {
     this.transport = this.transportFactory(uaFactory, options);
 
@@ -532,6 +538,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
     'resubscribe',
     'setDoNotDisturb',
     'unsubscribe',
-    'defaultMedia'
+    'defaultMedia',
+    'setShouldIgnoreDoNotDisturb'
   ]);
 } as any) as ClientCtor;
