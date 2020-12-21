@@ -419,16 +419,16 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         if (this.doNotDisturb) {
           const invitation = new Invitation(this.userAgent, incomingInviteRequest);
 
-          if (!this.shouldIgnoreDoNotDisturb(invitation)) {
-            log.info('Invitation has been rejected because DND is on.', this.constructor.name);
-            incomingInviteRequest.trying(); // Still sending Trying SIP message to follow normal SIP flow.
-            incomingInviteRequest.reject({ statusCode: 486 }); // Reject with a 'Busy here'
-            return;
-          } else {
+          if (this.shouldIgnoreDoNotDisturb(invitation)) {
             log.info(
-              'DND did not reject this invitation because the ignore rule has been applied.',
+              'DND did not reject this invitation because the DND ignore rule has been applied.',
               this.constructor.name
             );
+          } else {
+            log.info('Invitation has been rejected because DND is on.', this.constructor.name);
+            incomingInviteRequest.trying(); // Still sending Trying SIP message to follow normal SIP flow.
+            invitation.reject({ statusCode: 486 }); // Reject with a 'Busy here'
+            return;
           }
         }
 
