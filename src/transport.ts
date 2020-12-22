@@ -443,7 +443,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
             // you should be trying to deal with a transport error here, you are likely wrong.
             log.error(
               'A transport error has occured while handling an incoming INVITE request.',
-              'SIP.js 0.15.6 userAgentCore.delegate.onInvite'
+              this.constructor.name
             );
           }
         };
