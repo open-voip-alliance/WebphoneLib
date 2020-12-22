@@ -69,13 +69,8 @@ function onSessionsUpdated() {
   callingEvents.dispatchEvent(new CustomEvent('sessionsUpdated'));
 }
 
-function onInvite(session) {
-  if (localStorage.getItem('dndEnabled') === 'true') {
-    // Send the 486 'Busy here' status instead of the default 480 'Unavailable'.
-    session.reject({ statusCode: 486 });
-  } else {
-    callingEvents.dispatchEvent(new CustomEvent('sessionsUpdated'));
-  }
+function onInvite() {
+  callingEvents.dispatchEvent(new CustomEvent('sessionsUpdated'));
 }
 
 export const subscriptionEvents = eventTarget();

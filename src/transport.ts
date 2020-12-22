@@ -11,8 +11,8 @@ import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
 import { Subscriber } from 'sip.js/lib/api/subscriber';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
-import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
-import { IncomingInviteRequest } from 'sip.js/lib/core';
+import { UserAgentOptions, SIPExtension } from 'sip.js/lib/api/user-agent-options';
+import { IncomingInviteRequest, IncomingRequestMessage, TransportError } from 'sip.js/lib/core';
 
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
@@ -405,20 +405,120 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     };
 
     if (this.userAgent.userAgentCore) {
-      const onInvite = this.userAgent.userAgentCore.delegate.onInvite;
-
       // Patch the onInvite of the userAgentCore to interfere when DND
       // is enabled so we can stop the invitation early before it sends
-      // other SIP messages such as progress messages (i.e. 180 RINGING)
+      // the SIP progress messages such as 180 RINGING.
       //
       // Override the shouldIgnoreDoNotDisturb function to set an ignore
       // rule when you want to bypass DND for the given invite request.
+      //
+      // The following onInvite function is taken from:
+      // SIP.js 0.15.6, file: src/api/user-agent.ts, line: 666.
+      // See this.doNotDisturb below to view the patch.
+      //
+      // FIXME keep this up to date with SIP versions, or is there better way to do this?
       this.userAgent.userAgentCore.delegate.onInvite = (
         incomingInviteRequest: IncomingInviteRequest
-      ) => {
-        if (this.doNotDisturb) {
-          const invitation = new Invitation(this.userAgent, incomingInviteRequest);
+      ): void => {
+        const invitation = new Invitation(this.userAgent, incomingInviteRequest);
+        const ua = this.userAgent as any; // cast to any so we can access private and protected properties.
 
+        incomingInviteRequest.delegate = {
+          onCancel: (cancel: IncomingRequestMessage): void => {
+            invitation.onCancel(cancel);
+          },
+          onTransportError: (error: TransportError): void => {
+            // A server transaction MUST NOT discard transaction state based only on
+            // encountering a non-recoverable transport error when sending a
+            // response.  Instead, the associated INVITE server transaction state
+            // machine MUST remain in its current state.  (Timers will eventually
+            // cause it to transition to the "Terminated" state).
+            // https://tools.ietf.org/html/rfc6026#section-7.1
+
+            // As noted in the comment above, we are to leaving it to the transaction
+            // timers to evenutally cause the transaction to sort itself out in the case
+            // of a transport failure in an invite server transaction. This delegate method
+            // is here simply here for completeness and to make it clear that it provides
+            // nothing more than informational hook into the core. That is, if you think
+            // you should be trying to deal with a transport error here, you are likely wrong.
+            log.error(
+              'A transport error has occured while handling an incoming INVITE request.',
+              'SIP.js 0.15.6 userAgentCore.delegate.onInvite'
+            );
+          }
+        };
+
+        // FIXME: Ported - 100 Trying send should be configurable.
+        // Only required if TU will not respond in 200ms.
+        // https://tools.ietf.org/html/rfc3261#section-17.2.1
+        incomingInviteRequest.trying();
+
+        // The Replaces header contains information used to match an existing
+        // SIP dialog (call-id, to-tag, and from-tag).  Upon receiving an INVITE
+        // with a Replaces header, the User Agent (UA) attempts to match this
+        // information with a confirmed or early dialog.
+        // https://tools.ietf.org/html/rfc3891#section-3
+        if (ua.options.sipExtensionReplaces !== SIPExtension.Unsupported) {
+          const message = incomingInviteRequest.message;
+          const replaces = message.parseHeader('replaces');
+          if (replaces) {
+            const callId = replaces.call_id;
+            if (typeof callId !== 'string') {
+              throw new Error('Type of call id is not string');
+            }
+            const toTag = replaces.replaces_to_tag;
+            if (typeof toTag !== 'string') {
+              throw new Error('Type of to tag is not string');
+            }
+            const fromTag = replaces.replaces_from_tag;
+            if (typeof fromTag !== 'string') {
+              throw new Error('type of from tag is not string');
+            }
+            const targetDialogId = callId + toTag + fromTag;
+            const targetDialog = ua.userAgentCore.dialogs.get(targetDialogId);
+
+            // If no match is found, the UAS rejects the INVITE and returns a 481
+            // Call/Transaction Does Not Exist response.  Likewise, if the Replaces
+            // header field matches a dialog which was not created with an INVITE,
+            // the UAS MUST reject the request with a 481 response.
+            // https://tools.ietf.org/html/rfc3891#section-3
+            if (!targetDialog) {
+              invitation.reject({ statusCode: 481 });
+              return;
+            }
+
+            // If the Replaces header field matches a confirmed dialog, it checks
+            // for the presence of the "early-only" flag in the Replaces header
+            // field.  (This flag allows the UAC to prevent a potentially
+            // undesirable race condition described in Section 7.1.) If the flag is
+            // present, the UA rejects the request with a 486 Busy response.
+            // https://tools.ietf.org/html/rfc3891#section-3
+            if (!targetDialog.early && replaces.early_only === true) {
+              invitation.reject({ statusCode: 486 });
+              return;
+            }
+
+            // Provide a handle on the session being replaced.
+            const targetSession =
+              ua.sessions[callId + fromTag] || ua.sessions[callId + toTag] || undefined;
+            if (!targetSession) {
+              throw new Error('Session does not exist.');
+            }
+            invitation.replacee = targetSession;
+          }
+        }
+
+        // A common scenario occurs when the callee is currently not willing or
+        // able to take additional calls at this end system.  A 486 (Busy Here)
+        // SHOULD be returned in such a scenario.
+        // https://tools.ietf.org/html/rfc3261#section-13.3.1.3
+        if (!ua.delegate || !ua.delegate.onInvite) {
+          invitation.reject({ statusCode: 486 });
+          return;
+        }
+
+        // Do not disturb handling.
+        if (this.doNotDisturb) {
           if (this.shouldIgnoreDoNotDisturb(invitation)) {
             log.info(
               'DND did not reject this invitation because the DND ignore rule has been applied.',
@@ -426,14 +526,18 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
             );
           } else {
             log.info('Invitation has been rejected because DND is on.', this.constructor.name);
-            incomingInviteRequest.trying(); // Still sending Trying SIP message to follow normal SIP flow.
             invitation.reject({ statusCode: 486 }); // Reject with a 'Busy here'
             return;
           }
         }
 
-        // Otherwise execute normal onInvite flow when DND is off.
-        onInvite(incomingInviteRequest);
+        // Delegate invitation handling.
+        if (!invitation.autoSendAnInitialProvisionalResponse) {
+          ua.delegate.onInvite(invitation);
+        } else {
+          const onInvite = ua.delegate.onInvite;
+          invitation.progress().then(() => onInvite(invitation));
+        }
       };
     } else {
       log.error('UserAgent does not seem to have a UserAgentCore', this.constructor.name);
