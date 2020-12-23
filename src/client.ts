@@ -358,6 +358,8 @@ export class ClientImpl extends EventEmitter implements IClient {
   private configureTransport(uaFactory: UAFactory, options: IClientOptions) {
     this.transport = this.transportFactory(uaFactory, options);
 
+    this.transport.delegate = options.transport.delegate;
+
     this.transport.on('reviveSessions', () => {
       Object.values(this.sessions).forEach(async session => {
         session.rebuildSessionDescriptionHandler();
@@ -515,20 +517,20 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
   createFrozenProxy(this, impl, [
     'attendedTransfer',
     'connect',
+    'createPublisher',
+    'defaultMedia',
     'disconnect',
     'getSession',
     'getSessions',
     'invite',
-    'createPublisher',
     'isConnected',
     'on',
     'once',
     'reconfigure',
     'removeAllListeners',
     'removeListener',
-    'subscribe',
     'resubscribe',
-    'unsubscribe',
-    'defaultMedia'
+    'subscribe',
+    'unsubscribe'
   ]);
 } as any) as ClientCtor;
