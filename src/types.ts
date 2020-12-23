@@ -1,3 +1,5 @@
+import { ITransportDelegate } from './transport';
+
 export interface IClientOptions {
   account: {
     user: string;
@@ -8,6 +10,7 @@ export interface IClientOptions {
   transport: {
     wsServers: string;
     iceServers: string[];
+    delegate: ITransportDelegate;
   };
   media: IMedia;
   userAgentString?: string;

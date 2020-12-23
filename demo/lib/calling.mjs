@@ -22,10 +22,25 @@ let transport;
 
 export let client;
 
+function onBeforeInvite(invitation) {
+  if (localStorage.getItem('dndEnabled') === 'true') {
+    // Send the 486 'Busy here' status instead of the default 480 'Unavailable'.
+    invitation.reject({ statusCode: 486 });
+    // Prevents onInvite to progress any further.
+    return true;
+  }
+
+  // Nothing to see here, move along.
+  return false;
+}
+
 export function setTransport(websocketUrl) {
   transport = {
     wsServers: websocketUrl,
-    iceServers: []
+    iceServers: [],
+    delegate: {
+      onBeforeInvite
+    }
   };
 }
 
@@ -69,13 +84,8 @@ function onSessionsUpdated() {
   callingEvents.dispatchEvent(new CustomEvent('sessionsUpdated'));
 }
 
-function onInvite(session) {
-  if (localStorage.getItem('dndEnabled') === 'true') {
-    // Send the 486 'Busy here' status instead of the default 480 'Unavailable'.
-    session.reject({ statusCode: 486 });
-  } else {
-    callingEvents.dispatchEvent(new CustomEvent('sessionsUpdated'));
-  }
+function onInvite() {
+  callingEvents.dispatchEvent(new CustomEvent('sessionsUpdated'));
 }
 
 export const subscriptionEvents = eventTarget();
