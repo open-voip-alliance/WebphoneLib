@@ -409,12 +409,12 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       //
       // See "Delegate before invitation handling" below for the patch.
       //
-      // FIXME keep this up to date with SIP versions, or is there better way to do this?
-      this.userAgent.userAgentCore.delegate.onInvite = (
+      // FIXME Keep this up to date with SIP versions, or is there better way to do this?
+      this.userAgent.userAgentCore.delegate.onInvite = async (
         incomingInviteRequest: IncomingInviteRequest
-      ): void => {
+      ): Promise<void> => {
         const invitation = new Invitation(this.userAgent, incomingInviteRequest);
-        const ua = this.userAgent as any; // cast to any so we can access private and protected properties.
+        const ua = this.userAgent as any; // Cast to any so we can access private and protected properties.
 
         incomingInviteRequest.delegate = {
           onCancel: (cancel: IncomingRequestMessage): void => {
@@ -512,7 +512,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
         // Delegate before invitation handling.
         if (this.delegate && this.delegate.onBeforeInvite) {
-          const stopEarly = this.delegate.onBeforeInvite(invitation);
+          const stopEarly = await this.delegate.onBeforeInvite(invitation);
 
           if (stopEarly) {
             return;
