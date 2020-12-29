@@ -10,7 +10,7 @@ export interface IClientOptions {
   transport: {
     wsServers: string;
     iceServers: string[];
-    delegate: ITransportDelegate;
+    delegate?: ITransportDelegate;
   };
   media: IMedia;
   userAgentString?: string;
