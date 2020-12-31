@@ -234,6 +234,9 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
     delete this.registeredPromise;
 
+    // To avoid sending OPTIONS requests after disconnecting.
+    this.stopHealthChecker();
+
     // Unregistering is not possible when the socket connection is closed/interrupted
     // - by the server during a call
     // - by a network node during a call
@@ -727,12 +730,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.dyingIntervalID = window.setInterval(subtractTillDead, subtractValue);
   }
 
-  private createHealthChecker() {
+  private stopHealthChecker() {
     if (this.healthChecker) {
       this.healthChecker.stop();
       delete this.healthChecker;
     }
+  }
 
+  private createHealthChecker() {
+    this.stopHealthChecker();
     this.healthChecker = new HealthChecker(this.userAgent);
   }
 
