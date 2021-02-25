@@ -363,7 +363,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   /**
    * Returns true if the DTMF was successful.
    */
-  public dtmf(tones: string, options?: Object): boolean {
+  public dtmf(tones: string, options?: any): boolean {
     // Unfortunately there is no easy way to give feedback about the DTMF
     // tones. SIP.js uses one of two methods for sending the DTMF:
     //
