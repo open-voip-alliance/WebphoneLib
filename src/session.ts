@@ -363,7 +363,7 @@ export class SessionImpl extends EventEmitter implements ISession {
   /**
    * Returns true if the DTMF was successful.
    */
-  public dtmf(tones: string): boolean {
+  public dtmf(tones: string, options?: Object): boolean {
     // Unfortunately there is no easy way to give feedback about the DTMF
     // tones. SIP.js uses one of two methods for sending the DTMF:
     //
@@ -377,7 +377,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     // no feedback about the failure.
     //
     // For now only use the RTP method using the session description handler.
-    return this.session.sessionDescriptionHandler.sendDtmf(tones);
+    return this.session.sessionDescriptionHandler.sendDtmf(tones, options);
   }
 
   public get localStream() {
