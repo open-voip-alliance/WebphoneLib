@@ -14,6 +14,7 @@ export interface IClientOptions {
   };
   media: IMedia;
   userAgentString?: string;
+  subscripeEventTypes: Array<string>;
 }
 
 export type MediaDeviceId = string | undefined;

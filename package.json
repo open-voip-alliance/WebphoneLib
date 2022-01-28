@@ -62,7 +62,7 @@
   "dependencies": {
     "p-retry": "^4.1.0",
     "p-timeout": "^3.2.0",
-    "sip.js": "0.15.6"
+    "sip.js": "file:../SIP.js"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^0.1.3",

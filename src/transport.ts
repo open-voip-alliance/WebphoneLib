@@ -53,8 +53,8 @@ export interface ITransport extends EventEmitter {
   getConnection(mode: ReconnectionMode): Promise<boolean>;
   close(): void;
   createInviter(phoneNumber: string): Inviter;
-  createSubscriber(contact: string): Subscriber;
-  createPublisher(contact: string, options: PublisherOptions): Publisher;
+  createSubscriber(contact: string, eventType: string): Subscriber;
+  createPublisher(contact: string, eventType: string, options: PublisherOptions): Publisher;
 }
 
 /**
@@ -278,15 +278,15 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     return new Inviter(this.userAgent, UserAgent.makeURI(phoneNumber));
   }
 
-  public createSubscriber(contact: string): Subscriber {
+  public createSubscriber(contact: string, eventType: string): Subscriber {
     // Introducing a jitter here, to avoid thundering herds.
-    return new Subscriber(this.userAgent, UserAgent.makeURI(contact), 'dialog', {
+    return new Subscriber(this.userAgent, UserAgent.makeURI(contact), eventType, {
       expires: SIP_PRESENCE_EXPIRE + jitter(SIP_PRESENCE_EXPIRE, 30)
     });
   }
 
-  public createPublisher(contact: string, options: PublisherOptions) {
-    return new Publisher(this.userAgent, UserAgent.makeURI(contact), 'dialog', options);
+  public createPublisher(contact: string, eventType: string, options: PublisherOptions) {
+    return new Publisher(this.userAgent, UserAgent.makeURI(contact), eventType, options);
   }
 
   public isRegistered() {

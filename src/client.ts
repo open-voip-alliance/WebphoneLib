@@ -30,7 +30,7 @@ export interface IClient {
    * media property on client (to change it globally) or by adapting the media
    * property on session.
    */
-  reconfigure(options: IClientOptions): Promise<void>;
+  reconfigure(options: IClientOptions, eventType: string): Promise<void>;
 
   /**
    * Connect (and subsequently register) to server.
@@ -60,8 +60,8 @@ export interface IClient {
    */
   invite(uri: string): Promise<ISession>;
 
-  subscribe(uri: string): Promise<void>;
-  unsubscribe(uri: string): void;
+  subscribe(uri: string, eventType: string): Promise<void>;
+  unsubscribe(uri: string, eventType: string): void;
 
   getSession(id: string): ISession;
   getSessions(): ISession[];
@@ -80,7 +80,7 @@ export interface IClient {
    */
   attendedTransfer(a: { id: string }, b: { id: string }): Promise<boolean>;
 
-  createPublisher(contact: string, options: PublisherOptions): Publisher;
+  createPublisher(contact: string, eventType: string, options: PublisherOptions): Publisher;
 
   /* tslint:disable:unified-signatures */
   /**
@@ -154,7 +154,12 @@ export class ClientImpl extends EventEmitter implements IClient {
   private transportFactory: TransportFactory;
   private transport?: ITransport;
 
-  constructor(uaFactory: UAFactory, transportFactory: TransportFactory, options: IClientOptions) {
+  constructor(
+    uaFactory: UAFactory,
+    transportFactory: TransportFactory,
+    options: IClientOptions,
+    subscribeEventTypes: Array<string>
+  ) {
     super();
 
     if (!Features.checkRequired()) {
@@ -164,7 +169,7 @@ export class ClientImpl extends EventEmitter implements IClient {
     this.defaultMedia = options.media;
 
     this.transportFactory = transportFactory;
-    this.configureTransport(uaFactory, options);
+    this.configureTransport(uaFactory, subscribeEventTypes, options);
   }
 
   public async reconfigure(options: IClientOptions): Promise<void> {
@@ -233,43 +238,42 @@ export class ClientImpl extends EventEmitter implements IClient {
     delete this.transport;
   }
 
-  public subscribe(uri: string): Promise<void> {
+  public subscribe(uri: string, eventType: string): Promise<void> {
     if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
 
     return new Promise<void>((resolve, reject) => {
-      if (this.subscriptions[uri]) {
+      if (this.subscriptions[uri + eventType]) {
         log.info('Already subscribed', this.constructor.name);
-
         resolve();
         return;
       }
 
-      this.subscriptions[uri] = this.transport.createSubscriber(uri);
+      this.subscriptions[uri + eventType] = this.transport.createSubscriber(uri, eventType);
 
-      this.subscriptions[uri].delegate = {
+      this.subscriptions[uri + eventType].delegate = {
         onNotify: (notification: Notification) => {
           notification.accept();
           this.emit('subscriptionNotify', uri, statusFromDialog(notification));
         }
       };
 
-      this.subscriptions[uri].stateChange.on((newState: SubscriptionState) => {
+      this.subscriptions[uri + eventType].stateChange.on((newState: SubscriptionState) => {
         switch (newState) {
           case SubscriptionState.Subscribed:
             resolve();
             break;
           case SubscriptionState.Terminated:
-            delete this.subscriptions[uri];
+            delete this.subscriptions[uri + eventType];
             this.emit('subscriptionTerminated', uri);
             break;
         }
       });
 
-      this.subscriptions[uri].on('failed', (response: Core.IncomingResponseMessage) => {
+      this.subscriptions[uri + eventType].on('failed', (response: Core.IncomingResponseMessage) => {
         if (!response) {
-          this.removeSubscription({ uri });
+          this.removeSubscription({ uri, eventType });
           reject();
           return;
         }
@@ -286,32 +290,32 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
 
         setTimeout(() => {
-          this.removeSubscription({ uri });
-          this.subscribe(uri)
+          this.removeSubscription({ uri, eventType });
+          this.subscribe(uri, eventType)
             .then(resolve)
             .catch(reject);
         }, waitTime);
       });
 
-      this.subscriptions[uri].subscribe();
+      this.subscriptions[uri + eventType].subscribe();
     });
   }
-  public async resubscribe(uri: string): Promise<void> {
-    if (!this.subscriptions[uri]) {
+  public async resubscribe(uri: string, eventType: string): Promise<void> {
+    if (!this.subscriptions[uri + eventType]) {
       throw new Error('Cannot resubscribe to nonexistent subscription.');
     }
 
-    this.removeSubscription({ uri });
-    await this.subscribe(uri);
+    this.removeSubscription({ uri, eventType });
+    await this.subscribe(uri, eventType);
     log.debug(`Resubscribed to ${uri}`, this.constructor.name);
   }
 
-  public unsubscribe(uri: string): void {
-    if (!this.subscriptions[uri]) {
+  public unsubscribe(uri: string, eventType: string): void {
+    if (!this.subscriptions[uri + eventType]) {
       return;
     }
 
-    this.removeSubscription({ uri, unsubscribe: true });
+    this.removeSubscription({ uri, eventType, unsubscribe: true });
   }
 
   public getSession(id: string): ISession {
@@ -339,15 +343,19 @@ export class ClientImpl extends EventEmitter implements IClient {
     return sessionA.attendedTransfer(sessionB);
   }
 
-  public createPublisher(contact: string, options: PublisherOptions): Publisher {
+  public createPublisher(contact: string, eventType: string, options: PublisherOptions): Publisher {
     if (!this.transport.registeredPromise) {
       throw new Error('Register first!');
     }
 
-    return this.transport.createPublisher(contact, options);
+    return this.transport.createPublisher(contact, eventType, options);
   }
 
-  private configureTransport(uaFactory: UAFactory, options: IClientOptions) {
+  private configureTransport(
+    uaFactory: UAFactory,
+    eventTypes: Array<string>,
+    options: IClientOptions
+  ) {
     this.transport = this.transportFactory(uaFactory, options);
 
     this.transport.delegate = options.transport.delegate;
@@ -366,7 +374,9 @@ export class ClientImpl extends EventEmitter implements IClient {
         // the next re-subscribe will also be rate-limited. To avoid spamming
         // the server with a bunch of asynchronous requests, we handle them
         // one by one.
-        await this.resubscribe(uri);
+        for (const eventType in eventTypes) {
+          await this.resubscribe(uri, eventType);
+        }
       });
     });
 
@@ -446,20 +456,20 @@ export class ClientImpl extends EventEmitter implements IClient {
     return session;
   }
 
-  private removeSubscription({ uri, unsubscribe = false }) {
+  private removeSubscription({ uri, eventType, unsubscribe = false }) {
     if (!(uri in this.subscriptions)) {
       return;
     }
 
-    this.subscriptions[uri].removeAllListeners();
+    this.subscriptions[uri + eventType].removeAllListeners();
 
     if (unsubscribe) {
-      this.subscriptions[uri].unsubscribe();
+      this.subscriptions[uri + eventType].unsubscribe();
     } else {
-      this.subscriptions[uri].dispose();
+      this.subscriptions[uri + eventType].dispose();
     }
 
-    delete this.subscriptions[uri];
+    delete this.subscriptions[uri + eventType];
   }
 
   private addSession(session: SessionImpl) {
@@ -504,7 +514,9 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
     return new ReconnectableTransport(factory, options);
   };
 
-  const impl = new ClientImpl(uaFactory, transportFactory, clientOptions);
+  const subscripeEventTypes = clientOptions.subscripeEventTypes;
+
+  const impl = new ClientImpl(uaFactory, transportFactory, clientOptions, subscripeEventTypes);
   createFrozenProxy(this, impl, [
     'attendedTransfer',
     'connect',

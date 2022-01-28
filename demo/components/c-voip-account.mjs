@@ -34,9 +34,9 @@ window.customElements.define(
                     sipClient.setAccount(userId, password, realm);
                     sipClient.setTransport(websocketUrl);
                     sipClient.setClient();
+                    sipClient.registerAccount();
                     setOndevicesChanged();
                     setInputsAndOutputs();
-                    sipClient.registerAccount();
                     console.log('register');
                   }
                   break;
