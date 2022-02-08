@@ -255,7 +255,11 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri + eventType].delegate = {
         onNotify: (notification: Notification) => {
           notification.accept();
-          this.emit('subscriptionNotify', uri, statusFromDialog(notification));
+          const status = statusFromDialog(notification);
+          this.emit('subscriptionNotify', uri, {
+            status,
+            eventType
+          });
         }
       };
 
