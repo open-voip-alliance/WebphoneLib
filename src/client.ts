@@ -240,8 +240,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
     return new Promise<void>((resolve, reject) => {
       if (this.subscriptions[uri]) {
-        log.info('Already subscribed', this.constructor.name);
-
+        log.info(`[blf] Already subscribed to ${uri}`, this.constructor.name);
         resolve();
         return;
       }
@@ -251,17 +250,24 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri].delegate = {
         onNotify: (notification: Notification) => {
           notification.accept();
-          this.emit('subscriptionNotify', uri, statusFromDialog(notification));
+          const status = statusFromDialog(notification);
+          log.debug(
+            `[blf] ${notification}  \n accepted, emitting notify event with status ${status}`,
+            'client.subscriptions.delegate.onNotify'
+          );
+          this.emit('subscriptionNotify', uri, status);
         }
       };
 
       this.subscriptions[uri].stateChange.on((newState: SubscriptionState) => {
         switch (newState) {
           case SubscriptionState.Subscribed:
+            log.info(`[blf] Already subscribed to ${uri}`, this.constructor.name);
             resolve();
             break;
           case SubscriptionState.Terminated:
             delete this.subscriptions[uri];
+            log.info(`[blf] subscription terminated for ${uri}`, this.constructor.name);
             this.emit('subscriptionTerminated', uri);
             break;
         }
@@ -269,6 +275,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
       this.subscriptions[uri].on('failed', (response: Core.IncomingResponseMessage) => {
         if (!response) {
+          log.error(`[blf] subscription failed for ${uri}`, this.constructor.name);
           this.removeSubscription({ uri });
           reject();
           return;
@@ -296,6 +303,7 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri].subscribe();
     });
   }
+
   public async resubscribe(uri: string): Promise<void> {
     if (!this.subscriptions[uri]) {
       throw new Error('Cannot resubscribe to nonexistent subscription.');
