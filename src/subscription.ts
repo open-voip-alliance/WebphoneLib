@@ -2,6 +2,8 @@ import { SubscriptionStatus } from './enums';
 
 export { Subscription } from 'sip.js';
 
+import { log } from './logger';
+
 /**
  * Parse an incoming dialog XML request body and return
  * the account state from it.
@@ -14,6 +16,10 @@ export function statusFromDialog(notification: any): SubscriptionStatus | string
   const dialogNode = xmlDoc ? xmlDoc.getElementsByTagName('dialog-info')[0] : null;
   // Skip; an invalid dialog.
   if (!dialogNode) {
+    log.error(
+      `[blf] ${notification}  \n did not result in a valid dialogNode`,
+      'subscription.statusFromDialog'
+    );
     return null;
   }
 
