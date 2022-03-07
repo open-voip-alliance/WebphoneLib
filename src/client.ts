@@ -240,7 +240,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
     return new Promise<void>((resolve, reject) => {
       if (this.subscriptions[uri]) {
-        log.info(`[blf] Already subscribed to ${uri}`, this.constructor.name);
+        log.debug(`[blf] Already subscribed to ${uri}`, this.constructor.name);
         resolve();
         return;
       }
@@ -262,12 +262,12 @@ export class ClientImpl extends EventEmitter implements IClient {
       this.subscriptions[uri].stateChange.on((newState: SubscriptionState) => {
         switch (newState) {
           case SubscriptionState.Subscribed:
-            log.info(`[blf] Already subscribed to ${uri}`, this.constructor.name);
+            log.debug(`[blf] Already subscribed to ${uri}`, this.constructor.name);
             resolve();
             break;
           case SubscriptionState.Terminated:
             delete this.subscriptions[uri];
-            log.info(`[blf] subscription terminated for ${uri}`, this.constructor.name);
+            log.debug(`[blf] subscription terminated for ${uri}`, this.constructor.name);
             this.emit('subscriptionTerminated', uri);
             break;
         }
