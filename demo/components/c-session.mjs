@@ -75,9 +75,11 @@ window.customElements.define(
             }
             break;
           case 'hold':
+            this.setMute(true);
             this.session && this.session.hold();
             break;
           case 'unhold':
+            this.setMute(false);
             this.session && this.session.unhold();
             break;
           case 'toggleMute':
