@@ -1,16 +1,7 @@
 import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
 
-import {
-  C as SIPConstants,
-  Core,
-  Grammar,
-  IncomingResponse,
-  NameAddrHeader,
-  SessionDescriptionHandlerModifiers,
-  TypeStrings as SIPTypeStrings,
-  Utils
-} from 'sip.js';
+import { Core, IncomingResponse, SessionDescriptionHandlerModifiers } from 'sip.js';
 
 import { Invitation } from 'sip.js/lib/api/invitation';
 import { Inviter } from 'sip.js/lib/api/inviter';
@@ -24,7 +15,7 @@ import { SessionStatus } from './enums';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
 import { checkAudioConnected } from './session-health';
-import { InternalSession, SessionMedia } from './session-media';
+import { SessionMedia } from './session-media';
 import { SessionStats } from './session-stats';
 import * as Time from './time';
 import { IMedia, IRemoteIdentity } from './types';
@@ -456,8 +447,9 @@ export class SessionImpl extends EventEmitter implements ISession {
             rejectPhrase: message.reasonPhrase
           });
         },
-        onProgress: () => {
+        onProgress: ({ message }: Core.IncomingResponse) => {
           log.debug('Session is in progress', this.constructor.name);
+          this.emit('progressUpdate', { message });
           onProgress();
         },
         onTrying: () => {
