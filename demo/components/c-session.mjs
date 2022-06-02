@@ -80,6 +80,9 @@ window.customElements.define(
           case 'unhold':
             this.session && this.session.unhold();
             break;
+          case 'toggleMute':
+            this.toggleMute();
+            break;
           case 'hangup':
             this.session && (await this.session.terminate());
             break;
@@ -90,6 +93,18 @@ window.customElements.define(
         logger.info(`Pressed: ${dataset.key}`);
         this.session && this.session.dtmf(dataset.key);
       }
+    }
+
+    toggleMute() {
+      if (this.session) {
+        this.session.media.input.muted = !this.session.media.input.muted;
+      }
+    }
+
+    setMute(mute) {
+      this.session.media.input.muted !== mute
+        ? (this.session.media.input.muted = mute)
+        : this.session.media.input.muted;
     }
 
     connectedCallback() {

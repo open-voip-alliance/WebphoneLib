@@ -196,7 +196,7 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
   private setInputMuted(newMuted: boolean) {
     if (this.inputNode) {
       if (newMuted) {
-        this.inputNode.disconnect();
+        this.inputNode.disconnect((this.session as any).__streams.localStream);
       } else {
         this.inputNode.connect((this.session as any).__streams.localStream);
       }
