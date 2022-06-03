@@ -104,9 +104,7 @@ window.customElements.define(
     }
 
     setMute(mute) {
-      this.session.media.input.muted !== mute
-        ? (this.session.media.input.muted = mute)
-        : this.session.media.input.muted;
+      this.session.media.input.muted = mute;
     }
 
     connectedCallback() {
