@@ -75,10 +75,15 @@ window.customElements.define(
             }
             break;
           case 'hold':
+            this.setMute(true);
             this.session && this.session.hold();
             break;
           case 'unhold':
+            this.setMute(false);
             this.session && this.session.unhold();
+            break;
+          case 'toggleMute':
+            this.toggleMute();
             break;
           case 'hangup':
             this.session && (await this.session.terminate());
@@ -90,6 +95,16 @@ window.customElements.define(
         logger.info(`Pressed: ${dataset.key}`);
         this.session && this.session.dtmf(dataset.key);
       }
+    }
+
+    toggleMute() {
+      if (this.session) {
+        this.session.media.input.muted = !this.session.media.input.muted;
+      }
+    }
+
+    setMute(mute) {
+      this.session.media.input.muted = mute;
     }
 
     connectedCallback() {
