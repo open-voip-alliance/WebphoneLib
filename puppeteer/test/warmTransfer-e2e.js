@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer');
 const { expect } = require('chai');
+const { describe, beforeEach, afterEach, it } = require('mocha');
+
 const { callNumber, click, typeText, waitForText, registerUser } = require('../helpers/utils');
 const {
   USER_A,

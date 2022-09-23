@@ -1,7 +1,14 @@
 const puppeteer = require('puppeteer');
 const expect = require('chai').expect;
+const { describe, beforeEach, afterEach, it } = require('mocha');
+
 const { click } = require('../helpers/utils');
-const { REGISTER_BUTTON, DEMO_URL, LAUNCH_OPTIONS } = require('../helpers/constants');
+const {
+  REGISTER_BUTTON,
+  DEMO_URL,
+  LAUNCH_OPTIONS,
+  CLIENT_STATUS
+} = require('../helpers/constants');
 
 describe.skip('examples', () => {
   let browser;
@@ -19,12 +26,12 @@ describe.skip('examples', () => {
   it('Should launch a browser', async function() {
     // Assert if the page is visible
     await page.goto(DEMO_URL);
-    // expect(page).to.include('c-voip-account')
     const url = await page.url();
     expect(url).to.include('/demo/');
 
     // Click on Register
     await click(page, REGISTER_BUTTON);
+
     await page.waitForTimeout(2000);
   });
 
