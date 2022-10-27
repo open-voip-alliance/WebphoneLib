@@ -6,12 +6,12 @@
   "license": "MIT",
   "main": "dist/index.mjs",
   "scripts": {
-    "test:e2e": "mocha --timeout=120000 ./test/*.js"
+    "test:e2e": "mocha --timeout=20000 ./test/*.js"
   },
   "devDependencies": {
-    "chai": "^4.2.0",
-    "dotenv": "^8.2.0",
-    "mocha": "^7.2.0",
-    "puppeteer": "^5.4.1"
+    "chai": "^4.3.6",
+    "dotenv": "^16.0.2",
+    "mocha": "^10.0.0",
+    "puppeteer": "^18.0.4"
   }
 }
