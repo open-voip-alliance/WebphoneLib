@@ -356,14 +356,21 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.emit('statusUpdate', status);
   }
 
-  private isOnlinePromise() {
-    return new Promise(resolve => {
+  private isOnlinePromise(mode: ReconnectionMode) {
+    return new Promise((resolve, reject) => {
       const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
 
       const handlers = {
         onError: e => {
           log.debug(e, this.constructor.name);
           checkSocket.removeEventListener('open', handlers.onOpen);
+          // In the case that mode is BURST, reject the promise which can be
+          // caught by pRetry.
+          if (mode === ReconnectionMode.BURST) {
+            reject('reject to trigger pRetry that tries to reconnect to sip server');
+            return;
+          }
+
           resolve(false);
         },
         onOpen: () => {
@@ -426,13 +433,13 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
             // https://tools.ietf.org/html/rfc6026#section-7.1
 
             // As noted in the comment above, we are to leaving it to the transaction
-            // timers to evenutally cause the transaction to sort itself out in the case
+            // timers to eventually cause the transaction to sort itself out in the case
             // of a transport failure in an invite server transaction. This delegate method
             // is here simply here for completeness and to make it clear that it provides
             // nothing more than informational hook into the core. That is, if you think
             // you should be trying to deal with a transport error here, you are likely wrong.
             log.error(
-              'A transport error has occured while handling an incoming INVITE request.',
+              'A transport error has occurred while handling an incoming INVITE request.',
               this.constructor.name
             );
           }
@@ -542,9 +549,9 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }
 
     const tryOpeningSocketWithTimeout = () =>
-      pTimeout(this.isOnlinePromise(), 5000, () => {
+      pTimeout(this.isOnlinePromise(mode), 5000, () => {
         // In the case that mode is BURST, throw an error which can be
-        // catched by pRetry.
+        // caught by pRetry.
         if (mode === ReconnectionMode.BURST) {
           throw new Error('Cannot open socket. Probably DNS failure.');
         }
