@@ -363,7 +363,10 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       const handlers = {
         onError: e => {
           log.debug(e, this.constructor.name);
+
           checkSocket.removeEventListener('open', handlers.onOpen);
+          checkSocket.removeEventListener('error', handlers.onError);
+
           // In the case that mode is BURST, reject the promise which can be
           // caught by pRetry.
           if (mode === ReconnectionMode.BURST) {
@@ -376,6 +379,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         onOpen: () => {
           log.debug('Opening a socket to sip server worked.', this.constructor.name);
           checkSocket.close();
+          checkSocket.removeEventListener('open', handlers.onOpen);
           checkSocket.removeEventListener('error', handlers.onError);
           resolve(true);
         }
