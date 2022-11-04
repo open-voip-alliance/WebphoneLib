@@ -371,10 +371,9 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
           // caught by pRetry.
           if (mode === ReconnectionMode.BURST) {
             reject('reject to trigger pRetry that tries to reconnect to sip server');
-            return;
+          } else {
+            resolve(false);
           }
-
-          resolve(false);
         },
         onOpen: () => {
           log.debug('Opening a socket to sip server worked.', this.constructor.name);
