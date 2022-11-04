@@ -17,21 +17,21 @@ export class helpFunctions {
     this.registerButton = page.locator('[data-action="register"]');
   }
 
-  async registerUser1(page, userAuthId, userPw) {
+  async registerUser(userAuthId: string, userPw: string) {
     await this.userIdInput.click({ clickCount: 3 });
-    await page.keyboard.press('Backspace');
+    await this.page.keyboard.press('Backspace');
     await this.userIdInput.type(userAuthId);
 
     await this.passwordInput.click({ clickCount: 3 });
-    await page.keyboard.press('Backspace');
+    await this.page.keyboard.press('Backspace');
     await this.passwordInput.type(userPw);
 
     await this.websocketUrlInput.click({ clickCount: 3 });
-    await page.keyboard.press('Backspace');
+    await this.page.keyboard.press('Backspace');
     await this.websocketUrlInput.type('wss://websocket.voipgrid.nl');
 
     await this.realmInput.click({ clickCount: 3 });
-    await page.keyboard.press('Backspace');
+    await this.page.keyboard.press('Backspace');
     await this.realmInput.type('voipgrid.nl');
 
     await this.registerButton.click();
