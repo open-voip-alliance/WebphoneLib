@@ -356,7 +356,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.emit('statusUpdate', status);
   }
 
-  private isOnlinePromise(mode: ReconnectionMode) {
+  private isOnlinePromise() {
     return new Promise(resolve => {
       const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
 
@@ -364,12 +364,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
         onError: e => {
           log.debug(e, this.constructor.name);
           checkSocket.removeEventListener('open', handlers.onOpen);
-          // In the case that mode is BURST, throw an error which can be
-          // catched by pRetry.
-          if (mode === ReconnectionMode.BURST) {
-            throw new Error('it broke woops');
-          }
-
           resolve(false);
         },
         onOpen: () => {
@@ -548,7 +542,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }
 
     const tryOpeningSocketWithTimeout = () =>
-      pTimeout(this.isOnlinePromise(mode), 5000, () => {
+      pTimeout(this.isOnlinePromise(), 5000, () => {
         // In the case that mode is BURST, throw an error which can be
         // catched by pRetry.
         if (mode === ReconnectionMode.BURST) {
