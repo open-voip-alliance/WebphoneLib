@@ -71,53 +71,51 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
-    // prettier-ignore
     this.input = {
       get id() {
-        return self.media.input.id; 
+        return self.media.input.id;
       },
       set id(value) {
-        self.setInputDevice(value); 
+        self.setInputDevice(value);
       },
       get audioProcessing() {
-        return self.media.input.audioProcessing; 
+        return self.media.input.audioProcessing;
       },
       set audioProcessing(value) {
-        self.setInputAudioProcessing(value); 
+        self.setInputAudioProcessing(value);
       },
       get volume() {
-        return self.media.input.volume; 
+        return self.media.input.volume;
       },
       set volume(value) {
-        self.setInputVolume(value); 
+        self.setInputVolume(value);
       },
       get muted() {
-        return self.media.input.muted; 
+        return self.media.input.muted;
       },
       set muted(value) {
-        self.setInputMuted(value); 
+        self.setInputMuted(value);
       }
     };
 
-    // prettier-ignore
     this.output = {
       get id() {
-        return self.media.output.id; 
+        return self.media.output.id;
       },
       set id(value) {
-        self.setOutputDevice(value); 
+        self.setOutputDevice(value);
       },
       get volume() {
-        return self.media.output.volume; 
+        return self.media.output.volume;
       },
       set volume(value) {
-        self.setOutputVolume(value); 
+        self.setOutputVolume(value);
       },
       get muted() {
-        return self.media.output.muted; 
+        return self.media.output.muted;
       },
       set muted(value) {
-        self.setOutputMuted(value); 
+        self.setOutputMuted(value);
       }
     };
   }
@@ -196,7 +194,11 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
   private setInputMuted(newMuted: boolean) {
     if (this.inputNode) {
       if (newMuted) {
-        this.inputNode.disconnect((this.session as any).__streams.localStream);
+        try {
+          this.inputNode.disconnect((this.session as any).__streams.localStream);
+        } catch {
+          log.debug('cannot disconnect input audio node as the input is already muted', 'media');
+        }
       } else {
         this.inputNode.connect((this.session as any).__streams.localStream);
       }
@@ -227,7 +229,14 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
   private stopInput() {
     if (this.inputStream) {
       Media.closeStream(this.inputStream);
-      this.inputNode.disconnect();
+      try {
+        this.inputNode.disconnect();
+      } catch {
+        log.debug(
+          'cannot disconnect input audio node as the audio node is already disconnected',
+          'media'
+        );
+      }
     }
   }
 
