@@ -3,9 +3,10 @@ import { test } from '@playwright/test';
 import { helpFunctions } from './helpers/helpers';
 
 test.describe('Calling out', () => {
-  test('calling out & the other party answer & the other party ends the call', async ({
-    browser,
-  }) => {
+  let helpers1: helpFunctions;
+  let helpers2: helpFunctions;
+
+  test.beforeEach(async ({ browser }) => {
     const context = await browser.newContext();
     await context.grantPermissions(['microphone']);
     const page1 = await context.newPage();
@@ -15,9 +16,43 @@ test.describe('Calling out', () => {
 
     await page1.goto(`${process.env.DEMO_URL}`);
     await helpers1.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
-    //await helpers1.registerUser(process.env.USER_A as string, process.env.PASSWORD_A as string);
+    console.log(process.env.USER_A);
+    await helpers1.assertClientConnected();
 
     await page2.goto(`${process.env.DEMO_URL}`);
     await helpers2.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
+    await helpers2.assertClientConnected();
   });
+  test('calling out & the other party answers & the other party ends the call', async () => {
+    // const context = await browser.newContext();
+    // await context.grantPermissions(['microphone']);
+    // const page1 = await context.newPage();
+    // const page2 = await context.newPage();
+    // const helpers1 = new helpFunctions(page1);
+    // const helpers2 = new helpFunctions(page2);
+
+    // await page1.goto(`${process.env.DEMO_URL}`);
+    // await helpers1.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
+    // console.log(process.env.USER_A);
+    // await helpers1.assertClientConnected();
+
+    // await page2.goto(`${process.env.DEMO_URL}`);
+    // await helpers2.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
+    // await helpers2.assertClientConnected();
+
+    await helpers2.callNumber(`${process.env.NUMBER_A}`);
+    await helpers1.acceptCall();
+    await helpers1.assertCallAccepted();
+    await helpers1.terminateCall();
+    await helpers1.assertCallTerminated();
+  });
+
+  // test('calling out & the other party answers & calling party ends the call (terminate)', async({
+  //   await helpers2.callNumber(`${process.env.NUMBER_A}`);
+  //   await helpers1.acceptCall();
+  //   await helpers1.assertCallAccepted();
+  //   await helpers1.terminateCall();
+  //   await helpers1.assertCallTerminated();
+  //   await page1.waitForTimeout(1000);
+  // }));
 });

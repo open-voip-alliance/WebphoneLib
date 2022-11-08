@@ -12,7 +12,7 @@ module.exports = {
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
       '--start-maximized',
-      '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
+      '--unsafely-treat-insecure-origin-as-secure=http://web:1235',
     ],
     dumpio: false,
     ignoreHTTPSErrors: true,
@@ -20,7 +20,7 @@ module.exports = {
     devtools: false,
     slowMo: 10,
     timeout: 0,
-    defaultViewport: null
+    defaultViewport: null,
   },
   USER_ID_INPUT: 'c-voip-account [data-selector="userIdInput"]',
   USER_PASSWORD_INPUT: 'c-voip-account [data-selector="passwordInput"]',
@@ -43,5 +43,5 @@ module.exports = {
   SESSION_STATUS: 'c-session [data-selector="sessionStatus"]',
   SESSIONS_LIST: '[data-selector="sessionsList"]',
   SESSIONS: 'c-session',
-  CLIENT_STATUS: '[data-selector="clientStatus"]'
+  CLIENT_STATUS: '[data-selector="clientStatus"]',
 };

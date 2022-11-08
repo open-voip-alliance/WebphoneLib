@@ -7,6 +7,13 @@ export class helpFunctions {
   readonly websocketUrlInput: Locator;
   readonly realmInput: Locator;
   readonly registerButton: Locator;
+  readonly clientStatus: Locator;
+  readonly dialerInput: Locator;
+  readonly dialerCallButton: Locator;
+  readonly sessionAcceptButton: Locator;
+  readonly sessionStatus: Locator;
+  readonly sessionHangupButton: Locator;
+  readonly sessions: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -15,6 +22,13 @@ export class helpFunctions {
     this.websocketUrlInput = page.locator('[data-selector="websocketUrlInput"]');
     this.realmInput = page.locator('[data-selector="realmInput"]');
     this.registerButton = page.locator('[data-action="register"]');
+    this.clientStatus = page.locator('[data-selector="clientStatus"]');
+    this.dialerInput = page.locator('c-dialer [data-selector="input"]');
+    this.dialerCallButton = page.locator('[data-action="call"]');
+    this.sessionAcceptButton = page.locator('c-session [data-action="accept"]');
+    this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
+    this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
+    this.sessions = page.locator('c-session');
   }
 
   async registerUser(userAuthId: string, userPw: string) {
@@ -35,5 +49,30 @@ export class helpFunctions {
     await this.realmInput.type('voipgrid.nl');
 
     await this.registerButton.click();
+  }
+
+  async assertClientConnected() {
+    await expect(this.clientStatus).toHaveText('connected');
+  }
+
+  async callNumber(number: string) {
+    await this.dialerInput.type(number);
+    await this.dialerCallButton.click();
+  }
+
+  async acceptCall() {
+    await this.sessionAcceptButton.click();
+  }
+
+  async assertCallAccepted() {
+    await expect(this.sessionStatus).toHaveText('active');
+  }
+
+  async terminateCall() {
+    await this.sessionHangupButton.click();
+  }
+
+  async assertCallTerminated() {
+    await expect(this.sessions).toHaveCount(0);
   }
 }
