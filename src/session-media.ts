@@ -237,7 +237,10 @@ export class SessionMedia extends EventEmitter implements ISessionMedia {
         this.inputNode.disconnect();
       } catch (e) {
         if (e && e.name === 'InvalidAccessError') {
-          log.debug('cannot disconnect input audio node as the input is already muted', 'media');
+          log.debug(
+            'cannot disconnect input audio node as the input audio node is already disconnected',
+            'media'
+          );
         } else {
           throw e;
         }
