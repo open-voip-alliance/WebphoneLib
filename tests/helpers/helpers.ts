@@ -14,6 +14,8 @@ export class helpFunctions {
   readonly sessionStatus: Locator;
   readonly sessionHangupButton: Locator;
   readonly sessions: Locator;
+  //readonly cancelButton: Locator;
+  readonly sessionRejectButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -29,6 +31,8 @@ export class helpFunctions {
     this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
     this.sessions = page.locator('c-session');
+    //this.cancelButton = page.locator('c-session [data-action="cancel"]');
+    this.sessionRejectButton = page.locator('c-session [data-action="reject"]');
   }
 
   async registerUser(userAuthId: string, userPw: string) {
@@ -72,7 +76,11 @@ export class helpFunctions {
     await this.sessionHangupButton.click();
   }
 
-  async assertCallTerminated() {
+  async assertCallSessionTerminated() {
     await expect(this.sessions).toHaveCount(0);
+  }
+
+  async rejectCall() {
+    await this.sessionRejectButton.click();
   }
 }
