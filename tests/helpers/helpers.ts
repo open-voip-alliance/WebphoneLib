@@ -7,6 +7,7 @@ export class helpFunctions {
   readonly websocketUrlInput: Locator;
   readonly realmInput: Locator;
   readonly registerButton: Locator;
+  readonly unregisterButton: Locator;
   readonly clientStatus: Locator;
   readonly dialerInput: Locator;
   readonly dialerCallButton: Locator;
@@ -14,7 +15,7 @@ export class helpFunctions {
   readonly sessionStatus: Locator;
   readonly sessionHangupButton: Locator;
   readonly sessions: Locator;
-  //readonly cancelButton: Locator;
+  readonly cancelButton: Locator;
   readonly sessionRejectButton: Locator;
 
   constructor(page: Page) {
@@ -24,6 +25,7 @@ export class helpFunctions {
     this.websocketUrlInput = page.locator('[data-selector="websocketUrlInput"]');
     this.realmInput = page.locator('[data-selector="realmInput"]');
     this.registerButton = page.locator('[data-action="register"]');
+    this.unregisterButton = page.locator('[data-action="unregister"]');
     this.clientStatus = page.locator('[data-selector="clientStatus"]');
     this.dialerInput = page.locator('c-dialer [data-selector="input"]');
     this.dialerCallButton = page.locator('[data-action="call"]');
@@ -31,7 +33,7 @@ export class helpFunctions {
     this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
     this.sessions = page.locator('c-session');
-    //this.cancelButton = page.locator('c-session [data-action="cancel"]');
+    this.cancelButton = page.locator('c-session [data-action="cancel"]');
     this.sessionRejectButton = page.locator('c-session [data-action="reject"]');
   }
 
@@ -53,6 +55,10 @@ export class helpFunctions {
     await this.realmInput.type('voipgrid.nl');
 
     await this.registerButton.click();
+  }
+
+  async unregisterUser() {
+    await this.unregisterButton.click();
   }
 
   async assertClientConnected() {
@@ -78,6 +84,10 @@ export class helpFunctions {
 
   async assertCallSessionTerminated() {
     await expect(this.sessions).toHaveCount(0);
+  }
+
+  async cancelCall() {
+    await this.cancelButton.click();
   }
 
   async rejectCall() {
