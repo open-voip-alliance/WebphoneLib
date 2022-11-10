@@ -20,7 +20,7 @@
     "test-watch": "ava --watch",
     "docs": "typedoc --out docs src",
     "run-e2e-tests-in-docker": "docker-compose up --exit-code-from",
-    "test-e2e-debug": "PLAYWRIGHT_TEST_URL=http://localhost:3000 npx playwright test --project=chromium --debug --config=playwright.config.ts"
+    "test-e2e-debug": "npx playwright test --project=chromium --debug --config=playwright.config.ts"
   },
   "husky": {
     "hooks": {
