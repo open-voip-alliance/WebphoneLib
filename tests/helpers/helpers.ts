@@ -1,6 +1,6 @@
 import { Locator, Page, expect } from '@playwright/test';
 
-export class helpFunctions {
+export class HelpFunctions {
   readonly page: Page;
   readonly userIdInput: Locator;
   readonly passwordInput: Locator;

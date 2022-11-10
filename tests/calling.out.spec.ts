@@ -1,21 +1,20 @@
 import { test } from '@playwright/test';
 
-import { helpFunctions } from './helpers/helpers';
+import { HelpFunctions } from './helpers/helpers';
 
 test.describe('Calling out', () => {
-  let helpers1: helpFunctions;
-  let helpers2: helpFunctions;
+  let helpers1: HelpFunctions;
+  let helpers2: HelpFunctions;
 
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(['microphone']);
     const page1 = await context.newPage();
     const page2 = await context.newPage();
-    helpers1 = new helpFunctions(page1);
-    helpers2 = new helpFunctions(page2);
+    helpers1 = new HelpFunctions(page1);
+    helpers2 = new HelpFunctions(page2);
 
     await page1.goto(`${process.env.DEMO_URL}`);
     await helpers1.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
-    console.log(process.env.USER_A);
     await helpers1.assertClientConnected();
 
     await page2.goto(`${process.env.DEMO_URL}`);
