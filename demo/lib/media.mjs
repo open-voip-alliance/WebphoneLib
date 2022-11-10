@@ -59,9 +59,7 @@ function makeOptions(select, devices) {
 }
 
 function updateDevicesLists(mediaDevices, list) {
-  while (list.firstChild) {
-    list.removeChild(list.firstChild);
-  }
+  while (list.firstChild) list.removeChild(list.firstChild);
 
   mediaDevices
     .map(({ name }) => {
@@ -108,8 +106,8 @@ export function changeInputSelect(_inputSelect) {
     });
 
     client.defaultMedia.input.id = selected.value;
-    logger.info('Input select changed to: ' + selected.text);
   }
+  logger.info('Input select changed to: ' + selected.text);
 }
 
 export function changeOutputSelect(_outputSelect) {
@@ -120,8 +118,8 @@ export function changeOutputSelect(_outputSelect) {
     });
 
     client.defaultMedia.output.id = selected.value;
-    logger.info('Output select changed to: ' + selected.text);
   }
+  logger.info('Output select changed to: ' + selected.text);
 }
 
 export function playSound() {
