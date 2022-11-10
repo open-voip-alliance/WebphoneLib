@@ -13,6 +13,12 @@ test.describe('Calling out', () => {
     helpers1 = new helpFunctions(page1);
     helpers2 = new helpFunctions(page2);
 
+    page1.on('console', (message) => console.log(message));
+    page2.on('console', (message) => console.log(message));
+
+    page1.on('pageerror', (err) => console.log(err));
+    page2.on('pageerror', (err) => console.log(err));
+
     await page1.goto(`${process.env.DEMO_URL}`);
     await helpers1.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
     console.log(process.env.USER_A);
