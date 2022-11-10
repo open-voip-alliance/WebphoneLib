@@ -10,13 +10,13 @@ export const media = {
     id: undefined,
     audioProcessing: true,
     volume: 1.0,
-    muted: false,
+    muted: false
   },
   output: {
     id: undefined,
     volume: 1.0,
-    muted: false,
-  },
+    muted: false
+  }
 };
 
 const sound = new Sound('/demo/sounds/dtmf-0.mp3', { volume: 1.0, overlap: true });
@@ -45,7 +45,7 @@ function makeOptions(select, devices) {
       option.text = name;
       return option;
     })
-    .forEach((opt) => {
+    .forEach(opt => {
       if (selected && opt.value === selected.value) {
         opt.selected = true;
         selected = undefined;
@@ -67,7 +67,7 @@ function updateDevicesLists(mediaDevices, list) {
       device.textContent = name;
       return device;
     })
-    .forEach((listItem) => {
+    .forEach(listItem => {
       list.appendChild(listItem);
     });
 }
@@ -101,7 +101,7 @@ export function setInputsAndOutputs() {
 export function changeInputSelect(_inputSelect) {
   const selected = getSelectedOption(_inputSelect);
   if (selected) {
-    getSessions().forEach((session) => {
+    getSessions().forEach(session => {
       session.media.input.id = selected.value;
     });
 
@@ -113,7 +113,7 @@ export function changeInputSelect(_inputSelect) {
 export function changeOutputSelect(_outputSelect) {
   const selected = getSelectedOption(_outputSelect);
   if (selected) {
-    getSessions().forEach((session) => {
+    getSessions().forEach(session => {
       session.media.output.id = selected.value;
     });
 
@@ -131,7 +131,7 @@ window.Media = Media;
 
 export function changeInputVolume(value) {
   const vol = value / 10;
-  getSessions().forEach((session) => {
+  getSessions().forEach(session => {
     session.media.input.volume = vol;
   });
 
@@ -141,7 +141,7 @@ export function changeInputVolume(value) {
 }
 
 export function changeInputMuted(checked) {
-  getSessions().forEach((session) => {
+  getSessions().forEach(session => {
     session.media.media.input.muted = checked;
   });
 
@@ -152,7 +152,7 @@ export function changeInputMuted(checked) {
 
 export function changeOutputVolume(value) {
   const vol = value / 10;
-  getSessions().forEach((session) => {
+  getSessions().forEach(session => {
     session.media.output.volume = vol;
   });
 
@@ -162,7 +162,7 @@ export function changeOutputVolume(value) {
 }
 
 export function changeOutputMuted(checked) {
-  getSessions().forEach((session) => {
+  getSessions().forEach(session => {
     session.media.output.muted = checked;
   });
 
