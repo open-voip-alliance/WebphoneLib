@@ -1,4 +1,4 @@
-import { type Locator, type Page, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 
 export class helpFunctions {
   readonly page: Page;
