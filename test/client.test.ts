@@ -6,15 +6,15 @@ import {
   createClient,
   createClientImpl,
   defaultTransportFactory,
-  defaultUAFactory
+  defaultUAFactory,
 } from './_helpers';
 
-test.serial('cannot create client with unsupported browser', t => {
+test.serial('cannot create client with unsupported browser', (t) => {
   sinon.stub(Features, 'checkRequired').returns(false);
   t.throws<Error>(() => createClientImpl(defaultUAFactory(), defaultTransportFactory()));
 });
 
-test.serial('client is frozen', t => {
+test.serial('client is frozen', (t) => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const client = createClient();
