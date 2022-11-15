@@ -36,7 +36,7 @@ const config: PlaywrightTestConfig = {
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
-    actionTimeout: 0,
+    actionTimeout: 1000,
     /* Base URL to use in actions like `await page.goto('/')`. */
     // baseURL: 'http://localhost:3000',
 
@@ -46,8 +46,8 @@ const config: PlaywrightTestConfig = {
     /* Fake media (audio inputs and outputs) for headless mode. */
     launchOptions: {
       args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
-      //headless: false,
-      //slowMo: 10,
+      // headless: false,
+      // slowMo: 50,
     },
   },
 
