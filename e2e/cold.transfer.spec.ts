@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe.only('Calling out', () => {
+test.describe('Calling out', () => {
   let helpers1: HelpFunctions;
   let helpers2: HelpFunctions;
   let helpers3: HelpFunctions;
@@ -29,8 +29,20 @@ test.describe.only('Calling out', () => {
     await helpers3.assertClientConnected();
   });
 
-  test('User A calls user B and user B transfers user A to user C via a cold transfer', async () => {
+  test.only('User A calls user B and user B transfers user A to user C via a cold transfer', async () => {
     await helpers1.callNumber(`${process.env.NUMBER_B}`);
+    await helpers2.assertSessionActive();
     await helpers2.acceptCall();
+    await helpers2.coldTransferCall(`${process.env.NUMBER_C}`);
+    // Verify the session for User B is terminated after a cold transfer
+    await helpers2.assertSessionTerminated();
+    // Verify the call for User A is still active
+    await helpers1.assertCallActive();
+    // Verify the session for User C is created
+    await helpers3.assertSessionActive();
+    await helpers3.acceptCall();
+    // Verify the call for User C is active
+    await helpers1.assertCallActive();
+    // Figure out if User A need to accept a call (as in the old tests) or not
   });
 });

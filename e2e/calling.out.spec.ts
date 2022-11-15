@@ -24,44 +24,45 @@ test.describe('Calling out', () => {
 
   test('calling out & the other party answers & the other party ends the call', async () => {
     await helpers2.callNumber(`${process.env.NUMBER_A}`);
+    await helpers1.assertSessionActive();
     await helpers1.acceptCall();
-    await helpers1.assertCallAccepted();
+    await helpers1.assertCallActive();
     await helpers1.terminateCall();
-    await helpers1.assertCallSessionTerminated();
-    await helpers2.assertCallSessionTerminated();
+    await helpers1.assertSessionTerminated();
+    await helpers2.assertSessionTerminated();
   });
 
   test('calling out & the other party answers & calling party ends the call (terminate)', async () => {
     await helpers2.callNumber(`${process.env.NUMBER_A}`);
     await helpers1.acceptCall();
-    await helpers1.assertCallAccepted();
+    await helpers1.assertCallActive();
     await helpers2.terminateCall();
-    await helpers1.assertCallSessionTerminated();
-    await helpers2.assertCallSessionTerminated();
+    await helpers1.assertSessionTerminated();
+    await helpers2.assertSessionTerminated();
   });
 
   test('calling out & calling party ends the call before it is answered (cancel)', async () => {
     await helpers2.callNumber(`${process.env.NUMBER_A}`);
     await helpers2.cancelCall();
-    await helpers1.assertCallSessionTerminated();
-    await helpers2.assertCallSessionTerminated();
+    await helpers2.assertSessionTerminated();
+    await helpers1.assertSessionTerminated();
   });
 
   test('calling out & the other party rejects the call', async () => {
     await helpers2.callNumber(`${process.env.NUMBER_A}`);
     await helpers1.rejectCall();
-    await helpers1.assertCallSessionTerminated();
-    await helpers2.assertCallSessionTerminated();
+    await helpers1.assertSessionTerminated();
+    await helpers2.assertSessionTerminated();
   });
 
   test('calling out while other party is not available', async () => {
     await helpers1.unregisterUser();
     await helpers2.callNumber(`${process.env.NUMBER_A}`);
-    await helpers2.assertCallSessionTerminated();
+    await helpers2.assertSessionTerminated();
   });
 
   test('calling out while other party does not exist', async () => {
     await helpers2.callNumber(`${process.env.NON_EXISTING_NUMBER}`);
-    await helpers2.assertCallSessionTerminated();
+    await helpers2.assertSessionTerminated();
   });
 });
