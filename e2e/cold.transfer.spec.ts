@@ -28,9 +28,9 @@ test.describe('Calling out', () => {
     await helpers3.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
     await helpers3.assertClientConnected();
 
-    await helpers1.callNumber(`${process.env.NUMBER_B}`);
-    await helpers2.assertSessionActive();
-    await helpers2.acceptCall();
+    // await helpers1.callNumber(`${process.env.NUMBER_B}`);
+    // await helpers2.assertSessionActive();
+    // await helpers2.acceptCall();
   });
 
   test('User A calls user B and user B transfers user A to user C via a cold transfer', async () => {
@@ -48,16 +48,34 @@ test.describe('Calling out', () => {
   });
 
   test.only('User A calls user B, user B transfers user A to user C, and user C reject a call (it means that user A will get a ringback). User A accepts the ringback', async () => {
+    await helpers1.callNumber(`${process.env.NUMBER_B}`);
+    await helpers2.assertSessionActive();
+    await helpers2.acceptCall();
+    await helpers2.assertCallActive();
+    //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
+    await helpers2.page.waitForTimeout(3000);
+
     await helpers2.coldTransferCall(`${process.env.NUMBER_C}`);
+    await helpers2.assertSessionTerminated();
+
+    // Verify that User C is getting a call
+    await helpers3.assertSessionActive();
     await helpers3.rejectCall();
     // Verify the session for User C is terminated
     await helpers3.assertSessionTerminated();
-    // Verify the call for User A is still active
-    await helpers1.assertCallActive();
+
     // Verify that User B is getting a ringback
     await helpers2.assertSessionActive();
+    // Verify the call for User A is still active
     await helpers2.acceptCall();
+
     // Verify the call for User B is active
     await helpers2.assertCallActive();
+
+    // Assert call is active with user A
+    await helpers1.assertCallActive();
+
+    await helpers1.terminateCall();
+    await helpers1.assertSessionTerminated();
   });
 });
