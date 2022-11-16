@@ -3,79 +3,79 @@ import { test } from '@playwright/test';
 import { HelpFunctions } from './helpers/helpers';
 
 test.describe('Calling out', () => {
-  let helpers1: HelpFunctions;
-  let helpers2: HelpFunctions;
-  let helpers3: HelpFunctions;
+  let helpersA: HelpFunctions;
+  let helpersB: HelpFunctions;
+  let helpersC: HelpFunctions;
 
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(['microphone']);
-    const page1 = await context.newPage();
-    const page2 = await context.newPage();
-    const page3 = await context.newPage();
-    helpers1 = new HelpFunctions(page1);
-    helpers2 = new HelpFunctions(page2);
-    helpers3 = new HelpFunctions(page3);
+    const pageUserA = await context.newPage();
+    const pageUserB = await context.newPage();
+    const pageUserC = await context.newPage();
+    helpersA = new HelpFunctions(pageUserA);
+    helpersB = new HelpFunctions(pageUserB);
+    helpersC = new HelpFunctions(pageUserC);
 
-    await page1.goto(`${process.env.DEMO_URL}`);
-    await helpers1.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
-    await helpers1.assertClientConnected();
+    await pageUserA.goto(`${process.env.DEMO_URL}`);
+    await helpersA.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
+    await helpersA.assertClientConnected();
 
-    await page2.goto(`${process.env.DEMO_URL}`);
-    await helpers2.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
-    await helpers2.assertClientConnected();
+    await pageUserB.goto(`${process.env.DEMO_URL}`);
+    await helpersB.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
+    await helpersB.assertClientConnected();
 
-    await page3.goto(`${process.env.DEMO_URL}`);
-    await helpers3.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
-    await helpers3.assertClientConnected();
-
-    // await helpers1.callNumber(`${process.env.NUMBER_B}`);
-    // await helpers2.assertSessionActive();
-    // await helpers2.acceptCall();
+    await pageUserC.goto(`${process.env.DEMO_URL}`);
+    await helpersC.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
+    await helpersC.assertClientConnected();
   });
 
   test('User A calls user B and user B transfers user A to user C via a cold transfer', async () => {
-    await helpers2.coldTransferCall(`${process.env.NUMBER_C}`);
+    await helpersA.callNumber(`${process.env.NUMBER_B}`);
+    await helpersB.assertSessionActive();
+    await helpersB.acceptCall();
+    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
     // Verify the session for User B is terminated after a cold transfer
-    await helpers2.assertSessionTerminated();
+    await helpersB.assertSessionTerminated();
     // Verify the call for User A is still active
-    await helpers1.assertCallActive();
+    await helpersA.assertCallActive();
     // Verify the session for User C is created
-    await helpers3.assertSessionActive();
-    await helpers3.acceptCall();
+    await helpersC.assertSessionActive();
+
+    await helpersC.acceptCall();
     // Verify the call for User C is active
-    await helpers3.assertCallActive();
+    await helpersC.assertCallActive();
     // Figure out if User A need to accept a call (as in the old tests) or not
+
+    await helpersA.terminateCall();
+    await helpersA.assertSessionTerminated();
   });
 
-  test.only('User A calls user B, user B transfers user A to user C, and user C reject a call (it means that user A will get a ringback). User A accepts the ringback', async () => {
-    await helpers1.callNumber(`${process.env.NUMBER_B}`);
-    await helpers2.assertSessionActive();
-    await helpers2.acceptCall();
-    await helpers2.assertCallActive();
+  test('User A calls user B, user B transfers user A to user C, and user C reject a call (it means that user A will get a ringback). User A accepts the ringback', async () => {
+    await helpersA.callNumber(`${process.env.NUMBER_B}`);
+    await helpersB.assertSessionActive();
+    await helpersB.acceptCall();
+    await helpersB.assertCallActive();
     //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
-    await helpers2.page.waitForTimeout(3000);
+    await helpersB.page.waitForTimeout(3000);
 
-    await helpers2.coldTransferCall(`${process.env.NUMBER_C}`);
-    await helpers2.assertSessionTerminated();
-
+    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
+    await helpersB.assertSessionTerminated();
     // Verify that User C is getting a call
-    await helpers3.assertSessionActive();
-    await helpers3.rejectCall();
+    await helpersC.assertSessionActive();
+
+    await helpersC.rejectCall();
     // Verify the session for User C is terminated
-    await helpers3.assertSessionTerminated();
-
+    await helpersC.assertSessionTerminated();
     // Verify that User B is getting a ringback
-    await helpers2.assertSessionActive();
+    await helpersB.assertSessionActive();
     // Verify the call for User A is still active
-    await helpers2.acceptCall();
 
+    await helpersB.acceptCall();
     // Verify the call for User B is active
-    await helpers2.assertCallActive();
-
-    // Assert call is active with user A
-    await helpers1.assertCallActive();
-
-    await helpers1.terminateCall();
-    await helpers1.assertSessionTerminated();
+    await helpersB.assertCallActive();
+    // Assert the call is active with User A
+    await helpersA.assertCallActive();
+    await helpersA.terminateCall();
+    await helpersA.assertSessionTerminated();
   });
 });
