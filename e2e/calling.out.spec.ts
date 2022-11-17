@@ -3,66 +3,66 @@ import { test } from '@playwright/test';
 import { HelpFunctions } from './helpers/helpers';
 
 test.describe('Calling out', () => {
-  let helpers1: HelpFunctions;
-  let helpers2: HelpFunctions;
+  let helpersA: HelpFunctions;
+  let helpersB: HelpFunctions;
 
   test.beforeEach(async ({ context }) => {
     await context.grantPermissions(['microphone']);
-    const page1 = await context.newPage();
-    const page2 = await context.newPage();
-    helpers1 = new HelpFunctions(page1);
-    helpers2 = new HelpFunctions(page2);
+    const pageUserA = await context.newPage();
+    const pageUserB = await context.newPage();
+    helpersA = new HelpFunctions(pageUserA);
+    helpersB = new HelpFunctions(pageUserB);
 
-    await page1.goto(`${process.env.DEMO_URL}`);
-    await helpers1.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
-    await helpers1.assertClientConnected();
+    await pageUserA.goto(`${process.env.DEMO_URL}`);
+    await helpersA.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
+    await helpersA.assertClientConnected();
 
-    await page2.goto(`${process.env.DEMO_URL}`);
-    await helpers2.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
-    await helpers2.assertClientConnected();
+    await pageUserB.goto(`${process.env.DEMO_URL}`);
+    await helpersB.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
+    await helpersB.assertClientConnected();
   });
 
   test('calling out & the other party answers & the other party ends the call', async () => {
-    await helpers2.callNumber(`${process.env.NUMBER_A}`);
-    await helpers1.assertSessionActive();
-    await helpers1.acceptCall();
-    await helpers1.assertCallActive();
-    await helpers1.terminateCall();
-    await helpers1.assertSessionTerminated();
-    await helpers2.assertSessionTerminated();
+    await helpersB.callNumber(`${process.env.NUMBER_A}`);
+    await helpersA.assertSessionActive();
+    await helpersA.acceptCall();
+    await helpersA.assertCallActive();
+    await helpersA.terminateCall();
+    await helpersA.assertSessionTerminated();
+    await helpersB.assertSessionTerminated();
   });
 
   test('calling out & the other party answers & calling party ends the call (terminate)', async () => {
-    await helpers2.callNumber(`${process.env.NUMBER_A}`);
-    await helpers1.acceptCall();
-    await helpers1.assertCallActive();
-    await helpers2.terminateCall();
-    await helpers1.assertSessionTerminated();
-    await helpers2.assertSessionTerminated();
+    await helpersB.callNumber(`${process.env.NUMBER_A}`);
+    await helpersA.acceptCall();
+    await helpersA.assertCallActive();
+    await helpersB.terminateCall();
+    await helpersA.assertSessionTerminated();
+    await helpersB.assertSessionTerminated();
   });
 
   test('calling out & calling party ends the call before it is answered (cancel)', async () => {
-    await helpers2.callNumber(`${process.env.NUMBER_A}`);
-    await helpers2.cancelCall();
-    await helpers2.assertSessionTerminated();
-    await helpers1.assertSessionTerminated();
+    await helpersB.callNumber(`${process.env.NUMBER_A}`);
+    await helpersB.cancelCall();
+    await helpersB.assertSessionTerminated();
+    await helpersA.assertSessionTerminated();
   });
 
   test('calling out & the other party rejects the call', async () => {
-    await helpers2.callNumber(`${process.env.NUMBER_A}`);
-    await helpers1.rejectCall();
-    await helpers1.assertSessionTerminated();
-    await helpers2.assertSessionTerminated();
+    await helpersB.callNumber(`${process.env.NUMBER_A}`);
+    await helpersA.rejectCall();
+    await helpersA.assertSessionTerminated();
+    await helpersB.assertSessionTerminated();
   });
 
   test('calling out while other party is not available', async () => {
-    await helpers1.unregisterUser();
-    await helpers2.callNumber(`${process.env.NUMBER_A}`);
-    await helpers2.assertSessionTerminated();
+    await helpersA.unregisterUser();
+    await helpersB.callNumber(`${process.env.NUMBER_A}`);
+    await helpersB.assertSessionTerminated();
   });
 
   test('calling out while other party does not exist', async () => {
-    await helpers2.callNumber(`${process.env.NON_EXISTING_NUMBER}`);
-    await helpers2.assertSessionTerminated();
+    await helpersB.callNumber(`${process.env.NON_EXISTING_NUMBER}`);
+    await helpersB.assertSessionTerminated();
   });
 });
