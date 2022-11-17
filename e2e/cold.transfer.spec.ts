@@ -33,7 +33,7 @@ test.describe('Calling out', () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.assertSessionActive();
     await helpersB.acceptCall();
-    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
+    await helpersB.transferCall(`${process.env.NUMBER_C}`, `${process.env.COLD_TRANSFER}`);
     // Verify the session for User B is terminated after a cold transfer
     await helpersB.assertSessionTerminated();
     // Verify the call for User A is still active
@@ -58,7 +58,7 @@ test.describe('Calling out', () => {
     //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
     await helpersB.page.waitForTimeout(4000);
 
-    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
+    await helpersB.transferCall(`${process.env.NUMBER_C}`, `${process.env.COLD_TRANSFER}`);
     await helpersB.assertSessionTerminated();
     // Verify that User C is getting a call
     await helpersC.assertSessionActive();
@@ -86,7 +86,7 @@ test.describe('Calling out', () => {
     //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
     await helpersB.page.waitForTimeout(4000);
 
-    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
+    await helpersB.transferCall(`${process.env.NUMBER_C}`, `${process.env.COLD_TRANSFER}`);
     await helpersB.assertSessionTerminated();
     // Verify that User C is getting a call
     await helpersC.assertSessionActive();
@@ -111,7 +111,10 @@ test.describe('Calling out', () => {
     //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
     await helpersB.page.waitForTimeout(4000);
 
-    await helpersB.coldTransferCall(`${process.env.NON_EXISTING_NUMBER}`);
+    await helpersB.transferCall(
+      `${process.env.NON_EXISTING_NUMBER}`,
+      `${process.env.COLD_TRANSFER}`
+    );
     await helpersB.assertSessionTerminated();
     // Verify that User B is getting a ringback
     await helpersB.assertSessionActive();

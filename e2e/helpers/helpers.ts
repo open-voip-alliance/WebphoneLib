@@ -108,9 +108,9 @@ export class HelpFunctions {
     await this.sessionRejectButton.click();
   }
 
-  async coldTransferCall(number: string) {
+  async transferCall(number: string, method: string) {
     await this.sessionTransferButton.click();
-    await this.sessionTransferMethodDropdown.selectOption('blind');
+    await this.sessionTransferMethodDropdown.selectOption(method);
     await this.sessionTransferInput.type(number);
     await this.sessionCompleteTransferButton.click();
   }
