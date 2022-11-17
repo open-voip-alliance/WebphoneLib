@@ -108,9 +108,16 @@ export class HelpFunctions {
     await this.sessionRejectButton.click();
   }
 
-  async transferCall(number: string, method: string) {
+  async coldTransferCall(number: string) {
     await this.sessionTransferButton.click();
-    await this.sessionTransferMethodDropdown.selectOption(method);
+    await this.sessionTransferMethodDropdown.selectOption('blind');
+    await this.sessionTransferInput.type(number);
+    await this.sessionCompleteTransferButton.click();
+  }
+
+  async warmTransferCall(number: string) {
+    await this.sessionTransferButton.click();
+    await this.sessionTransferMethodDropdown.selectOption('attended');
     await this.sessionTransferInput.type(number);
     await this.sessionCompleteTransferButton.click();
   }

@@ -33,7 +33,7 @@ test.describe('Calling out', () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.assertSessionActive();
     await helpersB.acceptCall();
-    await helpersB.transferCall(`${process.env.NUMBER_C}`, `${process.env.COLD_TRANSFER}`);
+    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
     // Verify the session for User B is terminated after a cold transfer
     await helpersB.assertSessionTerminated();
     // Verify the call for User A is still active
@@ -44,8 +44,6 @@ test.describe('Calling out', () => {
     await helpersC.acceptCall();
     // Verify the call for User C is active
     await helpersC.assertCallActive();
-    // Figure out if User A need to accept a call (as in the old tests) or not
-
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
   });
@@ -55,10 +53,10 @@ test.describe('Calling out', () => {
     await helpersB.assertSessionActive();
     await helpersB.acceptCall();
     await helpersB.assertCallActive();
-    //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
+    //In a normal situation people would speak to each other as well, so a timeout to really establish the call.
     await helpersB.page.waitForTimeout(4000);
 
-    await helpersB.transferCall(`${process.env.NUMBER_C}`, `${process.env.COLD_TRANSFER}`);
+    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
     await helpersB.assertSessionTerminated();
     // Verify that User C is getting a call
     await helpersC.assertSessionActive();
@@ -83,10 +81,10 @@ test.describe('Calling out', () => {
   test('User A calls user B, user B transfers user A to user C, and user C rejects a call (it means that user B will get a ringback). User B declines the ringback', async () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.acceptCall();
-    //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
+    //In a normal situation people would speak to each other as well, so a timeout to really establish the call.
     await helpersB.page.waitForTimeout(4000);
 
-    await helpersB.transferCall(`${process.env.NUMBER_C}`, `${process.env.COLD_TRANSFER}`);
+    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
     await helpersB.assertSessionTerminated();
     // Verify that User C is getting a call
     await helpersC.assertSessionActive();
@@ -108,13 +106,10 @@ test.describe('Calling out', () => {
   test('User A calls user B and user B transfers user A to non-existing number (it means that user B will get a ringback). User B accepts the ringback', async () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.acceptCall();
-    //In a normal situation people would speak to eachother as well, so a timeout to really establish te call.
+    //In a normal situation people would speak to each other as well, so a timeout to really establish the call.
     await helpersB.page.waitForTimeout(4000);
 
-    await helpersB.transferCall(
-      `${process.env.NON_EXISTING_NUMBER}`,
-      `${process.env.COLD_TRANSFER}`
-    );
+    await helpersB.coldTransferCall(`${process.env.NON_EXISTING_NUMBER}`);
     await helpersB.assertSessionTerminated();
     // Verify that User B is getting a ringback
     await helpersB.assertSessionActive();
