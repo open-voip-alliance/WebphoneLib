@@ -17,6 +17,10 @@ export class HelpFunctions {
   readonly sessions: Locator;
   readonly cancelButton: Locator;
   readonly sessionRejectButton: Locator;
+  readonly sessionTransferButton: Locator;
+  readonly sessionTransferMethodDropdown: Locator;
+  readonly sessionTransferInput: Locator;
+  readonly sessionCompleteTransferButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -32,9 +36,15 @@ export class HelpFunctions {
     this.sessionAcceptButton = page.locator('c-session [data-action="accept"]');
     this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
-    this.sessions = page.locator('c-session');
+    this.sessions = page.locator('c-sessions c-session');
     this.cancelButton = page.locator('c-session [data-action="cancel"]');
     this.sessionRejectButton = page.locator('c-session [data-action="reject"]');
+    this.sessionTransferButton = page.locator('c-session [data-action="toggleTransfer"]');
+    this.sessionTransferMethodDropdown = page.locator(
+      'c-transfer [data-selector="selectTransferMethod"]'
+    );
+    this.sessionTransferInput = page.locator('c-transfer [data-selector="input"]');
+    this.sessionCompleteTransferButton = page.locator('c-transfer [data-action="transferCall"]');
   }
 
   async registerUser(userAuthId: string, userPw: string) {
@@ -70,11 +80,19 @@ export class HelpFunctions {
     await this.dialerCallButton.click();
   }
 
+  async assertSessionActive() {
+    await expect(this.sessions).toHaveCount(1);
+  }
+
+  async assertTwoActiveSessions() {
+    await expect(this.sessions).toHaveCount(2);
+  }
+
   async acceptCall() {
     await this.sessionAcceptButton.click();
   }
 
-  async assertCallAccepted() {
+  async assertCallActive() {
     await expect(this.sessionStatus).toHaveText('active');
   }
 
@@ -82,7 +100,7 @@ export class HelpFunctions {
     await this.sessionHangupButton.click();
   }
 
-  async assertCallSessionTerminated() {
+  async assertSessionTerminated() {
     await expect(this.sessions).toHaveCount(0);
   }
 
@@ -92,5 +110,19 @@ export class HelpFunctions {
 
   async rejectCall() {
     await this.sessionRejectButton.click();
+  }
+
+  async coldTransferCall(number: string) {
+    await this.sessionTransferButton.click();
+    await this.sessionTransferMethodDropdown.selectOption('blind');
+    await this.sessionTransferInput.type(number);
+    await this.sessionCompleteTransferButton.click();
+  }
+
+  async warmTransferCall(number: string) {
+    await this.sessionTransferButton.click();
+    await this.sessionTransferMethodDropdown.selectOption('attended');
+    await this.sessionTransferInput.type(number);
+    await this.sessionCompleteTransferButton.click();
   }
 }
