@@ -114,19 +114,19 @@ export const websocketUrl = '&lt;websocketUrl&gt;';</code></pre>
 
 <span class="hljs-keyword">const</span> transport = {
   <span class="hljs-attr">wsServers</span>: <span class="hljs-string">'&lt;websocket-url&gt;'</span>, <span class="hljs-comment">// or replace with your</span>
-  <span class="hljs-attr">iceServers</span>: [] <span class="hljs-comment">// depending on if your provider needs STUN/TURN.</span>
+  iceServers: [] <span class="hljs-comment">// depending on if your provider needs STUN/TURN.</span>
 };
 
 <span class="hljs-keyword">const</span> media = {
   <span class="hljs-attr">input</span>: {
     <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default audio device</span>
-    <span class="hljs-attr">audioProcessing</span>: <span class="hljs-literal">true</span>,
+    audioProcessing: <span class="hljs-literal">true</span>,
     <span class="hljs-attr">volume</span>: <span class="hljs-number">1.0</span>,
     <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
   },
   <span class="hljs-attr">output</span>: {
     <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default audio device</span>
-    <span class="hljs-attr">volume</span>: <span class="hljs-number">1.0</span>,
+    volume: <span class="hljs-number">1.0</span>,
     <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
   }
 };
@@ -203,13 +203,13 @@ client.on(<span class="hljs-string">'invite'</span>, (session) =&gt; {
   <span class="hljs-attr">media</span>: {
     <span class="hljs-attr">input</span>: {
       <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default input device</span>
-      <span class="hljs-attr">audioProcessing</span>: <span class="hljs-literal">true</span>,
+      audioProcessing: <span class="hljs-literal">true</span>,
       <span class="hljs-attr">volume</span>: <span class="hljs-number">1.0</span>,
       <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
     },
     <span class="hljs-attr">output</span>: {
       <span class="hljs-attr">id</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// default output device</span>
-      <span class="hljs-attr">volume</span>: <span class="hljs-number">1.0</span>,
+      volume: <span class="hljs-number">1.0</span>,
       <span class="hljs-attr">muted</span>: <span class="hljs-literal">false</span>
     }
   }
