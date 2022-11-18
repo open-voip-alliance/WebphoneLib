@@ -84,6 +84,10 @@ export class HelpFunctions {
     await expect(this.sessions).toHaveCount(1);
   }
 
+  async assertTwoActiveSessions() {
+    await expect(this.sessions).toHaveCount(2);
+  }
+
   async acceptCall() {
     await this.sessionAcceptButton.click();
   }
