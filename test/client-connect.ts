@@ -16,12 +16,12 @@ import {
   ReconnectableTransport,
   TransportFactory,
   UAFactory,
-  WrappedTransport,
+  WrappedTransport
 } from '../src/transport';
 
 import { createClientImpl, defaultTransportFactory, defaultUAFactory } from './_helpers';
 
-test.serial('client connect', async (t) => {
+test.serial('client connect', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const transport = sinon.createStubInstance(ReconnectableTransport);
@@ -33,7 +33,7 @@ test.serial('client connect', async (t) => {
   t.true(transport.connect.called);
 });
 
-test.serial('cannot connect client when recovering', async (t) => {
+test.serial('cannot connect client when recovering', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const client = createClientImpl(defaultUAFactory(), defaultTransportFactory());
@@ -43,7 +43,7 @@ test.serial('cannot connect client when recovering', async (t) => {
   t.is(error.message, 'Can not connect while trying to recover.');
 });
 
-test.serial('return true when already connected', async (t) => {
+test.serial('return true when already connected', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const client = createClientImpl(defaultUAFactory(), defaultTransportFactory());
@@ -55,18 +55,18 @@ test.serial('return true when already connected', async (t) => {
   t.true(await connected);
 });
 
-test.serial.cb('emits connecting status after connect is called', (t) => {
+test.serial.cb('emits connecting status after connect is called', t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const ua = sinon.createStubInstance(UserAgent, {
-    start: Promise.resolve(),
+    start: Promise.resolve()
   });
 
   (ua as any).transport = sinon.createStubInstance(WrappedTransport, {
-    on: sinon.fake() as any,
+    on: sinon.fake() as any
   });
 
-  const client = createClientImpl(() => ua as unknown as UserAgent, defaultTransportFactory());
+  const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
   (client as any).transport.createRegisteredPromise = () => {
     (client as any).transport.registerer = sinon.createStubInstance(Registerer);
@@ -75,12 +75,12 @@ test.serial.cb('emits connecting status after connect is called', (t) => {
 
   (client as any).transport.createHealthChecker = () => {
     (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
-      start: sinon.fake(),
+      start: sinon.fake()
     });
   };
 
   t.plan(3);
-  client.on('statusUpdate', (status) => {
+  client.on('statusUpdate', status => {
     // Shortly after calling connect ClientStatus should be CONNECTING.
     t.is(status, ClientStatus.CONNECTING);
     t.is((client as any).transport.status, ClientStatus.CONNECTING);
@@ -92,7 +92,7 @@ test.serial.cb('emits connecting status after connect is called', (t) => {
   client.connect();
 });
 
-test.serial('emits connected status after register is emitted', async (t) => {
+test.serial('emits connected status after register is emitted', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const uaFactory = (options: UserAgentOptions) => {
@@ -104,7 +104,7 @@ test.serial('emits connected status after register is emitted', async (t) => {
   const client = createClientImpl(uaFactory, defaultTransportFactory());
 
   t.plan(3);
-  client.on('statusUpdate', (status) => {
+  client.on('statusUpdate', status => {
     if (status === ClientStatus.CONNECTED) {
       t.is(status, ClientStatus.CONNECTED);
     }
@@ -120,7 +120,7 @@ test.serial('emits connected status after register is emitted', async (t) => {
 
   (client as any).transport.createHealthChecker = () => {
     (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
-      start: sinon.fake(),
+      start: sinon.fake()
     });
   };
 
@@ -130,7 +130,7 @@ test.serial('emits connected status after register is emitted', async (t) => {
   t.is((client as any).transport.status, ClientStatus.CONNECTED);
 });
 
-test.serial('emits disconnected status after registrationFailed is emitted', async (t) => {
+test.serial('emits disconnected status after registrationFailed is emitted', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const uaFactory = (options: UserAgentOptions) => {
@@ -148,7 +148,7 @@ test.serial('emits disconnected status after registrationFailed is emitted', asy
   const client = createClientImpl(uaFactory, transport);
 
   t.plan(4);
-  client.on('statusUpdate', (status) => {
+  client.on('statusUpdate', status => {
     if (status === ClientStatus.DISCONNECTED) {
       t.is(status, ClientStatus.DISCONNECTED);
     }
@@ -164,7 +164,7 @@ test.serial('emits disconnected status after registrationFailed is emitted', asy
 
   (client as any).transport.createHealthChecker = () => {
     (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
-      start: sinon.fake(),
+      start: sinon.fake()
     });
   };
 
@@ -175,12 +175,12 @@ test.serial('emits disconnected status after registrationFailed is emitted', asy
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 });
 
-test.serial("rejects when transport doesn't connect within timeout", async (t) => {
+test.serial("rejects when transport doesn't connect within timeout", async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const uaFactory = (options: UserAgentOptions) => {
     const userAgent = new UserAgent(options);
     userAgent.start = () => {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         setTimeout(() => resolve(), 250);
       });
     };
@@ -196,12 +196,12 @@ test.serial("rejects when transport doesn't connect within timeout", async (t) =
   t.is(error.message, 'Could not connect to the websocket in time.');
 });
 
-test.serial('ua.start called on first connect', (t) => {
+test.serial('ua.start called on first connect', t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const ua = sinon.createStubInstance(UserAgent, { start: Promise.resolve() });
   (ua as any).transport = sinon.createStubInstance(WrappedTransport, { on: sinon.fake() as any });
 
-  const client = createClientImpl(() => ua as unknown as UserAgent, defaultTransportFactory());
+  const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
   (client as any).transport.createRegisteredPromise = () => {
     (client as any).transport.registerer = sinon.createStubInstance(Registerer);
@@ -210,7 +210,7 @@ test.serial('ua.start called on first connect', (t) => {
 
   (client as any).transport.createHealthChecker = () => {
     (client as any).transport.healthChecker = sinon.createStubInstance(HealthChecker, {
-      start: sinon.fake(),
+      start: sinon.fake()
     });
   };
 
@@ -219,11 +219,11 @@ test.serial('ua.start called on first connect', (t) => {
   t.true(ua.start.called);
 });
 
-test.serial('userAgentString is correct', (t) => {
+test.serial('userAgentString is correct', t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const userAgentString = 'Test UserAgent string';
   const client = createClientImpl(defaultUAFactory(), defaultTransportFactory(), {
-    userAgentString,
+    userAgentString
   });
   t.is((client as any).transport.uaOptions.userAgentString, userAgentString);
 });
