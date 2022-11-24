@@ -37,13 +37,13 @@ test.describe('Calling out', () => {
     // Verify the session for User B is terminated after a cold transfer
     await helpersB.assertSessionTerminated();
     // Verify the call for User A is still active
-    await helpersA.assertCallActive();
+    await helpersA.assertCallStatus('active');
     // Verify the session for User C is created
     await helpersC.assertSessionActive();
 
     await helpersC.acceptCall();
     // Verify the call for User C is active
-    await helpersC.assertCallActive();
+    await helpersC.assertCallStatus('active');
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
   });
@@ -52,7 +52,7 @@ test.describe('Calling out', () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.assertSessionActive();
     await helpersB.acceptCall();
-    await helpersB.assertCallActive();
+    await helpersB.assertCallStatus('active');
     //In a normal situation people would speak to each other as well, so a timeout to really establish the call.
     await helpersB.page.waitForTimeout(4000);
 
@@ -67,13 +67,13 @@ test.describe('Calling out', () => {
     // Verify that User B is getting a ringback
     await helpersB.assertSessionActive();
     // Verify the call for User A is still active
-    await helpersA.assertCallActive();
+    await helpersA.assertCallStatus('active');
 
     await helpersB.acceptCall();
     // Verify the call for User B is active
-    await helpersB.assertCallActive();
+    await helpersB.assertCallStatus('active');
     // Assert the call is active with User A
-    await helpersA.assertCallActive();
+    await helpersA.assertCallStatus('active');
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
   });
@@ -114,11 +114,11 @@ test.describe('Calling out', () => {
     // Verify that User B is getting a ringback
     await helpersB.assertSessionActive();
     // Verify the call for User A is still active
-    await helpersA.assertCallActive();
+    await helpersA.assertCallStatus('active');
 
     await helpersB.acceptCall();
     // Verify the call for User B is active
-    await helpersB.assertCallActive();
+    await helpersB.assertCallStatus('active');
 
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
