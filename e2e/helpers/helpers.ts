@@ -133,7 +133,6 @@ export class HelpFunctions {
   }
 
   async coldTransferCall(number: string) {
-    await this.sessionTransferButton.click();
     await this.sessionTransferMethodDropdown.selectOption('blind');
     await this.sessionTransferInput.type(number);
     await this.sessionCompleteTransferButton.click();

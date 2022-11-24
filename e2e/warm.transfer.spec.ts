@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe('Calling out', () => {
+test.describe('Warm transfer', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
   let helpersC: HelpFunctions;
@@ -27,9 +27,7 @@ test.describe('Calling out', () => {
     await pageUserC.goto(`${process.env.DEMO_URL}`);
     await helpersC.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
     await helpersC.assertClientConnected();
-  });
 
-  test('User A calls user B, and user B transfers user A to user C via a warm transfer. User C accepts the call', async () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersA.assertCallStatus('ringing');
     await helpersB.assertSessionActive();
@@ -41,7 +39,9 @@ test.describe('Calling out', () => {
     await helpersB.clickTransferButton();
     await helpersA.assertCallStatus('active');
     await helpersB.assertCallStatus('on_hold');
+  });
 
+  test('User A calls user B, and user B transfers user A to user C via a warm transfer. User C accepts the call', async () => {
     await helpersB.warmTransferCall(`${process.env.NUMBER_C}`);
     await helpersA.assertCallStatus('active');
     await helpersB.assertTwoActiveSessions();
@@ -64,18 +64,6 @@ test.describe('Calling out', () => {
   });
 
   test('User A calls user B, and user B transfers user A to user C via a warm transfer. User C rejects a call and have user B activate a call to A again', async () => {
-    await helpersA.callNumber(`${process.env.NUMBER_B}`);
-    await helpersA.assertCallStatus('ringing');
-    await helpersB.assertSessionActive();
-
-    await helpersB.acceptCall();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('active');
-
-    await helpersB.clickTransferButton();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('on_hold');
-
     await helpersB.warmTransferCall(`${process.env.NUMBER_C}`);
     await helpersA.assertCallStatus('active');
     await helpersB.assertTwoActiveSessions();
@@ -86,6 +74,7 @@ test.describe('Calling out', () => {
 
     await helpersC.rejectCall();
     await helpersA.assertCallStatus('active');
+    await helpersB.assertSessionActive();
     await helpersB.assertCallStatus('on_hold');
     await helpersC.assertSessionTerminated();
 
@@ -99,22 +88,11 @@ test.describe('Calling out', () => {
   });
 
   test('User A calls user B, and user B transfers user A to a non-existing number via a warm transfer', async () => {
-    await helpersA.callNumber(`${process.env.NUMBER_B}`);
-    await helpersA.assertCallStatus('ringing');
-    await helpersB.assertSessionActive();
-
-    await helpersB.acceptCall();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('active');
-
-    await helpersB.clickTransferButton();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('on_hold');
-
     await helpersB.warmTransferCall(`${process.env.NON_EXISTING_NUMBER}`);
 
     // Wait several seconds while User B tries to establish a call
     await helpersB.page.waitForTimeout(5000);
+
     await helpersA.assertCallStatus('active');
     await helpersB.assertCallStatus('on_hold');
     await helpersC.assertSessionTerminated();
