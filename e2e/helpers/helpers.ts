@@ -12,11 +12,12 @@ export class HelpFunctions {
   readonly dialerInput: Locator;
   readonly dialerCallButton: Locator;
   readonly sessionAcceptButton: Locator;
+  readonly sessions: Locator;
   readonly sessionStatus: Locator;
   readonly sessionHangupButton: Locator;
-  readonly sessions: Locator;
-  readonly cancelButton: Locator;
+  readonly sessionCancelButton: Locator;
   readonly sessionRejectButton: Locator;
+  readonly sessionUnholdButton: Locator;
   readonly sessionTransferButton: Locator;
   readonly sessionTransferMethodDropdown: Locator;
   readonly sessionTransferInput: Locator;
@@ -34,11 +35,12 @@ export class HelpFunctions {
     this.dialerInput = page.locator('c-dialer [data-selector="input"]');
     this.dialerCallButton = page.locator('[data-action="call"]');
     this.sessionAcceptButton = page.locator('c-session [data-action="accept"]');
+    this.sessions = page.locator('c-sessions c-session');
     this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
-    this.sessions = page.locator('c-sessions c-session');
-    this.cancelButton = page.locator('c-session [data-action="cancel"]');
+    this.sessionCancelButton = page.locator('c-session [data-action="cancel"]');
     this.sessionRejectButton = page.locator('c-session [data-action="reject"]');
+    this.sessionUnholdButton = page.locator('c-session [data-action="unhold"]');
     this.sessionTransferButton = page.locator('c-session [data-action="toggleTransfer"]');
     this.sessionTransferMethodDropdown = page.locator(
       'c-transfer [data-selector="selectTransferMethod"]'
@@ -92,8 +94,18 @@ export class HelpFunctions {
     await this.sessionAcceptButton.click();
   }
 
-  async assertCallActive() {
-    await expect(this.sessionStatus).toHaveText('active');
+  async assertCallStatus(status: string) {
+    await expect(this.sessionStatus).toHaveText(status);
+  }
+
+  async assertFirstSessionStatus(status: string) {
+    await expect(this.sessionStatus.nth(0)).toHaveCount(1);
+    await expect(this.sessionStatus.nth(0)).toHaveText(status);
+  }
+
+  async assertSecondSessionStatus(status: string) {
+    await expect(this.sessionStatus.nth(1)).toHaveCount(1);
+    await expect(this.sessionStatus.nth(1)).toHaveText(status);
   }
 
   async terminateCall() {
@@ -105,22 +117,28 @@ export class HelpFunctions {
   }
 
   async cancelCall() {
-    await this.cancelButton.click();
+    await this.sessionCancelButton.click();
   }
 
   async rejectCall() {
     await this.sessionRejectButton.click();
   }
 
-  async coldTransferCall(number: string) {
+  async unholdCall() {
+    await this.sessionUnholdButton.click();
+  }
+
+  async clickTransferButton() {
     await this.sessionTransferButton.click();
+  }
+
+  async coldTransferCall(number: string) {
     await this.sessionTransferMethodDropdown.selectOption('blind');
     await this.sessionTransferInput.type(number);
     await this.sessionCompleteTransferButton.click();
   }
 
   async warmTransferCall(number: string) {
-    await this.sessionTransferButton.click();
     await this.sessionTransferMethodDropdown.selectOption('attended');
     await this.sessionTransferInput.type(number);
     await this.sessionCompleteTransferButton.click();

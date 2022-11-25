@@ -26,7 +26,7 @@ test.describe('Calling out', () => {
     await helpersB.callNumber(`${process.env.NUMBER_A}`);
     await helpersA.assertSessionActive();
     await helpersA.acceptCall();
-    await helpersA.assertCallActive();
+    await helpersA.assertCallStatus('active');
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
     await helpersB.assertSessionTerminated();
@@ -35,7 +35,7 @@ test.describe('Calling out', () => {
   test('calling out & the other party answers & calling party ends the call (terminate)', async () => {
     await helpersB.callNumber(`${process.env.NUMBER_A}`);
     await helpersA.acceptCall();
-    await helpersA.assertCallActive();
+    await helpersA.assertCallStatus('active');
     await helpersB.terminateCall();
     await helpersA.assertSessionTerminated();
     await helpersB.assertSessionTerminated();
