@@ -370,7 +370,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
           // In the case that mode is BURST, reject the promise which can be
           // caught by pRetry.
           if (mode === ReconnectionMode.BURST) {
-            reject('reject to trigger pRetry that tries to reconnect to sip server');
+            reject('Connection to sip server broke, try to reconnect');
           } else {
             resolve(false);
           }
