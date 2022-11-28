@@ -357,24 +357,28 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   }
 
   private isOnlinePromise(mode: ReconnectionMode) {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
 
       const handlers = {
         onError: e => {
           log.debug(e, this.constructor.name);
-          checkSocket.removeEventListener('open', handlers.onOpen);
-          // In the case that mode is BURST, throw an error which can be
-          // catched by pRetry.
-          if (mode === ReconnectionMode.BURST) {
-            throw new Error('it broke woops');
-          }
 
-          resolve(false);
+          checkSocket.removeEventListener('open', handlers.onOpen);
+          checkSocket.removeEventListener('error', handlers.onError);
+
+          // In the case that mode is BURST, reject the promise which can be
+          // caught by pRetry.
+          if (mode === ReconnectionMode.BURST) {
+            reject('Connection to sip server broke, try to reconnect');
+          } else {
+            resolve(false);
+          }
         },
         onOpen: () => {
           log.debug('Opening a socket to sip server worked.', this.constructor.name);
           checkSocket.close();
+          checkSocket.removeEventListener('open', handlers.onOpen);
           checkSocket.removeEventListener('error', handlers.onError);
           resolve(true);
         }
@@ -432,13 +436,13 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
             // https://tools.ietf.org/html/rfc6026#section-7.1
 
             // As noted in the comment above, we are to leaving it to the transaction
-            // timers to evenutally cause the transaction to sort itself out in the case
+            // timers to eventually cause the transaction to sort itself out in the case
             // of a transport failure in an invite server transaction. This delegate method
             // is here simply here for completeness and to make it clear that it provides
             // nothing more than informational hook into the core. That is, if you think
             // you should be trying to deal with a transport error here, you are likely wrong.
             log.error(
-              'A transport error has occured while handling an incoming INVITE request.',
+              'A transport error has occurred while handling an incoming INVITE request.',
               this.constructor.name
             );
           }
@@ -550,7 +554,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     const tryOpeningSocketWithTimeout = () =>
       pTimeout(this.isOnlinePromise(mode), 5000, () => {
         // In the case that mode is BURST, throw an error which can be
-        // catched by pRetry.
+        // caught by pRetry.
         if (mode === ReconnectionMode.BURST) {
           throw new Error('Cannot open socket. Probably DNS failure.');
         }
