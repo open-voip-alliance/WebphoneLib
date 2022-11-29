@@ -29,34 +29,34 @@ test.describe('Warm transfer', () => {
     await helpersC.assertClientConnected();
 
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
-    await helpersA.assertCallStatus('ringing');
-    await helpersB.assertSessionActive();
+    await helpersA.assertSessionStatus('ringing');
+    await helpersB.assertSessionExists();
 
     await helpersB.acceptCall();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('active');
+    await helpersA.assertSessionStatus('active');
+    await helpersB.assertSessionStatus('active');
 
     await helpersB.clickTransferButton();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('on_hold');
+    await helpersA.assertSessionStatus('active');
+    await helpersB.assertSessionStatus('on_hold');
   });
 
   test('User A calls user B, and user B transfers user A to user C via a warm transfer. User C accepts the call', async () => {
     await helpersB.warmTransferCall(`${process.env.NUMBER_C}`);
-    await helpersA.assertCallStatus('active');
+    await helpersA.assertSessionStatus('active');
     await helpersB.assertTwoActiveSessions();
     await helpersB.assertFirstSessionStatus('on_hold');
     await helpersB.assertSecondSessionStatus('ringing');
     // Verify the session for User C is created
-    await helpersC.assertSessionActive();
+    await helpersC.assertSessionExists();
 
     await helpersC.acceptCall();
-    await helpersA.assertCallStatus('active');
+    await helpersA.assertSessionStatus('active');
     // Verify both sessions for User B end 3 seconds after User C accept a call
     // This is done in the demo app to simulate a 3 second conversation between users B and C
     await helpersB.assertSessionTerminated();
     // Verify the call for User C is active
-    await helpersC.assertCallStatus('active');
+    await helpersC.assertSessionStatus('active');
 
     await helpersC.terminateCall();
     await helpersA.assertSessionTerminated();
@@ -65,22 +65,22 @@ test.describe('Warm transfer', () => {
 
   test('User A calls user B, and user B transfers user A to user C via a warm transfer. User C rejects a call and have user B activate a call to A again', async () => {
     await helpersB.warmTransferCall(`${process.env.NUMBER_C}`);
-    await helpersA.assertCallStatus('active');
+    await helpersA.assertSessionStatus('active');
     await helpersB.assertTwoActiveSessions();
     await helpersB.assertFirstSessionStatus('on_hold');
     await helpersB.assertSecondSessionStatus('ringing');
     // Verify the session for User C is created
-    await helpersC.assertSessionActive();
+    await helpersC.assertSessionExists();
 
     await helpersC.rejectCall();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertSessionActive();
-    await helpersB.assertCallStatus('on_hold');
+    await helpersA.assertSessionStatus('active');
+    await helpersB.assertSessionExists();
+    await helpersB.assertSessionStatus('on_hold');
     await helpersC.assertSessionTerminated();
 
     await helpersB.unholdCall();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('active');
+    await helpersA.assertSessionStatus('active');
+    await helpersB.assertSessionStatus('active');
 
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
@@ -93,13 +93,13 @@ test.describe('Warm transfer', () => {
     // Wait several seconds while User B tries to establish a call
     await helpersB.page.waitForTimeout(5000);
 
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('on_hold');
+    await helpersA.assertSessionStatus('active');
+    await helpersB.assertSessionStatus('on_hold');
     await helpersC.assertSessionTerminated();
 
     await helpersB.unholdCall();
-    await helpersA.assertCallStatus('active');
-    await helpersB.assertCallStatus('active');
+    await helpersA.assertSessionStatus('active');
+    await helpersB.assertSessionStatus('active');
 
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
