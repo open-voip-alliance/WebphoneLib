@@ -19,6 +19,7 @@
     "test-coverage": "nyc ava",
     "test-watch": "ava --watch",
     "docs": "typedoc --out docs src",
+    "run-e2e-tests-in-docker": "docker-compose up --exit-code-from",
     "test-e2e": "npx playwright test --project=chromium",
     "test-e2e-debug": "npx playwright test --project=chromium --debug"
   },
@@ -72,10 +73,10 @@
     "@types/sinon": "^7.5.0",
     "@typescript-eslint/eslint-plugin": "^5.33.0",
     "@typescript-eslint/parser": "^5.33.0",
-    "ava": "^5.1.0",
+    "ava": "^2.4.0",
     "ava-fast-check": "^1.1.2",
     "base": "^0.13.2",
-    "browser-env": "^2.0.21",
+    "browser-env": "^3.2.6",
     "dotenv": "^16.0.1",
     "eslint": "^8.21.0",
     "eslint-config-prettier": "^6.4.0",
@@ -89,13 +90,13 @@
     "rollup": "^1.23.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-json": "^4.0.0",
-    "rollup-plugin-node-builtins": "^2.0.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-typescript2": "^0.24.3",
-    "serve": "^14.1.2",
+    "serve": "^11.3.2",
     "sinon": "^7.5.0",
     "ts-node": "^8.4.1",
-    "typedoc": "^0.23.21",
+    "typedoc": "^0.15.0",
     "typescript": "^3.6.3"
   }
 }
