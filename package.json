@@ -19,7 +19,6 @@
     "test-coverage": "nyc ava",
     "test-watch": "ava --watch",
     "docs": "typedoc --out docs src",
-    "run-e2e-tests-in-docker": "docker-compose up --exit-code-from",
     "test-e2e": "npx playwright test --project=chromium",
     "test-e2e-debug": "npx playwright test --project=chromium --debug"
   },

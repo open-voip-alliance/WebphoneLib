@@ -54,12 +54,12 @@ const account = {
   user: 'accountId',
   password: 'password',
   uri: 'sip:accountId@<realm>',
-  name: 'test'
+  name: 'test',
 };
 
 const transport = {
   wsServers: '<websocket-url>', // or replace with your
-  iceServers: [] // depending on if your provider needs STUN/TURN.
+  iceServers: [], // depending on if your provider needs STUN/TURN.
 };
 
 const media = {
@@ -67,13 +67,13 @@ const media = {
     id: undefined, // default audio device
     audioProcessing: true,
     volume: 1.0,
-    muted: false
+    muted: false,
   },
   output: {
     id: undefined, // default audio device
     volume: 1.0,
-    muted: false
-  }
+    muted: false,
+  },
 };
 
 const client = new Client({ account, transport, media });
@@ -157,14 +157,14 @@ const client = new Client({
       id: undefined, // default input device
       audioProcessing: true,
       volume: 1.0,
-      muted: false
+      muted: false,
     },
     output: {
       id: undefined, // default output device
       volume: 1.0,
-      muted: false
-    }
-  }
+      muted: false,
+    },
+  },
 });
 ```
 
@@ -186,7 +186,7 @@ session.media.setInput({
   id: '120398120398123',
   audioProcessing: true,
   volume: 0.5,
-  muted: true
+  muted: true,
 });
 ```
 
@@ -210,27 +210,23 @@ documentation from the `jsdoc` comments in the source code. See [this
 link](https://typedoc.org/guides/doccomments/) for more information on which
 `jsdoc` tags are supported.
 
-## Run puppeteer tests
-
-### Using docker
+## Run playwright tests
 
 Add a .env file with the following:
 
 ```
-USER_A = <user-a>
+UUSER_A = <user-a>
 USER_B = <user-b>
+USER_C = <user-c>
 PASSWORD_A = <password-user-a>
 PASSWORD_B = <password-user-b>
+PASSWORD_C = <password-user-c>
 NUMBER_A = <number-user-a>
 NUMBER_B = <number-user-b>
+NUMBER_C = <number-user-c>
+NON_EXISTING_NUMBER = <non-existing-number>
 WEBSOCKET_URL = <your-websocket-url>
 REALM = <realm>
 ```
 
-Then call `docker-compose up` to run the tests.
-
-Note: Don't forget to call `npm ci` in the puppeteer folder. :)
-
-### Without docker
-
-If you don't want to use docker, you will need to run the demo with the `npm run demo` command (and keep it running) and run the tests with `npm run test:e2e`. For this you will need the .env file with your settings.
+You will need to run the demo with the `npm run demo` command (and keep it running) and run the tests with `npm run test-e2e` . For this you will need the .env file with your settings.
