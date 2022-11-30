@@ -1,5 +1,7 @@
 import { Locator, Page, expect } from '@playwright/test';
 
+type SessionStatus = 'ringing' | 'active' | 'on_hold';
+
 export class HelpFunctions {
   readonly page: Page;
   readonly userIdInput: Locator;
@@ -82,7 +84,7 @@ export class HelpFunctions {
     await this.dialerCallButton.click();
   }
 
-  async assertSessionActive() {
+  async assertSessionExists() {
     await expect(this.sessions).toHaveCount(1);
   }
 
@@ -94,16 +96,16 @@ export class HelpFunctions {
     await this.sessionAcceptButton.click();
   }
 
-  async assertCallStatus(status: string) {
+  async assertSessionStatus(status: SessionStatus) {
     await expect(this.sessionStatus).toHaveText(status);
   }
 
-  async assertFirstSessionStatus(status: string) {
+  async assertFirstSessionStatus(status: SessionStatus) {
     await expect(this.sessionStatus.nth(0)).toHaveCount(1);
     await expect(this.sessionStatus.nth(0)).toHaveText(status);
   }
 
-  async assertSecondSessionStatus(status: string) {
+  async assertSecondSessionStatus(status: SessionStatus) {
     await expect(this.sessionStatus.nth(1)).toHaveCount(1);
     await expect(this.sessionStatus.nth(1)).toHaveText(status);
   }
