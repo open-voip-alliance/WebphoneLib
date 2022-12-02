@@ -18,15 +18,15 @@ test.describe('Calling out', () => {
 
     await pageUserA.goto(`${process.env.DEMO_URL}`);
     await helpersA.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
-    await helpersA.assertClientConnected();
+    await helpersA.assertAccountStatus('connected');
 
     await pageUserB.goto(`${process.env.DEMO_URL}`);
     await helpersB.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
-    await helpersB.assertClientConnected();
+    await helpersB.assertAccountStatus('connected');
 
     await pageUserC.goto(`${process.env.DEMO_URL}`);
     await helpersC.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
-    await helpersC.assertClientConnected();
+    await helpersC.assertAccountStatus('connected');
 
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersA.assertSessionStatus('ringing');

@@ -15,14 +15,14 @@ test.describe('Hold/unhold', () => {
 
     await pageUserA.goto(`${process.env.DEMO_URL}`);
     await helpersA.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
-    await helpersA.assertClientConnected();
+    await helpersA.assertAccountStatus('connected');
 
     await pageUserB.goto(`${process.env.DEMO_URL}`);
     await helpersB.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
-    await helpersB.assertClientConnected();
+    await helpersB.assertAccountStatus('connected');
   });
 
-  test.only('calling out & the other party answers & put the call on hold/unhold', async () => {
+  test('calling out & the other party answers & put the call on hold/unhold', async () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersA.assertSessionStatus('ringing');
     await helpersB.assertSessionExists();
