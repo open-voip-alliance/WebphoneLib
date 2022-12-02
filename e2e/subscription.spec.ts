@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe('Hold/unhold', () => {
+test.describe.only('Hold/unhold', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
   let helpersC: HelpFunctions;
@@ -39,5 +39,20 @@ test.describe('Hold/unhold', () => {
 
     await helpersC.callNumber(`${process.env.NUMBER_B}`);
     await helpersA.assertSubscribedContactStatus(`${process.env.USER_B}`, 'ringing');
+  });
+
+  test('After the subscribed contact establish a call its status changes to busy', async () => {
+    await helpersA.subsribeToContact(`${process.env.USER_B}`);
+
+    await helpersC.callNumber(`${process.env.NUMBER_B}`);
+    await helpersB.acceptCall();
+    await helpersA.assertSubscribedContactStatus(`${process.env.USER_B}`, 'busy');
+  });
+
+  test('After the subscribed contact calls out its status changes to busy', async () => {
+    await helpersA.subsribeToContact(`${process.env.USER_B}`);
+
+    await helpersB.callNumber(`${process.env.NUMBER_C}`);
+    await helpersA.assertSubscribedContactStatus(`${process.env.USER_B}`, 'busy');
   });
 });
