@@ -4,18 +4,24 @@ type SessionStatus = 'ringing' | 'active' | 'on_hold';
 
 type AccountStatus = 'connected' | 'dsconnecting' | 'disconnected' | 'dying' | 'recovering';
 
+type ContactStatus = 'available' | 'busy' | 'ringing';
+
 export class HelpFunctions {
   readonly page: Page;
   readonly userIdInput: Locator;
   readonly passwordInput: Locator;
   readonly websocketUrlInput: Locator;
   readonly realmInput: Locator;
+  readonly dialerInput: Locator;
+  readonly subscriptionInput: Locator;
+  readonly accountStatus: Locator;
+  readonly subscribedContact: Locator;
+  readonly contactStatus: Locator;
   readonly registerButton: Locator;
   readonly unregisterButton: Locator;
-  readonly accountStatus: Locator;
-  readonly dialerInput: Locator;
   readonly dialerCallButton: Locator;
   readonly sessionAcceptButton: Locator;
+  readonly subscribeButton: Locator;
   readonly sessions: Locator;
   readonly sessionStatus: Locator;
   readonly sessionHangupButton: Locator;
@@ -34,12 +40,16 @@ export class HelpFunctions {
     this.passwordInput = page.locator('[data-selector="passwordInput"]');
     this.websocketUrlInput = page.locator('[data-selector="websocketUrlInput"]');
     this.realmInput = page.locator('[data-selector="realmInput"]');
+    this.dialerInput = page.locator('c-dialer [data-selector="input"]');
+    this.subscriptionInput = page.locator('c-contacts [data-selector="input"]');
+    this.accountStatus = page.locator('[data-selector="clientStatus"]');
+    this.subscribedContact = page.locator('[data-selector="contactUri"]');
+    this.contactStatus = page.locator('[data-selector="contactStatus"]');
     this.registerButton = page.locator('[data-action="register"]');
     this.unregisterButton = page.locator('[data-action="unregister"]');
-    this.accountStatus = page.locator('[data-selector="clientStatus"]');
-    this.dialerInput = page.locator('c-dialer [data-selector="input"]');
     this.dialerCallButton = page.locator('[data-action="call"]');
     this.sessionAcceptButton = page.locator('c-session [data-action="accept"]');
+    this.subscribeButton = page.locator('[data-action="subscribe"]');
     this.sessions = page.locator('c-sessions c-session');
     this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
@@ -152,5 +162,15 @@ export class HelpFunctions {
     await this.sessionTransferMethodDropdown.selectOption('attended');
     await this.sessionTransferInput.type(number);
     await this.sessionCompleteTransferButton.click();
+  }
+
+  async subsribeToContact(userAuthId: string) {
+    await this.subscriptionInput.type(`sip:${userAuthId}@voipgrid.nl`);
+    await this.subscribeButton.click();
+  }
+
+  async assertSubscribedContactStatus(userAuthId: string, contactStatus: ContactStatus) {
+    await expect(this.subscribedContact).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
+    await expect(this.contactStatus).toHaveText(contactStatus);
   }
 }
