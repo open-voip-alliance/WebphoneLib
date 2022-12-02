@@ -2,6 +2,8 @@ import { Locator, Page, expect } from '@playwright/test';
 
 type SessionStatus = 'ringing' | 'active' | 'on_hold';
 
+type AccountStatus = 'connected' | 'dsconnecting' | 'disconnected' | 'dying' | 'recovering';
+
 export class HelpFunctions {
   readonly page: Page;
   readonly userIdInput: Locator;
@@ -10,7 +12,7 @@ export class HelpFunctions {
   readonly realmInput: Locator;
   readonly registerButton: Locator;
   readonly unregisterButton: Locator;
-  readonly clientStatus: Locator;
+  readonly accountStatus: Locator;
   readonly dialerInput: Locator;
   readonly dialerCallButton: Locator;
   readonly sessionAcceptButton: Locator;
@@ -34,7 +36,7 @@ export class HelpFunctions {
     this.realmInput = page.locator('[data-selector="realmInput"]');
     this.registerButton = page.locator('[data-action="register"]');
     this.unregisterButton = page.locator('[data-action="unregister"]');
-    this.clientStatus = page.locator('[data-selector="clientStatus"]');
+    this.accountStatus = page.locator('[data-selector="clientStatus"]');
     this.dialerInput = page.locator('c-dialer [data-selector="input"]');
     this.dialerCallButton = page.locator('[data-action="call"]');
     this.sessionAcceptButton = page.locator('c-session [data-action="accept"]');
@@ -77,8 +79,8 @@ export class HelpFunctions {
     await this.unregisterButton.click();
   }
 
-  async assertClientConnected() {
-    await expect(this.clientStatus).toHaveText('connected');
+  async assertAccountStatus(accountStatus: AccountStatus) {
+    await expect(this.accountStatus).toHaveText(accountStatus);
   }
 
   async callNumber(number: string) {
@@ -98,18 +100,18 @@ export class HelpFunctions {
     await this.sessionAcceptButton.click();
   }
 
-  async assertSessionStatus(status: SessionStatus) {
-    await expect(this.sessionStatus).toHaveText(status);
+  async assertSessionStatus(sessionStatus: SessionStatus) {
+    await expect(this.sessionStatus).toHaveText(sessionStatus);
   }
 
-  async assertFirstSessionStatus(status: SessionStatus) {
+  async assertFirstSessionStatus(sessionStatus: SessionStatus) {
     await expect(this.sessionStatus.nth(0)).toHaveCount(1);
-    await expect(this.sessionStatus.nth(0)).toHaveText(status);
+    await expect(this.sessionStatus.nth(0)).toHaveText(sessionStatus);
   }
 
-  async assertSecondSessionStatus(status: SessionStatus) {
+  async assertSecondSessionStatus(sessionStatus: SessionStatus) {
     await expect(this.sessionStatus.nth(1)).toHaveCount(1);
-    await expect(this.sessionStatus.nth(1)).toHaveText(status);
+    await expect(this.sessionStatus.nth(1)).toHaveText(sessionStatus);
   }
 
   async terminateCall() {

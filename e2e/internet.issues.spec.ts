@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe('Hold/unhold', () => {
+test.describe('Internet issues', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
 
@@ -22,21 +22,18 @@ test.describe('Hold/unhold', () => {
     await helpersB.assertAccountStatus('connected');
   });
 
-  test('calling out & the other party answers & put the call on hold/unhold', async () => {
+  test('The account connection is restored after the Internet connection was turned off/on', async ({
+    context,
+  }) => {
+    await context.setOffline(true);
+    await helpersA.assertAccountStatus('dying');
+
+    await context.setOffline(false);
+    await helpersA.assertAccountStatus('recovering');
+    await helpersA.assertAccountStatus('connected');
+
+    // Verify that it's possible to establish a call after the internet turned off/on
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersA.assertSessionStatus('ringing');
-    await helpersB.assertSessionExists();
-
-    await helpersB.acceptCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('active');
-
-    await helpersB.holdCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('on_hold');
-
-    await helpersB.unholdCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('active');
   });
 });
