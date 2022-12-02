@@ -19,6 +19,7 @@ export class HelpFunctions {
   readonly sessionHangupButton: Locator;
   readonly sessionCancelButton: Locator;
   readonly sessionRejectButton: Locator;
+  readonly sessionHoldButton: Locator;
   readonly sessionUnholdButton: Locator;
   readonly sessionTransferButton: Locator;
   readonly sessionTransferMethodDropdown: Locator;
@@ -42,6 +43,7 @@ export class HelpFunctions {
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
     this.sessionCancelButton = page.locator('c-session [data-action="cancel"]');
     this.sessionRejectButton = page.locator('c-session [data-action="reject"]');
+    this.sessionHoldButton = page.locator('c-session [data-action="hold"]');
     this.sessionUnholdButton = page.locator('c-session [data-action="unhold"]');
     this.sessionTransferButton = page.locator('c-session [data-action="toggleTransfer"]');
     this.sessionTransferMethodDropdown = page.locator(
@@ -124,6 +126,10 @@ export class HelpFunctions {
 
   async rejectCall() {
     await this.sessionRejectButton.click();
+  }
+
+  async holdCall() {
+    await this.sessionHoldButton.click();
   }
 
   async unholdCall() {
