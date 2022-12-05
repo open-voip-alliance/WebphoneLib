@@ -22,6 +22,7 @@ export class HelpFunctions {
   readonly dialerCallButton: Locator;
   readonly sessionAcceptButton: Locator;
   readonly subscribeButton: Locator;
+  readonly unsubscribeButton: Locator;
   readonly sessions: Locator;
   readonly sessionStatus: Locator;
   readonly sessionHangupButton: Locator;
@@ -50,6 +51,7 @@ export class HelpFunctions {
     this.dialerCallButton = page.locator('[data-action="call"]');
     this.sessionAcceptButton = page.locator('c-session [data-action="accept"]');
     this.subscribeButton = page.locator('[data-action="subscribe"]');
+    this.unsubscribeButton = page.locator('[data-action="unsubscribe"]');
     this.sessions = page.locator('c-sessions c-session');
     this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
@@ -172,5 +174,14 @@ export class HelpFunctions {
   async assertSubscribedContactStatus(userAuthId: string, contactStatus: ContactStatus) {
     await expect(this.subscribedContact).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
     await expect(this.contactStatus).toHaveText(contactStatus);
+  }
+
+  async unsubsribeFromContact() {
+    await this.unsubscribeButton.click();
+  }
+
+  async assertContactUnsubscribed() {
+    await expect(this.subscribedContact).toHaveCount(0);
+    await expect(this.contactStatus).toHaveCount(0);
   }
 }

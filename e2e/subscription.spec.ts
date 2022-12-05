@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe.only('Hold/unhold', () => {
+test.describe.only('Subscription', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
   let helpersC: HelpFunctions;
@@ -27,6 +27,12 @@ test.describe.only('Hold/unhold', () => {
     await pageUserC.goto(`${process.env.DEMO_URL}`);
     await helpersC.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
     await helpersC.assertAccountStatus('connected');
+  });
+
+  test.afterEach(async () => {
+    await helpersA.unsubsribeFromContact();
+    await helpersA.assertContactUnsubscribed();
+    await helpersB.page.waitForTimeout(5000);
   });
 
   test('User sibscribed to another contact and sees their status', async () => {
