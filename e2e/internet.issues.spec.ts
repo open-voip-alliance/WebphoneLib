@@ -35,5 +35,9 @@ test.describe('Internet issues', () => {
     // Verify that it's possible to establish a call after the internet turned off/on
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersA.assertSessionStatus('ringing');
+
+    await helpersA.cancelCall();
+    await helpersA.assertSessionTerminated();
+    await helpersB.assertSessionTerminated();
   });
 });

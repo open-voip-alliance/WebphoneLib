@@ -38,5 +38,9 @@ test.describe('Hold/unhold', () => {
     await helpersB.unholdCall();
     await helpersA.assertSessionStatus('active');
     await helpersB.assertSessionStatus('active');
+
+    await helpersA.terminateCall();
+    await helpersA.assertSessionTerminated();
+    await helpersB.assertSessionTerminated();
   });
 });

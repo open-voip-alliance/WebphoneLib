@@ -167,21 +167,49 @@ export class HelpFunctions {
   }
 
   async subsribeToContact(userAuthId: string) {
+    await this.subscriptionInput.click({ clickCount: 3 });
+    await this.page.keyboard.press('Backspace');
     await this.subscriptionInput.type(`sip:${userAuthId}@voipgrid.nl`);
     await this.subscribeButton.click();
   }
 
-  async assertSubscribedContactStatus(userAuthId: string, contactStatus: ContactStatus) {
-    await expect(this.subscribedContact).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
-    await expect(this.contactStatus).toHaveText(contactStatus);
+  // async assertSubscribedContactStatus(userAuthId: string, contactStatus: ContactStatus) {
+  //   await expect(this.subscribedContact).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
+  //   await expect(this.contactStatus).toHaveText(contactStatus);
+  // }
+
+  async assertSubscribedContactUri(userAuthId: string) {
+    await expect(this.subscribedContact.nth(0)).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
   }
 
-  async unsubsribeFromContact() {
+  async assertSecondSubscribedContactUri(userAuthId: string) {
+    await expect(this.subscribedContact.nth(1)).toHaveCount(1);
+    await expect(this.subscribedContact.nth(1)).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
+  }
+
+  async assertSubscribedContactStatus(contactStatus: ContactStatus) {
+    await expect(this.contactStatus.nth(0)).toHaveText(contactStatus);
+  }
+
+  async assertSecondSubscribedContactStatus(contactStatus: ContactStatus) {
+    await expect(this.contactStatus.nth(1)).toHaveCount(1);
+    await expect(this.contactStatus.nth(1)).toHaveText(contactStatus);
+  }
+
+  async unsubsribeFromContact(userAuthId: string) {
+    await this.subscriptionInput.click({ clickCount: 3 });
+    await this.page.keyboard.press('Backspace');
+    await this.subscriptionInput.type(`sip:${userAuthId}@voipgrid.nl`);
     await this.unsubscribeButton.click();
   }
 
   async assertContactUnsubscribed() {
-    await expect(this.subscribedContact).toHaveCount(0);
-    await expect(this.contactStatus).toHaveCount(0);
+    await expect(this.subscribedContact.nth(0)).toHaveCount(0);
+    await expect(this.contactStatus.nth(0)).toHaveCount(0);
+  }
+
+  async assertSecondContactUnsubscribed() {
+    await expect(this.subscribedContact.nth(1)).toHaveCount(0);
+    await expect(this.contactStatus.nth(1)).toHaveCount(0);
   }
 }

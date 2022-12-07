@@ -2,7 +2,12 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe.only('Subscription', () => {
+// !!!
+// Run this testsuit no more than once in 1 minute or it will fail (not more than 2 subscriptions is allowed)
+// (with error in console: Subscription rate-limited. Retrying after 60)
+// !!!
+
+test.describe('Subscription', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
   let helpersC: HelpFunctions;
@@ -30,35 +35,45 @@ test.describe.only('Subscription', () => {
   });
 
   test.afterEach(async () => {
-    await helpersA.unsubsribeFromContact();
+    await helpersA.unsubsribeFromContact(`${process.env.USER_C}`);
+    await helpersA.assertSecondContactUnsubscribed();
+    await helpersA.unsubsribeFromContact(`${process.env.USER_B}`);
     await helpersA.assertContactUnsubscribed();
-    await helpersB.page.waitForTimeout(5000);
   });
 
-  test('User sibscribed to another contact and sees their status', async () => {
+  test('User can subscribe to more than one contact', async () => {
     await helpersA.subsribeToContact(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactStatus(`${process.env.USER_B}`, 'available');
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
+    await helpersA.assertSubscribedContactStatus('available');
+
+    await helpersA.subsribeToContact(`${process.env.USER_C}`);
+    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
+    await helpersA.assertSecondSubscribedContactStatus('available');
   });
 
-  test('After the subscribed contact gets an incoming call its status changes to ringing', async () => {
+  test('Check the statuses of subscribed contacts, when one contact calls another, they receives the call and  then terminates it', async () => {
     await helpersA.subsribeToContact(`${process.env.USER_B}`);
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
+    await helpersA.assertSubscribedContactStatus('available');
+
+    await helpersA.subsribeToContact(`${process.env.USER_C}`);
+    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
+    await helpersA.assertSecondSubscribedContactStatus('available');
 
     await helpersC.callNumber(`${process.env.NUMBER_B}`);
-    await helpersA.assertSubscribedContactStatus(`${process.env.USER_B}`, 'ringing');
-  });
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
+    await helpersA.assertSubscribedContactStatus('ringing');
+    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
+    await helpersA.assertSecondSubscribedContactStatus('busy');
 
-  test('After the subscribed contact establish a call its status changes to busy', async () => {
-    await helpersA.subsribeToContact(`${process.env.USER_B}`);
-
-    await helpersC.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.acceptCall();
-    await helpersA.assertSubscribedContactStatus(`${process.env.USER_B}`, 'busy');
-  });
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
+    await helpersA.assertSubscribedContactStatus('busy');
+    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
+    await helpersA.assertSecondSubscribedContactStatus('busy');
 
-  test('After the subscribed contact calls out its status changes to busy', async () => {
-    await helpersA.subsribeToContact(`${process.env.USER_B}`);
-
-    await helpersB.callNumber(`${process.env.NUMBER_C}`);
-    await helpersA.assertSubscribedContactStatus(`${process.env.USER_B}`, 'busy');
+    await helpersB.terminateCall();
+    await helpersA.assertSubscribedContactStatus('available');
+    await helpersA.assertSecondSubscribedContactStatus('available');
   });
 });
