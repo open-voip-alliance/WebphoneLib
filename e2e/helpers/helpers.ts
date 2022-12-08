@@ -15,8 +15,6 @@ export class HelpFunctions {
   readonly dialerInput: Locator;
   readonly subscriptionInput: Locator;
   readonly accountStatus: Locator;
-  readonly subscribedContact: Locator;
-  readonly contactStatus: Locator;
   readonly registerButton: Locator;
   readonly unregisterButton: Locator;
   readonly dialerCallButton: Locator;
@@ -34,6 +32,8 @@ export class HelpFunctions {
   readonly sessionTransferMethodDropdown: Locator;
   readonly sessionTransferInput: Locator;
   readonly sessionCompleteTransferButton: Locator;
+  readonly subscribedContact: (userAuthId: string) => Locator;
+  readonly contactStatus: (userAuthId: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -44,8 +44,6 @@ export class HelpFunctions {
     this.dialerInput = page.locator('c-dialer [data-selector="input"]');
     this.subscriptionInput = page.locator('c-contacts [data-selector="input"]');
     this.accountStatus = page.locator('[data-selector="clientStatus"]');
-    this.subscribedContact = page.locator('[data-selector="contactUri"]');
-    this.contactStatus = page.locator('[data-selector="contactStatus"]');
     this.registerButton = page.locator('[data-action="register"]');
     this.unregisterButton = page.locator('[data-action="unregister"]');
     this.dialerCallButton = page.locator('[data-action="call"]');
@@ -65,6 +63,18 @@ export class HelpFunctions {
     );
     this.sessionTransferInput = page.locator('c-transfer [data-selector="input"]');
     this.sessionCompleteTransferButton = page.locator('c-transfer [data-action="transferCall"]');
+
+    this.subscribedContact = (userAuthId: string) => {
+      return this.page.locator(
+        `[contact-uri="sip:${userAuthId}@${process.env.REALM}"] [data-selector="contactUri"]`
+      );
+    };
+
+    this.contactStatus = (userAuthId: string) => {
+      return this.page.locator(
+        `[contact-uri="sip:${userAuthId}@${process.env.REALM}"] [data-selector="contactStatus"]`
+      );
+    };
   }
 
   async registerUser(userAuthId: string, userPw: string) {
@@ -166,26 +176,28 @@ export class HelpFunctions {
     await this.sessionCompleteTransferButton.click();
   }
 
-  async subsribeToContact(userAuthId: string) {
+  async subscribeToContact(userAuthId: string) {
     await this.subscriptionInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
     await this.subscriptionInput.type(`sip:${userAuthId}@${process.env.REALM}`);
     await this.subscribeButton.click();
   }
 
-  async assertSubscribedContactUri(userAuthId: string, contact: number) {
-    await expect(this.subscribedContact.nth(contact)).toHaveCount(1);
-    await expect(this.subscribedContact.nth(contact)).toHaveText(
-      `sip:${userAuthId}@${process.env.REALM}`
+  async assertSubscribedContactUri(userAuthId: string) {
+    const locator = this.page.locator(
+      `[contact-uri="sip:${userAuthId}@${process.env.REALM}"] [data-selector="contactUri"]`
     );
+
+    await expect(locator).toHaveCount(1);
+    await expect(locator).toHaveText(`sip:${userAuthId}@${process.env.REALM}`);
   }
 
-  async assertSubscribedContactStatus(contactStatus: ContactStatus, contact: number) {
-    await expect(this.contactStatus.nth(contact)).toHaveCount(1);
-    await expect(this.contactStatus.nth(contact)).toHaveText(contactStatus);
+  async assertSubscribedContactStatus(contactStatus: ContactStatus, userAuthId: string) {
+    await expect(this.contactStatus(userAuthId)).toHaveCount(1);
+    await expect(this.contactStatus(userAuthId)).toHaveText(contactStatus);
   }
 
-  async unsubsribeFromContact(userAuthId: string) {
+  async unsubscribeFromContact(userAuthId: string) {
     await this.subscriptionInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
     await this.subscriptionInput.type(`sip:${userAuthId}@${process.env.REALM}`);
@@ -193,7 +205,7 @@ export class HelpFunctions {
   }
 
   async assertContactUnsubscribed(contact: number) {
-    await expect(this.subscribedContact.nth(contact)).toHaveCount(0);
-    await expect(this.contactStatus.nth(contact)).toHaveCount(0);
+    // await expect(this.subscribedContact.nth(contact)).toHaveCount(0);
+    // await expect(this.contactStatus.nth(contact)).toHaveCount(0);
   }
 }

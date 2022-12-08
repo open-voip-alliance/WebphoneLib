@@ -41,6 +41,7 @@ window.customElements.define(
         const { contactUri } = this.data;
         this.nodes.contactUri.textContent = contactUri;
         this.nodes.contactStatus.textContent = subscriptions[contactUri];
+        this.setAttribute('contact-uri', contactUri);
       }
     }
 

@@ -7,7 +7,7 @@ import { HelpFunctions } from './helpers/helpers';
 // (with error in console: Subscription rate-limited. Retrying after 60)
 // !!!
 
-test.describe('Subscription', () => {
+test.describe.only('Subscription', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
   let helpersC: HelpFunctions;
@@ -35,28 +35,28 @@ test.describe('Subscription', () => {
   });
 
   test.afterEach(async () => {
-    await helpersA.unsubsribeFromContact(`${process.env.USER_C}`);
+    await helpersA.unsubscribeFromContact(`${process.env.USER_C}`);
     await helpersA.assertContactUnsubscribed(1);
-    await helpersA.unsubsribeFromContact(`${process.env.USER_B}`);
+    await helpersA.unsubscribeFromContact(`${process.env.USER_B}`);
     await helpersA.assertContactUnsubscribed(0);
   });
 
-  test('User can subscribe to more than one contact', async () => {
-    await helpersA.subsribeToContact(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`, 0);
-    await helpersA.assertSubscribedContactStatus('available', 0);
+  test.only('User can subscribe to more than one contact', async () => {
+    await helpersA.subscribeToContact(`${process.env.USER_B}`);
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
+    await helpersA.assertSubscribedContactStatus('available', `${process.env.USER_B}`);
 
-    await helpersA.subsribeToContact(`${process.env.USER_C}`);
-    await helpersA.assertSubscribedContactUri(`${process.env.USER_C}`, 1);
-    await helpersA.assertSubscribedContactStatus('available', 1);
+    await helpersA.subscribeToContact(`${process.env.USER_C}`);
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_C}`);
+    await helpersA.assertSubscribedContactStatus('available', `${process.env.USER_C}`);
   });
 
   test('Check the statuses of subscribed contacts, when one contact calls another, they receives the call and  then terminates it', async () => {
-    await helpersA.subsribeToContact(`${process.env.USER_B}`);
+    await helpersA.subscribeToContact(`${process.env.USER_B}`);
     await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`, 0);
     await helpersA.assertSubscribedContactStatus('available', 0);
 
-    await helpersA.subsribeToContact(`${process.env.USER_C}`);
+    await helpersA.subscribeToContact(`${process.env.USER_C}`);
     await helpersA.assertSubscribedContactUri(`${process.env.USER_C}`, 1);
     await helpersA.assertSubscribedContactStatus('available', 1);
 
