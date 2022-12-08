@@ -184,12 +184,10 @@ export class HelpFunctions {
   }
 
   async assertSubscribedContactUri(userAuthId: string) {
-    const locator = this.page.locator(
-      `[contact-uri="sip:${userAuthId}@${process.env.REALM}"] [data-selector="contactUri"]`
+    await expect(this.subscribedContact(userAuthId)).toHaveCount(1);
+    await expect(this.subscribedContact(userAuthId)).toHaveText(
+      `sip:${userAuthId}@${process.env.REALM}`
     );
-
-    await expect(locator).toHaveCount(1);
-    await expect(locator).toHaveText(`sip:${userAuthId}@${process.env.REALM}`);
   }
 
   async assertSubscribedContactStatus(contactStatus: ContactStatus, userAuthId: string) {
@@ -204,8 +202,8 @@ export class HelpFunctions {
     await this.unsubscribeButton.click();
   }
 
-  async assertContactUnsubscribed(contact: number) {
-    // await expect(this.subscribedContact.nth(contact)).toHaveCount(0);
-    // await expect(this.contactStatus.nth(contact)).toHaveCount(0);
+  async assertContactUnsubscribed(userAuthId: string) {
+    await expect(this.subscribedContact(userAuthId)).toHaveCount(0);
+    await expect(this.contactStatus(userAuthId)).toHaveCount(0);
   }
 }
