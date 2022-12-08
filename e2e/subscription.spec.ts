@@ -36,44 +36,44 @@ test.describe('Subscription', () => {
 
   test.afterEach(async () => {
     await helpersA.unsubsribeFromContact(`${process.env.USER_C}`);
-    await helpersA.assertSecondContactUnsubscribed();
+    await helpersA.assertContactUnsubscribed(1);
     await helpersA.unsubsribeFromContact(`${process.env.USER_B}`);
-    await helpersA.assertContactUnsubscribed();
+    await helpersA.assertContactUnsubscribed(0);
   });
 
   test('User can subscribe to more than one contact', async () => {
     await helpersA.subsribeToContact(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactStatus('available');
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`, 0);
+    await helpersA.assertSubscribedContactStatus('available', 0);
 
     await helpersA.subsribeToContact(`${process.env.USER_C}`);
-    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
-    await helpersA.assertSecondSubscribedContactStatus('available');
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_C}`, 1);
+    await helpersA.assertSubscribedContactStatus('available', 1);
   });
 
   test('Check the statuses of subscribed contacts, when one contact calls another, they receives the call and  then terminates it', async () => {
     await helpersA.subsribeToContact(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactStatus('available');
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`, 0);
+    await helpersA.assertSubscribedContactStatus('available', 0);
 
     await helpersA.subsribeToContact(`${process.env.USER_C}`);
-    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
-    await helpersA.assertSecondSubscribedContactStatus('available');
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_C}`, 1);
+    await helpersA.assertSubscribedContactStatus('available', 1);
 
     await helpersC.callNumber(`${process.env.NUMBER_B}`);
-    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactStatus('ringing');
-    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
-    await helpersA.assertSecondSubscribedContactStatus('busy');
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`, 0);
+    await helpersA.assertSubscribedContactStatus('ringing', 0);
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_C}`, 1);
+    await helpersA.assertSubscribedContactStatus('busy', 1);
 
     await helpersB.acceptCall();
-    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
-    await helpersA.assertSubscribedContactStatus('busy');
-    await helpersA.assertSecondSubscribedContactUri(`${process.env.USER_C}`);
-    await helpersA.assertSecondSubscribedContactStatus('busy');
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`, 0);
+    await helpersA.assertSubscribedContactStatus('busy', 0);
+    await helpersA.assertSubscribedContactUri(`${process.env.USER_C}`, 1);
+    await helpersA.assertSubscribedContactStatus('busy', 1);
 
     await helpersB.terminateCall();
-    await helpersA.assertSubscribedContactStatus('available');
-    await helpersA.assertSecondSubscribedContactStatus('available');
+    await helpersA.assertSubscribedContactStatus('available', 0);
+    await helpersA.assertSubscribedContactStatus('available', 1);
   });
 });

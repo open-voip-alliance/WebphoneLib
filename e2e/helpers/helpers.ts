@@ -78,11 +78,11 @@ export class HelpFunctions {
 
     await this.websocketUrlInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
-    await this.websocketUrlInput.type('wss://websocket.voipgrid.nl');
+    await this.websocketUrlInput.type(`${process.env.WEBSOCKET_URL}`);
 
     await this.realmInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
-    await this.realmInput.type('voipgrid.nl');
+    await this.realmInput.type(`${process.env.REALM}`);
 
     await this.registerButton.click();
   }
@@ -169,47 +169,31 @@ export class HelpFunctions {
   async subsribeToContact(userAuthId: string) {
     await this.subscriptionInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
-    await this.subscriptionInput.type(`sip:${userAuthId}@voipgrid.nl`);
+    await this.subscriptionInput.type(`sip:${userAuthId}@${process.env.REALM}`);
     await this.subscribeButton.click();
   }
 
-  // async assertSubscribedContactStatus(userAuthId: string, contactStatus: ContactStatus) {
-  //   await expect(this.subscribedContact).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
-  //   await expect(this.contactStatus).toHaveText(contactStatus);
-  // }
-
-  async assertSubscribedContactUri(userAuthId: string) {
-    await expect(this.subscribedContact.nth(0)).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
+  async assertSubscribedContactUri(userAuthId: string, contact: number) {
+    await expect(this.subscribedContact.nth(contact)).toHaveCount(1);
+    await expect(this.subscribedContact.nth(contact)).toHaveText(
+      `sip:${userAuthId}@${process.env.REALM}`
+    );
   }
 
-  async assertSecondSubscribedContactUri(userAuthId: string) {
-    await expect(this.subscribedContact.nth(1)).toHaveCount(1);
-    await expect(this.subscribedContact.nth(1)).toHaveText(`sip:${userAuthId}@voipgrid.nl`);
-  }
-
-  async assertSubscribedContactStatus(contactStatus: ContactStatus) {
-    await expect(this.contactStatus.nth(0)).toHaveText(contactStatus);
-  }
-
-  async assertSecondSubscribedContactStatus(contactStatus: ContactStatus) {
-    await expect(this.contactStatus.nth(1)).toHaveCount(1);
-    await expect(this.contactStatus.nth(1)).toHaveText(contactStatus);
+  async assertSubscribedContactStatus(contactStatus: ContactStatus, contact: number) {
+    await expect(this.contactStatus.nth(contact)).toHaveCount(1);
+    await expect(this.contactStatus.nth(contact)).toHaveText(contactStatus);
   }
 
   async unsubsribeFromContact(userAuthId: string) {
     await this.subscriptionInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
-    await this.subscriptionInput.type(`sip:${userAuthId}@voipgrid.nl`);
+    await this.subscriptionInput.type(`sip:${userAuthId}@${process.env.REALM}`);
     await this.unsubscribeButton.click();
   }
 
-  async assertContactUnsubscribed() {
-    await expect(this.subscribedContact.nth(0)).toHaveCount(0);
-    await expect(this.contactStatus.nth(0)).toHaveCount(0);
-  }
-
-  async assertSecondContactUnsubscribed() {
-    await expect(this.subscribedContact.nth(1)).toHaveCount(0);
-    await expect(this.contactStatus.nth(1)).toHaveCount(0);
+  async assertContactUnsubscribed(contact: number) {
+    await expect(this.subscribedContact.nth(contact)).toHaveCount(0);
+    await expect(this.contactStatus.nth(contact)).toHaveCount(0);
   }
 }
