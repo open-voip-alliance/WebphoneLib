@@ -2,7 +2,7 @@ import { Locator, Page, expect } from '@playwright/test';
 
 type SessionStatus = 'ringing' | 'active' | 'on_hold';
 
-type AccountStatus = 'connected' | 'dsconnecting' | 'disconnected' | 'dying' | 'recovering';
+type AccountStatus = 'connected' | 'disconnecting' | 'disconnected' | 'dying' | 'recovering';
 
 type ContactStatus = 'available' | 'busy' | 'ringing';
 
@@ -122,18 +122,8 @@ export class HelpFunctions {
     await this.sessionAcceptButton.click();
   }
 
-  async assertSessionStatus(sessionStatus: SessionStatus) {
-    await expect(this.sessionStatus).toHaveText(sessionStatus);
-  }
-
-  async assertFirstSessionStatus(sessionStatus: SessionStatus) {
-    await expect(this.sessionStatus.nth(0)).toHaveCount(1);
-    await expect(this.sessionStatus.nth(0)).toHaveText(sessionStatus);
-  }
-
-  async assertSecondSessionStatus(sessionStatus: SessionStatus) {
-    await expect(this.sessionStatus.nth(1)).toHaveCount(1);
-    await expect(this.sessionStatus.nth(1)).toHaveText(sessionStatus);
+  async assertSessionStatus(sessionStatus: SessionStatus, number: number) {
+    await expect(this.sessionStatus.nth(number)).toHaveText(sessionStatus);
   }
 
   async terminateCall() {

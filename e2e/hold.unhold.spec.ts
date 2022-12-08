@@ -24,20 +24,20 @@ test.describe('Hold/unhold', () => {
 
   test('calling out & the other party answers & put the call on hold/unhold', async () => {
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
-    await helpersA.assertSessionStatus('ringing');
+    await helpersA.assertSessionStatus('ringing', 0);
     await helpersB.assertSessionExists();
 
     await helpersB.acceptCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('active', 0);
 
     await helpersB.holdCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('on_hold');
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('on_hold', 0);
 
     await helpersB.unholdCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('active', 0);
 
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();

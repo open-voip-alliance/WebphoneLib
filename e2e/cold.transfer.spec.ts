@@ -29,34 +29,34 @@ test.describe('Calling out', () => {
     await helpersC.assertAccountStatus('connected');
 
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
-    await helpersA.assertSessionStatus('ringing');
+    await helpersA.assertSessionStatus('ringing', 0);
     await helpersB.assertSessionExists();
 
     await helpersB.acceptCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('active', 0);
 
     //In a normal situation people would speak to each other as well, so a timeout to really establish the call.
     await helpersB.page.waitForTimeout(4000);
 
     await helpersB.clickTransferButton();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('on_hold');
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('on_hold', 0);
   });
 
   test('User A calls user B and user B transfers user A to user C via a cold transfer', async () => {
     await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
     // Verify the call for User A is still active
-    await helpersA.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
     // Verify the session for User B is terminated after a cold transfer
     await helpersB.assertSessionTerminated();
     // Verify the session for User C is created
     await helpersC.assertSessionExists();
 
     await helpersC.acceptCall();
-    await helpersA.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
     // Verify the call for User C is active
-    await helpersC.assertSessionStatus('active');
+    await helpersC.assertSessionStatus('active', 0);
 
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
@@ -65,20 +65,20 @@ test.describe('Calling out', () => {
 
   test('User A calls user B, user B transfers user A to user C, and user C rejects a call (it means that user B will get a ringback). User B accepts the ringback', async () => {
     await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
-    await helpersA.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
     await helpersB.assertSessionTerminated();
     // Verify that User C is getting a call
     await helpersC.assertSessionExists();
 
     await helpersC.rejectCall();
-    await helpersA.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
     // Verify that User B is getting a ringback
     await helpersB.assertSessionExists();
     await helpersC.assertSessionTerminated();
 
     await helpersB.acceptCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('active', 0);
 
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
@@ -87,13 +87,13 @@ test.describe('Calling out', () => {
 
   test('User A calls user B, user B transfers user A to user C, and user C rejects a call (it means that user B will get a ringback). User B declines the ringback', async () => {
     await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
-    await helpersA.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
     await helpersB.assertSessionTerminated();
     // Verify that User C is getting a call
     await helpersC.assertSessionExists();
 
     await helpersC.rejectCall();
-    await helpersA.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
     // Verify that User B is getting a ringback
     await helpersB.assertSessionExists();
     await helpersC.assertSessionTerminated();
@@ -105,15 +105,15 @@ test.describe('Calling out', () => {
 
   test('User A calls user B and user B transfers user A to non-existing number (it means that user B will get a ringback). User B accepts the ringback', async () => {
     await helpersB.coldTransferCall(`${process.env.NON_EXISTING_NUMBER}`);
-    await helpersA.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
     await helpersB.assertSessionTerminated();
 
     // Verify that User B is getting a ringback
     await helpersB.assertSessionExists();
 
     await helpersB.acceptCall();
-    await helpersA.assertSessionStatus('active');
-    await helpersB.assertSessionStatus('active');
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('active', 0);
 
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();

@@ -51,7 +51,7 @@ test.describe('Subscription', () => {
     await helpersA.assertSubscribedContactStatus('available', `${process.env.USER_C}`);
   });
 
-  test('Check the statuses of subscribed contacts, when one contact calls another, they receives the call and  then terminates it', async () => {
+  test('Check the statuses of subscribed contacts, when one contact calls another, they receives the call and then terminates it', async () => {
     await helpersA.subscribeToContact(`${process.env.USER_B}`);
     await helpersA.assertSubscribedContactUri(`${process.env.USER_B}`);
     await helpersA.assertSubscribedContactStatus('available', `${process.env.USER_B}`);
