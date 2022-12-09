@@ -2,7 +2,9 @@ import { Locator, Page, expect } from '@playwright/test';
 
 type SessionStatus = 'ringing' | 'active' | 'on_hold';
 
-type AccountStatus = 'connected' | 'dsconnecting' | 'disconnected' | 'dying' | 'recovering';
+type AccountStatus = 'connected' | 'disconnecting' | 'disconnected' | 'dying' | 'recovering';
+
+type ContactStatus = 'available' | 'busy' | 'ringing';
 
 export class HelpFunctions {
   readonly page: Page;
@@ -10,12 +12,15 @@ export class HelpFunctions {
   readonly passwordInput: Locator;
   readonly websocketUrlInput: Locator;
   readonly realmInput: Locator;
+  readonly dialerInput: Locator;
+  readonly subscriptionInput: Locator;
+  readonly accountStatus: Locator;
   readonly registerButton: Locator;
   readonly unregisterButton: Locator;
-  readonly accountStatus: Locator;
-  readonly dialerInput: Locator;
   readonly dialerCallButton: Locator;
   readonly sessionAcceptButton: Locator;
+  readonly subscribeButton: Locator;
+  readonly unsubscribeButton: Locator;
   readonly sessions: Locator;
   readonly sessionStatus: Locator;
   readonly sessionHangupButton: Locator;
@@ -27,6 +32,8 @@ export class HelpFunctions {
   readonly sessionTransferMethodDropdown: Locator;
   readonly sessionTransferInput: Locator;
   readonly sessionCompleteTransferButton: Locator;
+  readonly subscribedContact: (userAuthId: string) => Locator;
+  readonly contactStatus: (userAuthId: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -34,12 +41,15 @@ export class HelpFunctions {
     this.passwordInput = page.locator('[data-selector="passwordInput"]');
     this.websocketUrlInput = page.locator('[data-selector="websocketUrlInput"]');
     this.realmInput = page.locator('[data-selector="realmInput"]');
+    this.dialerInput = page.locator('c-dialer [data-selector="input"]');
+    this.subscriptionInput = page.locator('c-contacts [data-selector="input"]');
+    this.accountStatus = page.locator('[data-selector="clientStatus"]');
     this.registerButton = page.locator('[data-action="register"]');
     this.unregisterButton = page.locator('[data-action="unregister"]');
-    this.accountStatus = page.locator('[data-selector="clientStatus"]');
-    this.dialerInput = page.locator('c-dialer [data-selector="input"]');
     this.dialerCallButton = page.locator('[data-action="call"]');
     this.sessionAcceptButton = page.locator('c-session [data-action="accept"]');
+    this.subscribeButton = page.locator('[data-action="subscribe"]');
+    this.unsubscribeButton = page.locator('[data-action="unsubscribe"]');
     this.sessions = page.locator('c-sessions c-session');
     this.sessionStatus = page.locator('c-session [data-selector="sessionStatus"]');
     this.sessionHangupButton = page.locator('c-session [data-action="hangup"]');
@@ -53,6 +63,18 @@ export class HelpFunctions {
     );
     this.sessionTransferInput = page.locator('c-transfer [data-selector="input"]');
     this.sessionCompleteTransferButton = page.locator('c-transfer [data-action="transferCall"]');
+
+    this.subscribedContact = (userAuthId: string) => {
+      return this.page.locator(
+        `[contact-uri="sip:${userAuthId}@${process.env.REALM}"] [data-selector="contactUri"]`
+      );
+    };
+
+    this.contactStatus = (userAuthId: string) => {
+      return this.page.locator(
+        `[contact-uri="sip:${userAuthId}@${process.env.REALM}"] [data-selector="contactStatus"]`
+      );
+    };
   }
 
   async registerUser(userAuthId: string, userPw: string) {
@@ -66,11 +88,11 @@ export class HelpFunctions {
 
     await this.websocketUrlInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
-    await this.websocketUrlInput.type('wss://websocket.voipgrid.nl');
+    await this.websocketUrlInput.type(`${process.env.WEBSOCKET_URL}`);
 
     await this.realmInput.click({ clickCount: 3 });
     await this.page.keyboard.press('Backspace');
-    await this.realmInput.type('voipgrid.nl');
+    await this.realmInput.type(`${process.env.REALM}`);
 
     await this.registerButton.click();
   }
@@ -100,18 +122,8 @@ export class HelpFunctions {
     await this.sessionAcceptButton.click();
   }
 
-  async assertSessionStatus(sessionStatus: SessionStatus) {
-    await expect(this.sessionStatus).toHaveText(sessionStatus);
-  }
-
-  async assertFirstSessionStatus(sessionStatus: SessionStatus) {
-    await expect(this.sessionStatus.nth(0)).toHaveCount(1);
-    await expect(this.sessionStatus.nth(0)).toHaveText(sessionStatus);
-  }
-
-  async assertSecondSessionStatus(sessionStatus: SessionStatus) {
-    await expect(this.sessionStatus.nth(1)).toHaveCount(1);
-    await expect(this.sessionStatus.nth(1)).toHaveText(sessionStatus);
+  async assertSessionStatus(sessionStatus: SessionStatus, number: number) {
+    await expect(this.sessionStatus.nth(number)).toHaveText(sessionStatus);
   }
 
   async terminateCall() {
@@ -152,5 +164,36 @@ export class HelpFunctions {
     await this.sessionTransferMethodDropdown.selectOption('attended');
     await this.sessionTransferInput.type(number);
     await this.sessionCompleteTransferButton.click();
+  }
+
+  async subscribeToContact(userAuthId: string) {
+    await this.subscriptionInput.click({ clickCount: 3 });
+    await this.page.keyboard.press('Backspace');
+    await this.subscriptionInput.type(`sip:${userAuthId}@${process.env.REALM}`);
+    await this.subscribeButton.click();
+  }
+
+  async assertSubscribedContactUri(userAuthId: string) {
+    await expect(this.subscribedContact(userAuthId)).toHaveCount(1);
+    await expect(this.subscribedContact(userAuthId)).toHaveText(
+      `sip:${userAuthId}@${process.env.REALM}`
+    );
+  }
+
+  async assertSubscribedContactStatus(contactStatus: ContactStatus, userAuthId: string) {
+    await expect(this.contactStatus(userAuthId)).toHaveCount(1);
+    await expect(this.contactStatus(userAuthId)).toHaveText(contactStatus);
+  }
+
+  async unsubscribeFromContact(userAuthId: string) {
+    await this.subscriptionInput.click({ clickCount: 3 });
+    await this.page.keyboard.press('Backspace');
+    await this.subscriptionInput.type(`sip:${userAuthId}@${process.env.REALM}`);
+    await this.unsubscribeButton.click();
+  }
+
+  async assertContactUnsubscribed(userAuthId: string) {
+    await expect(this.subscribedContact(userAuthId)).toHaveCount(0);
+    await expect(this.contactStatus(userAuthId)).toHaveCount(0);
   }
 }

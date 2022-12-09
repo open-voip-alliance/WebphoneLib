@@ -12,6 +12,7 @@ demo/config.mjs
 coverage
 # IDE specific files
 .idea/
+.vscode/
 /test-results/
 /playwright-report/
 /playwright/.cache/
