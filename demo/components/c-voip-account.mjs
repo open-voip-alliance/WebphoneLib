@@ -2,6 +2,7 @@ import * as CONF from '../config.mjs';
 import * as sipClient from '../lib/calling.mjs';
 import { setOndevicesChanged, setInputsAndOutputs } from '../lib/media.mjs';
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
+import { updateDndPublisher, removeDndPublisher } from '../lib/dndPublisher.mjs';
 
 window.customElements.define(
   'c-voip-account',
@@ -64,6 +65,11 @@ window.customElements.define(
 
         case 'change':
           localStorage.setItem('dndEnabled', this.actions.dndToggle.checked);
+          updateDndPublisher(
+            sipClient,
+            this.nodes.userIdInput.value,
+            this.actions.dndToggle.checked
+          );
           break;
 
         default:
@@ -74,6 +80,9 @@ window.customElements.define(
     connectedCallback() {
       const template = document.querySelector('[data-component=c-voip-account]');
       this.appendChild(template.content.cloneNode(true));
+
+      //Start with a clean slate for dnd publishing
+      removeDndPublisher();
 
       [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach(n => {
         n.addEventListener('click', this);
