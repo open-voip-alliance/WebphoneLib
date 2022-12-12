@@ -47,6 +47,7 @@ export function updateDndPublisher(client, account, enabled) {
   });
 
   if (enabled) {
+    //TODO the call id is wrong and needs fixing.
     publisher.publish(
       `<?xml version="1.0"?><dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info" state="partial" entity="${account.uri}"><dialog id="${publisher.request.callId}" call-id="${publisher.request.callId}" direction="recipient"><state>dnd</state><remote><identity>${account.uri}</identity><target uri="${account.uri}"/></remote><local><identity>${account.uri}</identity><target uri="${account.uri}"/></local></dialog></dialog-info>`
     );
