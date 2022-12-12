@@ -37,6 +37,7 @@ test.describe('DTMF', () => {
     await helpersB.page.waitForTimeout(1000);
     await helpersA.selectIVRMenuOption('1');
     await helpersA.assertSessionStatus('active', 0);
+    // Verify that the User B has an incoming call
     await helpersB.assertSessionExists();
 
     await helpersB.acceptCall();

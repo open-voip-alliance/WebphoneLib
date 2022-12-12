@@ -69,8 +69,6 @@ export class HelpFunctions {
     this.sessionTransferInput = page.locator('c-transfer [data-selector="input"]');
     this.sessionCompleteTransferButton = page.locator('c-transfer [data-action="transferCall"]');
 
-    //this.sessionIVRMenuOption = page.locator('c-session .base-button:has-text("1")');
-
     this.sessionIVRMenuOption = (ivrMenuOption: string) => {
       return this.page.locator(`c-session .base-button:has-text('${ivrMenuOption}')`);
     };
