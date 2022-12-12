@@ -60,6 +60,13 @@ window.customElements.define(
               detail: { status }
             } = e;
             this.nodes.clientStatus.textContent = status;
+            if (status === 'connected') {
+              updateDndPublisher(
+                sipClient,
+                this.nodes.userIdInput.value,
+                this.actions.dndToggle.checked
+              );
+            }
           }
           break;
 
@@ -81,16 +88,18 @@ window.customElements.define(
       const template = document.querySelector('[data-component=c-voip-account]');
       this.appendChild(template.content.cloneNode(true));
 
-      //Start with a clean slate for dnd publishing
-      removeDndPublisher();
-
       [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach(n => {
         n.addEventListener('click', this);
       });
 
+      // some cleanup necessary
+      removeDndPublisher();
+
       this.actions.dndToggle.addEventListener('change', this);
 
-      if (localStorage.getItem('dndEnabled') === 'true') {
+      const dndEnabled = localStorage.getItem('dndEnabled') === 'true';
+
+      if (dndEnabled) {
         this.actions.dndToggle.setAttribute('checked', '');
       }
 
