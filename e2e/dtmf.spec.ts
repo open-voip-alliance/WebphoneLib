@@ -2,11 +2,6 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-// !!!
-// The test data should be created: Dial plan extension (807 - IVR Menu with the option one (1): call to the User B Webphone account),
-// the option two (2) - undefined.
-// !!!
-
 test.describe('DTMF', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
@@ -31,13 +26,13 @@ test.describe('DTMF', () => {
     await helpersA.callNumber(`${process.env.EXTENSION_IVR}`);
     await helpersA.assertSessionStatus('ringing', 0);
 
-    await helpersA.openIVRMenu();
-    await helpersA.assertIVRMenuOpened();
+    await helpersA.openKeypad();
+    await helpersA.assertKeypadOpened();
 
     await helpersB.page.waitForTimeout(1000);
-    await helpersA.selectIVRMenuOption('1');
+    await helpersA.selectKeypadOption('1');
     await helpersA.assertSessionStatus('active', 0);
-    // Verify that the User B has an incoming call
+    // Verify that the User B has an incoming
     await helpersB.assertSessionExists();
 
     await helpersB.acceptCall();
@@ -53,11 +48,11 @@ test.describe('DTMF', () => {
     await helpersA.callNumber(`${process.env.EXTENSION_IVR}`);
     await helpersA.assertSessionStatus('ringing', 0);
 
-    await helpersA.openIVRMenu();
-    await helpersA.assertIVRMenuOpened();
+    await helpersA.openKeypad();
+    await helpersA.assertKeypadOpened();
 
     await helpersB.page.waitForTimeout(1000);
-    await helpersA.selectIVRMenuOption('2');
+    await helpersA.selectKeypadOption('2');
     await helpersA.assertSessionTerminated();
   });
 });

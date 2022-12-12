@@ -32,9 +32,9 @@ export class HelpFunctions {
   readonly sessionTransferMethodDropdown: Locator;
   readonly sessionTransferInput: Locator;
   readonly sessionDTMFButton: Locator;
-  readonly sessionIVRMenu: Locator;
+  readonly sessionKeypad: Locator;
   readonly sessionCompleteTransferButton: Locator;
-  readonly sessionIVRMenuOption: (ivrMenuOption: string) => Locator;
+  readonly sessionKeypadOption: (ivrMenuOption: string) => Locator;
   readonly subscribedContact: (userAuthId: string) => Locator;
   readonly contactStatus: (userAuthId: string) => Locator;
 
@@ -61,7 +61,7 @@ export class HelpFunctions {
     this.sessionHoldButton = page.locator('c-session [data-action="hold"]');
     this.sessionUnholdButton = page.locator('c-session [data-action="unhold"]');
     this.sessionDTMFButton = page.locator('c-session [data-action="toggleDTMF"]');
-    this.sessionIVRMenu = page.locator('c-session c-keypad');
+    this.sessionKeypad = page.locator('c-session c-keypad');
     this.sessionTransferButton = page.locator('c-session [data-action="toggleTransfer"]');
     this.sessionTransferMethodDropdown = page.locator(
       'c-transfer [data-selector="selectTransferMethod"]'
@@ -69,8 +69,8 @@ export class HelpFunctions {
     this.sessionTransferInput = page.locator('c-transfer [data-selector="input"]');
     this.sessionCompleteTransferButton = page.locator('c-transfer [data-action="transferCall"]');
 
-    this.sessionIVRMenuOption = (ivrMenuOption: string) => {
-      return this.page.locator(`c-session .base-button:has-text('${ivrMenuOption}')`);
+    this.sessionKeypadOption = (keypadOption: string) => {
+      return this.page.locator(`c-session .base-button:has-text('${keypadOption}')`);
     };
 
     this.subscribedContact = (userAuthId: string) => {
@@ -206,15 +206,15 @@ export class HelpFunctions {
     await expect(this.contactStatus(userAuthId)).toHaveCount(0);
   }
 
-  async openIVRMenu() {
+  async openKeypad() {
     await this.sessionDTMFButton.click();
   }
 
-  async assertIVRMenuOpened() {
-    await expect(this.sessionIVRMenu).toHaveCount(1);
+  async assertKeypadOpened() {
+    await expect(this.sessionKeypad).toHaveCount(1);
   }
 
-  async selectIVRMenuOption(ivrMenuOption: string) {
-    await this.sessionIVRMenuOption(ivrMenuOption).click();
+  async selectKeypadOption(keypadOption: string) {
+    await this.sessionKeypadOption(keypadOption).click();
   }
 }
