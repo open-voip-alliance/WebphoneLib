@@ -23,7 +23,7 @@ test.describe('DTMF', () => {
   });
 
   test('Pressing the predefined number in the IVR menu ends up at the User B webphone account', async () => {
-    await helpersA.callNumber(`${process.env.EXTENSION_IVR}`);
+    await helpersA.callNumber(`${process.env.DIAL_PLAN_EXTENSION_IVR_MENU}`);
     await helpersA.assertSessionStatus('ringing', 0);
 
     await helpersA.openKeypad();
@@ -45,7 +45,7 @@ test.describe('DTMF', () => {
   });
 
   test('Pressing the undefined number in the IVR menu terminates the existing session', async () => {
-    await helpersA.callNumber(`${process.env.EXTENSION_IVR}`);
+    await helpersA.callNumber(`${process.env.DIAL_PLAN_EXTENSION_IVR_MENU}`);
     await helpersA.assertSessionStatus('ringing', 0);
 
     await helpersA.openKeypad();
