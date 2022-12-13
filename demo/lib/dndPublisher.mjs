@@ -1,6 +1,23 @@
 import * as CONF from '../config.mjs';
+import { Logger } from '../lib/logging.mjs';
+
+const logger = new Logger('dndPublisher');
 
 let publisher;
+let userCallId;
+// Adding a random Id to the callId to make it more unique.
+
+function getUserCallId() {
+  if (userCallId) {
+    return userCallId;
+  } else {
+    userCallId = Math.floor(Math.random() * 100000000000000000);
+
+    logger.info(`callId is set to: ${userCallId}`);
+
+    return userCallId;
+  }
+}
 
 function getOrCreatePublisher(client, contact, options) {
   if (!publisher) {
@@ -40,14 +57,16 @@ export function updateDndPublisher(client, account, enabled) {
 
   const sipAccount = `sip:${account}@${CONF.realm}`;
 
+  const callId = getUserCallId();
+
   publisher = getOrCreatePublisher(client, sipAccount, {
     body: 'dnd',
     contentType: 'application/dialog-info+xml',
-    expires: 120
+    expires: 120,
+    params: { callId }
   });
 
   if (enabled) {
-    //TODO the call id is wrong and needs fixing.
     publisher.publish(
       `<?xml version="1.0"?><dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info" state="partial" entity="${account.uri}"><dialog id="${publisher.request.callId}" call-id="${publisher.request.callId}" direction="recipient"><state>dnd</state><remote><identity>${account.uri}</identity><target uri="${account.uri}"/></remote><local><identity>${account.uri}</identity><target uri="${account.uri}"/></local></dialog></dialog-info>`
     );
