@@ -212,10 +212,10 @@ link](https://typedoc.org/guides/doccomments/) for more information on which
 
 ## Run playwright tests
 
-Add a .env file with the following:
+1.  Add a .env file with the following:
 
 ```
-UUSER_A = <user-a>
+USER_A = <user-a>
 USER_B = <user-b>
 USER_C = <user-c>
 PASSWORD_A = <password-user-a>
@@ -224,9 +224,22 @@ PASSWORD_C = <password-user-c>
 NUMBER_A = <number-user-a>
 NUMBER_B = <number-user-b>
 NUMBER_C = <number-user-c>
+DIAL_PLAN_EXTENSION_IVR_MENU = <extension to test dtmf>
 NON_EXISTING_NUMBER = <non-existing-number>
 WEBSOCKET_URL = <your-websocket-url>
 REALM = <realm>
 ```
+
+2. Comment for the subscription.spec.ts
+
+Run the subscription.spec testsuit no more than once in 1 minute or it will fail (not more than 2 subscriptions is allowed)
+(with error in console: Subscription rate-limited. Retrying after 60)
+
+3. The test data should be created for the dtmf.spec.ts
+
+Dial plan extension - 807 - IVR Menu with:
+
+- option one (1): call to the User B Webphone account,
+- option two (2): - undefined.
 
 You will need to run the demo with the `npm run demo` command (and keep it running) and run the tests with `npm run test-e2e` . For this you will need the .env file with your settings.
