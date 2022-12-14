@@ -2,6 +2,7 @@ import * as CONF from '../config.mjs';
 import * as sipClient from '../lib/calling.mjs';
 import { setOndevicesChanged, setInputsAndOutputs } from '../lib/media.mjs';
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
+import { updateDndPublisher, removeDndPublisher } from '../lib/dndPublisher.mjs';
 
 window.customElements.define(
   'c-voip-account',
@@ -59,11 +60,23 @@ window.customElements.define(
               detail: { status }
             } = e;
             this.nodes.clientStatus.textContent = status;
+            if (status === 'connected') {
+              updateDndPublisher(
+                sipClient,
+                this.nodes.userIdInput.value,
+                this.actions.dndToggle.checked
+              );
+            }
           }
           break;
 
         case 'change':
           localStorage.setItem('dndEnabled', this.actions.dndToggle.checked);
+          updateDndPublisher(
+            sipClient,
+            this.nodes.userIdInput.value,
+            this.actions.dndToggle.checked
+          );
           break;
 
         default:
@@ -79,9 +92,14 @@ window.customElements.define(
         n.addEventListener('click', this);
       });
 
+      // some cleanup necessary
+      removeDndPublisher();
+
       this.actions.dndToggle.addEventListener('change', this);
 
-      if (localStorage.getItem('dndEnabled') === 'true') {
+      const dndEnabled = localStorage.getItem('dndEnabled') === 'true';
+
+      if (dndEnabled) {
         this.actions.dndToggle.setAttribute('checked', '');
       }
 
