@@ -122,7 +122,7 @@ export function unregisterAccount() {
 export function reconfigure() {
   logger.info('Trying to reconfigure account.');
   try {
-    client.reconfigure({ account, transport });
+    client.reconfigure({ account, transport, media, userAgentString: 'WebphoneLib Demo' });
   } catch (e) {
     logger.error(e);
     console.log(e);
