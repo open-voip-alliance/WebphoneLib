@@ -15,6 +15,7 @@ export class HelpFunctions {
   readonly dialerInput: Locator;
   readonly subscriptionInput: Locator;
   readonly accountStatus: Locator;
+  readonly dndToggle: Locator;
   readonly registerButton: Locator;
   readonly unregisterButton: Locator;
   readonly dialerCallButton: Locator;
@@ -47,6 +48,7 @@ export class HelpFunctions {
     this.dialerInput = page.locator('c-dialer [data-selector="input"]');
     this.subscriptionInput = page.locator('c-contacts [data-selector="input"]');
     this.accountStatus = page.locator('[data-selector="clientStatus"]');
+    this.dndToggle = page.locator('.switch');
     this.registerButton = page.locator('[data-action="register"]');
     this.unregisterButton = page.locator('[data-action="unregister"]');
     this.dialerCallButton = page.locator('[data-action="call"]');
@@ -115,6 +117,8 @@ export class HelpFunctions {
   }
 
   async callNumber(number: string) {
+    await this.dialerInput.click({ clickCount: 3 });
+    await this.page.keyboard.press('Backspace');
     await this.dialerInput.type(number);
     await this.dialerCallButton.click();
   }
@@ -216,5 +220,14 @@ export class HelpFunctions {
 
   async selectKeypadOption(keypadOption: string) {
     await this.sessionKeypadOption(keypadOption).click();
+  }
+
+  async checkDndToggle() {
+    await expect(this.dndToggle).toBeVisible();
+    await this.dndToggle.check();
+  }
+
+  async uncheckDndToggle() {
+    await this.dndToggle.uncheck();
   }
 }
