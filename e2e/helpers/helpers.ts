@@ -223,11 +223,18 @@ export class HelpFunctions {
   }
 
   async checkDndToggle() {
-    await expect(this.dndToggle).toBeVisible();
     await this.dndToggle.check();
   }
 
   async uncheckDndToggle() {
     await this.dndToggle.uncheck();
+  }
+
+  async assertDndToggleIsChecked() {
+    await expect(await this.dndToggle.isChecked()).toEqual(true);
+  }
+
+  async assertDndToggleIsUnchecked() {
+    await expect(await this.dndToggle.isChecked()).toEqual(false);
   }
 }

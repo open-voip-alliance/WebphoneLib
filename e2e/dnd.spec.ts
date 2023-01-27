@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe('DND', () => {
+test.describe.only('DND', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
   let helpersC: HelpFunctions;
@@ -29,19 +29,53 @@ test.describe('DND', () => {
     await helpersC.assertAccountStatus('connected');
   });
 
-  test.only('Should not be possible to reach the user, when its DND is on, the call is terminated', async () => {
+  test('Should not be possible to reach the user, when its DND is on. The call is terminated', async () => {
     await helpersA.checkDndToggle();
+    await helpersA.assertDndToggleIsChecked();
     await helpersB.callNumber(`${process.env.NUMBER_A}`);
     await helpersA.assertSessionTerminated();
     await helpersB.assertSessionTerminated();
 
     await helpersA.uncheckDndToggle();
+    await helpersA.assertDndToggleIsUnchecked();
     await helpersB.callNumber(`${process.env.NUMBER_A}`);
     await helpersA.assertSessionExists();
     await helpersB.assertSessionStatus('ringing', 0);
   });
 
-  test('Should not be possible to reach the user after a cold transfer, when its DND is on, the call is terminated', async () => {});
+  test('Should not be possible to reach the user after a cold transfer, when its DND is on. The call is terminated', async () => {
+    await helpersC.checkDndToggle();
 
-  test('Should not be possible to reach the user after a warm transfer, when its DND is on, the call is terminated', async () => {});
+    await helpersA.callNumber(`${process.env.NUMBER_B}`);
+    await helpersB.acceptCall();
+
+    await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionTerminated();
+
+    // Verify that User B is getting a ringback
+    await helpersB.assertSessionExists();
+
+    await helpersB.rejectCall();
+    await helpersA.assertSessionTerminated();
+    await helpersB.assertSessionTerminated();
+
+    await helpersC.uncheckDndToggle();
+  });
+
+  test('Should not be possible to reach the user after a warm transfer, when its DND is on. The call is terminated', async () => {
+    await helpersC.checkDndToggle();
+
+    await helpersA.callNumber(`${process.env.NUMBER_B}`);
+    await helpersB.acceptCall();
+
+    await helpersB.warmTransferCall(`${process.env.NUMBER_C}`);
+    await helpersA.assertSessionStatus('active', 0);
+    await helpersB.assertSessionStatus('on_hold', 0);
+    await helpersC.assertSessionTerminated();
+
+    await helpersA.terminateCall();
+    await helpersA.assertSessionTerminated();
+    await helpersC.assertSessionTerminated();
+  });
 });
