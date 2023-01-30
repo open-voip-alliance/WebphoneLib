@@ -23,7 +23,7 @@ let transport;
 export let client;
 
 function onBeforeInvite(invitation) {
-  if (localStorage.getItem('dndEnabled') === 'true') {
+  if (localStorage.getItem(`dndEnabled+${account.user}`) === 'true') {
     // Send the 486 'Busy here' status instead of the default 480 'Unavailable'.
     invitation.reject({ statusCode: 486 });
     // Prevents onInvite to progress any further.

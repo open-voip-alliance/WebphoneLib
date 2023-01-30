@@ -79,7 +79,10 @@ window.customElements.define(
           break;
 
         case 'change':
-          localStorage.setItem('dndEnabled', this.actions.dndToggle.checked);
+          localStorage.setItem(
+            `dndEnabled+${this.nodes.userIdInput.value}`,
+            this.actions.dndToggle.checked
+          );
           updateDndPublisher(
             sipClient,
             this.nodes.userIdInput.value,
@@ -110,7 +113,8 @@ window.customElements.define(
 
       this.actions.dndToggle.addEventListener('change', this);
 
-      const dndEnabled = localStorage.getItem('dndEnabled') === 'true';
+      const dndEnabled =
+        localStorage.getItem(`dndEnabled+${this.nodes.userIdInput.value}`) === 'true';
 
       if (dndEnabled) {
         this.actions.dndToggle.setAttribute('checked', '');
