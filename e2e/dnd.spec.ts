@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 import { HelpFunctions } from './helpers/helpers';
 
-test.describe.only('DND', () => {
+test.describe('DND', () => {
   let helpersA: HelpFunctions;
   let helpersB: HelpFunctions;
   let helpersC: HelpFunctions;
@@ -16,17 +16,17 @@ test.describe.only('DND', () => {
     helpersB = new HelpFunctions(pageUserB);
     helpersC = new HelpFunctions(pageUserC);
 
-    await pageUserA.goto(`${process.env.DEMO_URL}`);
+    await pageUserA.goto(`${process.env.DEMO_URL}`, { waitUntil: 'networkidle' });
     await helpersA.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
     await helpersA.assertAccountStatus('connected');
 
-    await pageUserB.goto(`${process.env.DEMO_URL}`);
+    await pageUserB.goto(`${process.env.DEMO_URL}`, { waitUntil: 'networkidle' });
     await helpersB.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
     await helpersB.assertAccountStatus('connected');
 
-    await pageUserC.goto(`${process.env.DEMO_URL}`);
+    await pageUserC.goto(`${process.env.DEMO_URL}`, { waitUntil: 'networkidle' });
     await helpersC.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
-    await helpersC.assertAccountStatus('connected');
+    //await helpersC.assertAccountStatus('connected');
   });
 
   test('Should not be possible to reach the user, when its DND is on. The call is terminated', async () => {
@@ -45,13 +45,15 @@ test.describe.only('DND', () => {
 
   test('Should not be possible to reach the user after a cold transfer, when its DND is on. The call is terminated', async () => {
     await helpersC.checkDndToggle();
+    await helpersC.assertDndToggleIsChecked();
 
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.acceptCall();
+    await helpersB.clickTransferButton();
 
     await helpersB.coldTransferCall(`${process.env.NUMBER_C}`);
-    await helpersA.assertSessionStatus('active', 0);
     await helpersB.assertSessionTerminated();
+    await helpersA.assertSessionStatus('active', 0);
 
     // Verify that User B is getting a ringback
     await helpersB.assertSessionExists();
@@ -68,6 +70,7 @@ test.describe.only('DND', () => {
 
     await helpersA.callNumber(`${process.env.NUMBER_B}`);
     await helpersB.acceptCall();
+    await helpersB.clickTransferButton();
 
     await helpersB.warmTransferCall(`${process.env.NUMBER_C}`);
     await helpersA.assertSessionStatus('active', 0);

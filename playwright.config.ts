@@ -46,8 +46,8 @@ const config: PlaywrightTestConfig = {
     /* Fake media (audio inputs and outputs) for headless mode. */
     launchOptions: {
       args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
-      // headless: false,
-      // slowMo: 50,
+      headless: false,
+      slowMo: 30,
     },
   },
 

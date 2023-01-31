@@ -21,7 +21,7 @@ window.customElements.define(
         case 'click':
           {
             const {
-              target: { dataset }
+              target: { dataset },
             } = e;
 
             if (dataset.action) {
@@ -57,7 +57,7 @@ window.customElements.define(
         case 'clientStatusUpdate':
           {
             const {
-              detail: { status }
+              detail: { status },
             } = e;
             this.nodes.clientStatus.textContent = status;
             if (status === 'connected') {
@@ -71,7 +71,10 @@ window.customElements.define(
           break;
 
         case 'change':
-          localStorage.setItem('dndEnabled', this.actions.dndToggle.checked);
+          localStorage.setItem(
+            `dndEnabled+${this.nodes.userIdInput.value}`,
+            this.actions.dndToggle.checked
+          );
           updateDndPublisher(
             sipClient,
             this.nodes.userIdInput.value,
@@ -88,7 +91,7 @@ window.customElements.define(
       const template = document.querySelector('[data-component=c-voip-account]');
       this.appendChild(template.content.cloneNode(true));
 
-      [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach(n => {
+      [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach((n) => {
         n.addEventListener('click', this);
       });
 
@@ -97,7 +100,8 @@ window.customElements.define(
 
       this.actions.dndToggle.addEventListener('change', this);
 
-      const dndEnabled = localStorage.getItem('dndEnabled') === 'true';
+      const dndEnabled =
+        localStorage.getItem(`dndEnabled+${this.nodes.userIdInput.value}`) === 'true';
 
       if (dndEnabled) {
         this.actions.dndToggle.setAttribute('checked', '');
@@ -112,7 +116,7 @@ window.customElements.define(
     }
 
     disconnectedCallback() {
-      [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach(n => {
+      [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach((n) => {
         n.removeEventListener('click', this);
       });
 
