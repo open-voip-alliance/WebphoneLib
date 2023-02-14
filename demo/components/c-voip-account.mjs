@@ -49,6 +49,14 @@ window.customElements.define(
                   sipClient.reconfigure();
                   console.log('reconfigure');
                   break;
+                case 'setAccount': {
+                  const userId = this.nodes.userIdInput.value;
+                  const password = this.nodes.passwordInput.value;
+                  const realm = this.nodes.realmInput.value;
+                  const websocketUrl = this.nodes.websocketUrlInput.value;
+                  sipClient.setAccount(userId, password, realm);
+                  sipClient.setTransport(websocketUrl);
+                }
               }
             }
           }
@@ -91,7 +99,12 @@ window.customElements.define(
       const template = document.querySelector('[data-component=c-voip-account]');
       this.appendChild(template.content.cloneNode(true));
 
-      [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach((n) => {
+      [
+        this.actions.register,
+        this.actions.unregister,
+        this.actions.reconfigure,
+        this.actions.setAccount,
+      ].forEach((n) => {
         n.addEventListener('click', this);
       });
 
@@ -116,7 +129,12 @@ window.customElements.define(
     }
 
     disconnectedCallback() {
-      [this.actions.register, this.actions.unregister, this.actions.reconfigure].forEach((n) => {
+      [
+        this.actions.register,
+        this.actions.unregister,
+        this.actions.reconfigure,
+        this.actions.setAccount,
+      ].forEach((n) => {
         n.removeEventListener('click', this);
       });
 
