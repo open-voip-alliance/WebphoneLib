@@ -11,7 +11,7 @@ log.connector = ({ level, context, message }) => {
     verbose: console.debug,
     info: console.info,
     warn: console.warn,
-    error: console.error
+    error: console.error,
   }[level];
 
   print(`${level} [${context}] ${message}`);
@@ -39,8 +39,8 @@ export function setTransport(websocketUrl) {
     wsServers: websocketUrl,
     iceServers: [],
     delegate: {
-      onBeforeInvite
-    }
+      onBeforeInvite,
+    },
   };
 }
 
@@ -50,7 +50,7 @@ export function setAccount(user, password, realm) {
     user,
     password,
     uri,
-    name: 'test'
+    name: 'test',
   };
 }
 
@@ -59,7 +59,7 @@ export function setClient() {
     account,
     transport,
     media,
-    userAgentString: 'WebphoneLib Demo'
+    userAgentString: 'WebphoneLib Demo',
   });
 }
 
@@ -102,7 +102,7 @@ export function registerAccount() {
     .then(async () => {
       console.log('connected!');
     })
-    .catch(e => {
+    .catch((e) => {
       logger.error(e);
       console.error(e);
     });

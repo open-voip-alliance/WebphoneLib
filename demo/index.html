@@ -176,18 +176,16 @@
     <div class="transfer-header">
       <div>
         <select data-selector="selectTransferMethod">
-          <option value="attended" data-translation-key="attended_transfer"
-            >Attended transfer</option
-          >
+          <option value="attended" data-translation-key="attended_transfer">
+            Attended transfer
+          </option>
           <option value="blind" data-translation-key="blind_transfer">Blind transfer</option>
         </select>
       </div>
 
       <div>
         <input type="text" data-selector="input" />
-        <button class="success" data-action="transferCall" tabindex="0">
-          Transfer call
-        </button>
+        <button class="success" data-action="transferCall" tabindex="0">Transfer call</button>
       </div>
     </div>
   </template>
@@ -239,33 +237,15 @@
       <span class="session-direction" data-selector="sessionDirection"></span>
     </div>
     <div class="call-options">
-      <button class="session-button accept" data-action="accept">
-        Accept
-      </button>
-      <button class="session-button reject" data-action="reject">
-        Reject
-      </button>
-      <button class="session-button" data-action="cancel">
-        Cancel
-      </button>
-      <button class="session-button" data-action="toggleMute">
-        Mute
-      </button>
-      <button class="session-button" data-action="toggleTransfer">
-        Transfer
-      </button>
-      <button class="session-button" data-action="toggleDTMF">
-        DTMF
-      </button>
-      <button class="session-button" data-action="hold">
-        Hold
-      </button>
-      <button class="session-button" data-action="unhold">
-        Unhold
-      </button>
-      <button class="session-button hangup" data-action="hangup">
-        Hangup
-      </button>
+      <button class="session-button accept" data-action="accept">Accept</button>
+      <button class="session-button reject" data-action="reject">Reject</button>
+      <button class="session-button" data-action="cancel">Cancel</button>
+      <button class="session-button" data-action="toggleMute">Mute</button>
+      <button class="session-button" data-action="toggleTransfer">Transfer</button>
+      <button class="session-button" data-action="toggleDTMF">DTMF</button>
+      <button class="session-button" data-action="hold">Hold</button>
+      <button class="session-button" data-action="unhold">Unhold</button>
+      <button class="session-button hangup" data-action="hangup">Hangup</button>
     </div>
     <div data-selector="additionalInterface" class="additional-interface"></div>
   </template>

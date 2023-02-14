@@ -47,7 +47,7 @@ const config: PlaywrightTestConfig = {
     launchOptions: {
       args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
       // headless: false,
-      // slowMo: 50,
+      // slowMo: 30,
     },
   },
 

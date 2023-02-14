@@ -21,7 +21,7 @@ window.customElements.define(
         case 'click':
           {
             const {
-              target: { dataset }
+              target: { dataset },
             } = e;
 
             if (dataset.action) {
@@ -65,7 +65,7 @@ window.customElements.define(
         case 'clientStatusUpdate':
           {
             const {
-              detail: { status }
+              detail: { status },
             } = e;
             this.nodes.clientStatus.textContent = status;
             if (status === 'connected') {
@@ -103,8 +103,8 @@ window.customElements.define(
         this.actions.register,
         this.actions.unregister,
         this.actions.reconfigure,
-        this.actions.setAccount
-      ].forEach(n => {
+        this.actions.setAccount,
+      ].forEach((n) => {
         n.addEventListener('click', this);
       });
 
@@ -133,8 +133,8 @@ window.customElements.define(
         this.actions.register,
         this.actions.unregister,
         this.actions.reconfigure,
-        this.actions.setAccount
-      ].forEach(n => {
+        this.actions.setAccount,
+      ].forEach((n) => {
         n.removeEventListener('click', this);
       });
 
