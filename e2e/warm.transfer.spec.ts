@@ -16,15 +16,15 @@ test.describe('Warm transfer', () => {
     helpersB = new HelpFunctions(pageUserB);
     helpersC = new HelpFunctions(pageUserC);
 
-    await pageUserA.goto(`${process.env.DEMO_URL}`, { timeout: 0 });
+    await pageUserA.goto(`${process.env.DEMO_URL}`);
     await helpersA.registerUser(`${process.env.USER_A}`, `${process.env.PASSWORD_A}`);
     await helpersA.assertAccountStatus('connected');
 
-    await pageUserB.goto(`${process.env.DEMO_URL}`, { timeout: 0 });
+    await pageUserB.goto(`${process.env.DEMO_URL}`);
     await helpersB.registerUser(`${process.env.USER_B}`, `${process.env.PASSWORD_B}`);
     await helpersB.assertAccountStatus('connected');
 
-    await pageUserC.goto(`${process.env.DEMO_URL}`, { timeout: 0 });
+    await pageUserC.goto(`${process.env.DEMO_URL}`);
     await helpersC.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
     await helpersC.assertAccountStatus('connected');
 

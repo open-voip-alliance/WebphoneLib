@@ -26,7 +26,7 @@ test.describe('DND', () => {
 
     await pageUserC.goto(`${process.env.DEMO_URL}`, { timeout: 0 });
     await helpersC.registerUser(`${process.env.USER_C}`, `${process.env.PASSWORD_C}`);
-    //await helpersC.assertAccountStatus('connected');
+    await helpersC.assertAccountStatus('connected');
   });
 
   test('Should not be possible to reach the user, when its DND is on. The call is terminated', async () => {
@@ -66,6 +66,8 @@ test.describe('DND', () => {
     // await helpersB.assertSessionTerminated();
 
     // await helpersC.uncheckDndToggle();
+
+    await helpersC.uncheckDndToggle();
   });
 
   test('Should not be possible to reach the user after a warm transfer, when its DND is on. The call is terminated', async () => {
@@ -83,5 +85,7 @@ test.describe('DND', () => {
     await helpersA.terminateCall();
     await helpersA.assertSessionTerminated();
     await helpersC.assertSessionTerminated();
+
+    await helpersC.uncheckDndToggle();
   });
 });
