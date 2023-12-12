@@ -41,6 +41,10 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
 
   public init() {
     this.update();
+
+    navigator.mediaDevices.ondevicechange = () => {
+      this.update();
+    };
   }
 
   get devices() {
@@ -161,13 +165,6 @@ class MediaSingleton extends EventEmitter implements IMediaDevices {
     }
 
     this.hadPermission = havePermission;
-
-    // When running on localhost in Firefox, the permission can't be stored
-    // (unless over https). The timer will clear the devices list on the next
-    // timeout. Prevent this behaviour because it's annoying to develop with.
-    if (!(Features.isFirefox && Features.isLocalhost)) {
-      this.timer = window.setTimeout(() => this.update(), UPDATE_INTERVAL);
-    }
   }
 
   private updateDevices(enumeratedDevices: MediaDeviceInfo[]) {
