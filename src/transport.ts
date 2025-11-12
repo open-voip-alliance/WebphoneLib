@@ -150,8 +150,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }
 
     this.uaOptions = {
-      autoStart: false,
-      autoStop: false,
       noAnswerTimeout: 60,
       authorizationUsername: account.user,
       authorizationPassword: account.password,
