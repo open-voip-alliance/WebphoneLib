@@ -53,7 +53,7 @@ export function sessionDescriptionHandlerFactory(session, options): SessionDescr
       }
 
       // Reconstruct remote stream from receivers
-      let remoteStream = new MediaStream();
+      const remoteStream = new MediaStream();
       if (pc.getReceivers) {
         pc.getReceivers().forEach(receiver => {
           const rtrack = receiver.track;
