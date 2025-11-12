@@ -20,7 +20,7 @@ export class HealthChecker {
    */
   public start(): any {
     return pTimeout(
-      new Promise(resolve => {
+      new Promise<void>(resolve => {
         clearTimeout(this.optionsTimeout);
         this.userAgent.userAgentCore.request(this.createOptionsMessage(), {
           onAccept: () => {
@@ -35,8 +35,6 @@ export class HealthChecker {
       () => {
         this.logger.error('No response after OPTIONS message to sip server.');
         clearTimeout(this.optionsTimeout);
-        // In 0.17.x, Transport no longer has .emit()
-        // Instead, we trigger disconnect which will change state to Disconnected
         this.userAgent.transport.disconnect().catch(error => {
           this.logger.error('Error disconnecting transport after health check failure: ' + error);
         });

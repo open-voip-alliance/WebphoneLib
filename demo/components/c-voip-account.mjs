@@ -85,8 +85,8 @@ window.customElements.define(
         this.actions.dndToggle.setAttribute('checked', '');
       }
 
-      this.nodes.passwordInput.value = CONF.PASSWORD_A;
-      this.nodes.userIdInput.value = CONF.USER_A;
+      this.nodes.passwordInput.value = CONF.PASSWORD;
+      this.nodes.userIdInput.value = CONF.AUTHORIZATION_USER_ID;
       this.nodes.realmInput.value = CONF.REALM;
       this.nodes.websocketUrlInput.value = CONF.WEBSOCKET_URL;
 

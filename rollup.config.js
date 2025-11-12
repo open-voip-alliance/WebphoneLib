@@ -16,5 +16,11 @@ export default {
     format: 'esm',
     sourcemap: true
   },
-  plugins: [resolve({ preferBuiltins: true }), commonjs(), builtins(), json(), typescript()]
+  plugins: [
+    resolve({ preferBuiltins: true }),
+    commonjs(),
+    builtins(),
+    json(),
+    typescript({ tsconfig: './tsconfig.build.json' })
+  ]
 };

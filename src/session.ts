@@ -1,12 +1,10 @@
 import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
-
 import { Core, SessionDescriptionHandlerModifier } from 'sip.js';
-
 import { Invitation } from 'sip.js/lib/api/invitation';
+import { InvitationRejectOptions } from 'sip.js/lib/api/invitation-reject-options';
 import { Inviter } from 'sip.js/lib/api/inviter';
 import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options';
-import { InvitationRejectOptions } from 'sip.js/lib/api/invitation-reject-options';
 import { Session as UserAgentSession } from 'sip.js/lib/api/session';
 import { SessionState } from 'sip.js/lib/api/session-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
@@ -112,12 +110,15 @@ export interface ISession {
   dtmf(tones: string): void;
 
   /* tslint:disable:unified-signatures */
-  on(event: 'terminated', listener: ({ id: string }) => void): this;
+  on(event: 'terminated', listener: (data: { id: string }) => void): this;
   on(event: 'statusUpdate', listener: (session: { id: string; status: string }) => void): this;
-  on(event: 'callQualityUpdate', listener: ({ id: string }, stats: SessionStats) => void): this;
+  on(
+    event: 'callQualityUpdate',
+    listener: (data: { id: string }, stats: SessionStats) => void
+  ): this;
   on(
     event: 'remoteIdentityUpdate',
-    listener: ({ id: string }, remoteIdentity: IRemoteIdentity) => void
+    listener: (data: { id: string }, remoteIdentity: IRemoteIdentity) => void
   ): this;
   /* tslint:enable:unified-signatures */
 }
@@ -173,7 +174,6 @@ export class SessionImpl extends EventEmitter implements ISession {
 
   private onTerminated: (sessionId: string) => void;
 
-  // In 0.17.x, Session no longer has startTime/endTime, so we track them manually
   private _startTime: Date;
   private _endTime: Date;
 
@@ -209,7 +209,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     // be rejected when there is some fault is detected with the session after it
     // has been accepted.
     this.terminatedPromise = new Promise(resolve => {
-      // In 0.17.x, stateChange uses addListener instead of on
       this.session.stateChange.addListener((newState: SessionState) => {
         if (newState === SessionState.Terminated) {
           // Track end time
@@ -237,7 +236,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     // Track if the other side said bye before terminating.
     this.saidBye = false;
 
-    // In 0.17.x, Session no longer has .once(), use delegate instead
     if (!this.session.delegate) {
       this.session.delegate = {};
     }
@@ -251,7 +249,6 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     this.holdState = false;
 
-    // Track start time manually since Session no longer has it in 0.17.x
     this._startTime = new Date();
 
     this.stats.on('statsUpdated', () => {
@@ -289,12 +286,10 @@ export class SessionImpl extends EventEmitter implements ISession {
   }
 
   get startTime(): Date {
-    // In 0.17.x, Session no longer has startTime, we track it manually
     return this._startTime;
   }
 
   get endTime(): Date {
-    // In 0.17.x, Session no longer has endTime, we track it manually
     return this._endTime;
   }
 
@@ -508,7 +503,6 @@ export class SessionImpl extends EventEmitter implements ISession {
     const modifiers: Array<SessionDescriptionHandlerModifier> = [];
     if (flag) {
       log.debug('Hold requested', this.constructor.name);
-      // In 0.17.x, holdModifier is a standalone function, not a property of SDH
       modifiers.push(holdModifier);
     } else {
       log.debug('Unhold requested', this.constructor.name);

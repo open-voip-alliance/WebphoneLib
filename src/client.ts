@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-
 import { Core } from 'sip.js';
 import { Notification } from 'sip.js/lib/api/notification';
 import { Publisher } from 'sip.js/lib/api/publisher';
@@ -8,7 +7,6 @@ import { Subscriber } from 'sip.js/lib/api/subscriber';
 import { SubscriptionState } from 'sip.js/lib/api/subscription-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
-
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { Invitation } from './invitation';
@@ -259,7 +257,6 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
       };
 
-      // In 0.17.x, stateChange uses addListener instead of on
       this.subscriptions[uri].stateChange.addListener((newState: SubscriptionState) => {
         switch (newState) {
           case SubscriptionState.Subscribed:
@@ -274,7 +271,6 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
       });
 
-      // In 0.17.x, subscribe() returns a promise that rejects on failure
       this.subscriptions[uri].subscribe().catch((error: any) => {
         // Extract response if available (could be IncomingResponseMessage)
         const response = error ? error.message || error : error;
@@ -460,7 +456,6 @@ export class ClientImpl extends EventEmitter implements IClient {
       return;
     }
 
-    // In 0.17.x, there's no removeAllListeners() method
     // The stateChange emitter will be cleaned up when the subscription is disposed
 
     if (unsubscribe) {

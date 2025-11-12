@@ -45,7 +45,7 @@ export function minimalOptions() {
       name: ''
     },
     transport: {
-      wsServers: '',
+      server: '',
       iceServers: []
     },
     media: {

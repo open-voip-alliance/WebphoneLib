@@ -8,7 +8,7 @@ export interface IClientOptions {
     name: string;
   };
   transport: {
-    wsServers: string;
+    server: string;
     iceServers: string[];
     delegate?: ITransportDelegate;
   };

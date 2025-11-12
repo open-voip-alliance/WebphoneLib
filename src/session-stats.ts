@@ -1,7 +1,5 @@
 import { EventEmitter } from 'events';
-
 import { Session as UserAgentSession } from 'sip.js/lib/api/session';
-
 import { log } from './logger';
 
 class StatsAggregation {
@@ -81,7 +79,6 @@ export class SessionStats extends EventEmitter {
 
     // Set up stats timer to periodically query and process the peer connection's
     // statistics and feed them to the stats aggregator.
-    // In 0.17.x, Session no longer has .once(), use delegate instead
     const setupStatsTimer = () => {
       this.statsTimer = window.setInterval(() => {
         if (!session.sessionDescriptionHandler) {

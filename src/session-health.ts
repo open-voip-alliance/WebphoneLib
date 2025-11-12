@@ -15,7 +15,6 @@ export function checkAudioConnected(
   let checkTimer: number;
 
   return new Promise((resolve, reject) => {
-    // In 0.17.x, Session no longer has .once(), use delegate instead
     const setupAudioCheck = () => {
       // We patched the sdh with peerConnection.
       const pc = (session.sessionDescriptionHandler as any).peerConnection;
@@ -56,7 +55,6 @@ export function checkAudioConnected(
 
         checkTimer = window.setTimeout(checkStats, checkInterval);
 
-        // In 0.17.x, use stateChange emitter to listen for termination
         session.stateChange.addListener((newState: SessionState) => {
           if (newState === SessionState.Terminated && checkTimer) {
             window.clearTimeout(checkTimer);

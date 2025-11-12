@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-
 import pRetry from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Web } from 'sip.js';
@@ -10,12 +9,11 @@ import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
 import { Subscriber } from 'sip.js/lib/api/subscriber';
+import { TransportState } from 'sip.js/lib/api/transport-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
-import { UserAgentOptions, SIPExtension } from 'sip.js/lib/api/user-agent-options';
+import { SIPExtension, UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 import { IncomingInviteRequest, IncomingRequestMessage, TransportError } from 'sip.js/lib/core';
 import * as Modifiers from 'sip.js/lib/platform/web/modifiers';
-import { TransportState } from 'sip.js/lib/api/transport-state';
-
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { HealthChecker } from './health-checker';
@@ -70,7 +68,6 @@ export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) =
 export class WrappedTransport extends Web.Transport {
   /**
    * Disconnect socket with timeout handling.
-   * In 0.17.x, we can't override disconnectPromise (it's private), so we override disconnect() instead.
    */
   public disconnect(): Promise<void> {
     return pTimeout(super.disconnect(), 1000, () => {
@@ -122,8 +119,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
   private registerer: Registerer;
   private unregisterer: Registerer;
-  private boundOnWindowOffline: EventListenerOrEventListenerObject;
-  private boundOnWindowOnline: EventListenerOrEventListenerObject;
+  private boundOnWindowOffline: EventListener;
+  private boundOnWindowOnline: EventListener;
   private wasWindowOffline = false;
   private healthChecker: HealthChecker;
 
@@ -168,9 +165,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       },
       transportConstructor: WrappedTransport,
       transportOptions: {
-        maxReconnectionAttempts: 0,
         traceSip: true,
-        wsServers: transport.wsServers
+        server: transport.server
       },
       uri,
       userAgentString
@@ -263,9 +259,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.updateStatus(ClientStatus.DISCONNECTED);
 
     log.info('Disconnected.', this.constructor.name);
-
-    // Note: Transport no longer has removeAllListeners in 0.17.x
-    // Event handling is done via stateChange emitter instead
 
     delete this.userAgent;
     delete this.unregisteredPromise;
@@ -360,7 +353,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
   private isOnlinePromise(mode: ReconnectionMode) {
     return new Promise((resolve, reject) => {
-      const checkSocket = new WebSocket((this.uaOptions.transportOptions as any).wsServers, 'sip');
+      const checkSocket = new WebSocket((this.uaOptions.transportOptions as any).server, 'sip');
 
       const handlers = {
         onError: e => {
@@ -427,7 +420,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
         incomingInviteRequest.delegate = {
           onCancel: (cancel: IncomingRequestMessage): void => {
-            // In 0.17.x, onCancel is now _onCancel (internal method)
             (invitation as any)._onCancel(cancel);
           },
           onTransportError: (error: TransportError): void => {
@@ -507,7 +499,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
             if (!targetSession) {
               throw new Error('Session does not exist.');
             }
-            // In 0.17.x, replacee is read-only, so we set the internal _replacee instead
             (invitation as any)._replacee = targetSession;
           }
         }
@@ -542,7 +533,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       log.error('UserAgent does not seem to have a UserAgentCore', this.constructor.name);
     }
 
-    // In 0.17.x, Transport uses stateChange emitter instead of 'disconnected' event
     this.userAgent.transport.stateChange.on((state: TransportState) => {
       if (state === TransportState.Disconnected) {
         this.onTransportDisconnected();
@@ -554,7 +544,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     const hasConfiguredWsServer =
       this.uaOptions &&
       this.uaOptions.transportOptions &&
-      (this.uaOptions.transportOptions as any).wsServers;
+      (this.uaOptions.transportOptions as any).server;
 
     if (!hasConfiguredWsServer) {
       return Promise.resolve(false);
@@ -665,7 +655,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     if (this.registerer) {
       // Remove from UA's collection, not using this.registerer.dispose to
       // avoid unregistering.
-      // In 0.17.x, registerers is now _registerers (internal property)
       delete (this.userAgent as any)._registerers[(this.registerer as any).id];
     }
 
@@ -696,7 +685,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     if (this.unregisterer) {
       // Remove from UA's collection, not using this.registerer.dispose to
       // avoid unregistering.
-      // In 0.17.x, registerers is now _registerers (internal property)
       delete (this.userAgent as any)._registerers[(this.unregisterer as any).id];
     }
 

@@ -44,5 +44,5 @@ export function createFrozenProxy<T>(obj: object, impl: T, properties: string[])
         });
       }
     }, obj)
-  );
+  ) as T;
 }
