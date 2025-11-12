@@ -1,6 +1,6 @@
 import * as CONF from '../config.mjs';
 import * as sipClient from '../lib/calling.mjs';
-import { setOndevicesChanged, setInputsAndOutputs } from '../lib/media.mjs';
+import { setInputsAndOutputs, setOndevicesChanged } from '../lib/media.mjs';
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
 
 window.customElements.define(
@@ -85,10 +85,10 @@ window.customElements.define(
         this.actions.dndToggle.setAttribute('checked', '');
       }
 
-      this.nodes.passwordInput.value = CONF.password;
-      this.nodes.userIdInput.value = CONF.authorizationUserId;
-      this.nodes.realmInput.value = CONF.realm;
-      this.nodes.websocketUrlInput.value = CONF.websocketUrl;
+      this.nodes.passwordInput.value = CONF.PASSWORD_A;
+      this.nodes.userIdInput.value = CONF.USER_A;
+      this.nodes.realmInput.value = CONF.REALM;
+      this.nodes.websocketUrlInput.value = CONF.WEBSOCKET_URL;
 
       sipClient.callingEvents.addEventListener('clientStatusUpdate', this);
     }
