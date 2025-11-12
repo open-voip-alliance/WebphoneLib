@@ -1,16 +1,16 @@
 import { EventEmitter } from 'events';
 import pTimeout from 'p-timeout';
 
-import { Core, IncomingResponse, SessionDescriptionHandlerModifiers } from 'sip.js';
+import { Core, SessionDescriptionHandlerModifier } from 'sip.js';
 
 import { Invitation } from 'sip.js/lib/api/invitation';
 import { Inviter } from 'sip.js/lib/api/inviter';
 import { InviterInviteOptions } from 'sip.js/lib/api/inviter-invite-options';
 import { InvitationRejectOptions } from 'sip.js/lib/api/invitation-reject-options';
-import { Referrer } from 'sip.js/lib/api/referrer';
 import { Session as UserAgentSession } from 'sip.js/lib/api/session';
 import { SessionState } from 'sip.js/lib/api/session-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
+import { holdModifier } from 'sip.js/lib/platform/web/modifiers';
 import { SessionStatus } from './enums';
 import { createFrozenProxy } from './lib/freeze';
 import { log } from './logger';
@@ -173,6 +173,10 @@ export class SessionImpl extends EventEmitter implements ISession {
 
   private onTerminated: (sessionId: string) => void;
 
+  // In 0.17.x, Session no longer has startTime/endTime, so we track them manually
+  private _startTime: Date;
+  private _endTime: Date;
+
   protected constructor({
     session,
     media,
@@ -205,8 +209,12 @@ export class SessionImpl extends EventEmitter implements ISession {
     // be rejected when there is some fault is detected with the session after it
     // has been accepted.
     this.terminatedPromise = new Promise(resolve => {
-      this.session.stateChange.on((newState: SessionState) => {
+      // In 0.17.x, stateChange uses addListener instead of on
+      this.session.stateChange.addListener((newState: SessionState) => {
         if (newState === SessionState.Terminated) {
+          // Track end time
+          this._endTime = new Date();
+
           this.onTerminated(this.id);
           this.emit('terminated', { id: this.id });
           this.status = SessionStatus.TERMINATED;
@@ -228,11 +236,23 @@ export class SessionImpl extends EventEmitter implements ISession {
 
     // Track if the other side said bye before terminating.
     this.saidBye = false;
-    this.session.once('bye', () => {
+
+    // In 0.17.x, Session no longer has .once(), use delegate instead
+    if (!this.session.delegate) {
+      this.session.delegate = {};
+    }
+    const originalOnBye = this.session.delegate.onBye;
+    this.session.delegate.onBye = bye => {
       this.saidBye = true;
-    });
+      if (originalOnBye) {
+        originalOnBye(bye);
+      }
+    };
 
     this.holdState = false;
+
+    // Track start time manually since Session no longer has it in 0.17.x
+    this._startTime = new Date();
 
     this.stats.on('statsUpdated', () => {
       this.emit('callQualityUpdate', { id: this.id }, this.stats);
@@ -269,11 +289,13 @@ export class SessionImpl extends EventEmitter implements ISession {
   }
 
   get startTime(): Date {
-    return this.session.startTime;
+    // In 0.17.x, Session no longer has startTime, we track it manually
+    return this._startTime;
   }
 
   get endTime(): Date {
-    return this.session.endTime;
+    // In 0.17.x, Session no longer has endTime, we track it manually
+    return this._endTime;
   }
 
   public accept(): Promise<void> {
@@ -296,7 +318,7 @@ export class SessionImpl extends EventEmitter implements ISession {
     return this.terminatedPromise;
   }
 
-  public async reinvite(modifiers: SessionDescriptionHandlerModifiers = []): Promise<void> {
+  public async reinvite(modifiers: Array<SessionDescriptionHandlerModifier> = []): Promise<void> {
     await new Promise((resolve, reject) => {
       this.session.invite(
         this.makeInviteOptions({
@@ -483,10 +505,11 @@ export class SessionImpl extends EventEmitter implements ISession {
       return this.reinvitePromise;
     }
 
-    const modifiers = [];
+    const modifiers: Array<SessionDescriptionHandlerModifier> = [];
     if (flag) {
       log.debug('Hold requested', this.constructor.name);
-      modifiers.push(this.session.sessionDescriptionHandler.holdModifier);
+      // In 0.17.x, holdModifier is a standalone function, not a property of SDH
+      modifiers.push(holdModifier);
     } else {
       log.debug('Unhold requested', this.constructor.name);
     }
@@ -525,13 +548,10 @@ export class SessionImpl extends EventEmitter implements ISession {
 
   private async isTransferredPromise(target: Core.URI | UserAgentSession) {
     return new Promise<boolean>(resolve => {
-      const referrer = new Referrer(this.session, target);
-
-      referrer.refer({
+      this.session.refer(target, {
         requestDelegate: {
           onAccept: () => {
             log.info('Transferred session is accepted!', this.constructor.name);
-
             resolve(true);
           },
           // Refer can be rejected with the following responses:
@@ -540,8 +560,7 @@ export class SessionImpl extends EventEmitter implements ISession {
           onReject: () => {
             log.info('Transferred session is rejected!', this.constructor.name);
             resolve(false);
-          },
-          onNotify: () => ({}) // To make sure the requestDelegate type is complete.
+          }
         }
       });
     });

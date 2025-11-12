@@ -259,7 +259,8 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
       };
 
-      this.subscriptions[uri].stateChange.on((newState: SubscriptionState) => {
+      // In 0.17.x, stateChange uses addListener instead of on
+      this.subscriptions[uri].stateChange.addListener((newState: SubscriptionState) => {
         switch (newState) {
           case SubscriptionState.Subscribed:
             log.debug(`[blf] Already subscribed to ${uri}`, this.constructor.name);
@@ -273,25 +274,27 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
       });
 
-      this.subscriptions[uri].on('failed', (response: Core.IncomingResponseMessage) => {
-        if (!response) {
-          log.error(`[blf] subscription failed for ${uri}`, this.constructor.name);
-          this.removeSubscription({ uri });
-          reject();
-          return;
-        }
+      // In 0.17.x, subscribe() returns a promise that rejects on failure
+      this.subscriptions[uri].subscribe().catch((error: any) => {
+        // Extract response if available (could be IncomingResponseMessage)
+        const response = error ? error.message || error : error;
 
+        log.error(`[blf] subscription failed for ${uri}`, this.constructor.name);
+
+        // Check for Retry-After header if this is a response object
         let waitTime = 100;
-
-        const retryAfter = response.getHeader('Retry-After');
-        if (retryAfter) {
-          log.info(
-            `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
-            this.constructor.name
-          );
-          waitTime = Number(retryAfter) * second;
+        if (response && typeof response.getHeader === 'function') {
+          const retryAfter = response.getHeader('Retry-After');
+          if (retryAfter) {
+            log.info(
+              `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
+              this.constructor.name
+            );
+            waitTime = Number(retryAfter) * second;
+          }
         }
 
+        // Retry after timeout
         setTimeout(() => {
           this.removeSubscription({ uri });
           this.subscribe(uri)
@@ -299,8 +302,6 @@ export class ClientImpl extends EventEmitter implements IClient {
             .catch(reject);
         }, waitTime);
       });
-
-      this.subscriptions[uri].subscribe();
     });
   }
 
@@ -459,7 +460,8 @@ export class ClientImpl extends EventEmitter implements IClient {
       return;
     }
 
-    this.subscriptions[uri].removeAllListeners();
+    // In 0.17.x, there's no removeAllListeners() method
+    // The stateChange emitter will be cleaned up when the subscription is disposed
 
     if (unsubscribe) {
       this.subscriptions[uri].unsubscribe();

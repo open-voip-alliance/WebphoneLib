@@ -81,9 +81,16 @@ export class SessionStats extends EventEmitter {
 
     // Set up stats timer to periodically query and process the peer connection's
     // statistics and feed them to the stats aggregator.
-    session.once('SessionDescriptionHandler-created', () => {
+    // In 0.17.x, Session no longer has .once(), use delegate instead
+    const setupStatsTimer = () => {
       this.statsTimer = window.setInterval(() => {
+        if (!session.sessionDescriptionHandler) {
+          return;
+        }
         const pc = (session.sessionDescriptionHandler as any).peerConnection;
+        if (!pc) {
+          return;
+        }
         pc.getStats().then((stats: RTCStatsReport) => {
           if (this.add(stats)) {
             this.emit('statsUpdated', this);
@@ -92,7 +99,25 @@ export class SessionStats extends EventEmitter {
           }
         });
       }, this.statsInterval);
-    });
+    };
+
+    // Check if SDH already exists, or wait for it to be created
+    if (session.sessionDescriptionHandler) {
+      setupStatsTimer();
+    } else {
+      const originalDelegate = session.delegate;
+      session.delegate = {
+        ...originalDelegate,
+        onSessionDescriptionHandler: (sdh, provisional) => {
+          if (!provisional) {
+            setupStatsTimer();
+          }
+          if (originalDelegate && originalDelegate.onSessionDescriptionHandler) {
+            originalDelegate.onSessionDescriptionHandler(sdh, provisional);
+          }
+        }
+      };
+    }
   }
 
   public clearStatsTimer() {

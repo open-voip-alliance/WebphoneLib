@@ -1,4 +1,5 @@
 import { Session as UserAgentSession } from 'sip.js/lib/api/session';
+import { SessionState } from 'sip.js/lib/api/session-state';
 import * as Features from './features';
 
 export function checkAudioConnected(
@@ -14,7 +15,8 @@ export function checkAudioConnected(
   let checkTimer: number;
 
   return new Promise((resolve, reject) => {
-    session.once('SessionDescriptionHandler-created', () => {
+    // In 0.17.x, Session no longer has .once(), use delegate instead
+    const setupAudioCheck = () => {
       // We patched the sdh with peerConnection.
       const pc = (session.sessionDescriptionHandler as any).peerConnection;
 
@@ -54,12 +56,31 @@ export function checkAudioConnected(
 
         checkTimer = window.setTimeout(checkStats, checkInterval);
 
-        session.once('terminated', () => {
-          if (checkTimer) {
+        // In 0.17.x, use stateChange emitter to listen for termination
+        session.stateChange.addListener((newState: SessionState) => {
+          if (newState === SessionState.Terminated && checkTimer) {
             window.clearTimeout(checkTimer);
           }
         });
       }
-    });
+    };
+
+    // Check if SDH already exists, or wait for it to be created
+    if (session.sessionDescriptionHandler) {
+      setupAudioCheck();
+    } else {
+      const originalDelegate = session.delegate;
+      session.delegate = {
+        ...originalDelegate,
+        onSessionDescriptionHandler: (sdh, provisional) => {
+          if (!provisional) {
+            setupAudioCheck();
+          }
+          if (originalDelegate && originalDelegate.onSessionDescriptionHandler) {
+            originalDelegate.onSessionDescriptionHandler(sdh, provisional);
+          }
+        }
+      };
+    }
   });
 }
