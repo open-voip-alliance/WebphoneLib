@@ -11,6 +11,8 @@ module.exports = {
       '--disable-setuid-sandbox',
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
+      '--auto-accept-camera-and-microphone-capture',
+      '--disable-features=AudioServiceOutOfProcess',
       '--start-maximized',
       '--unsafely-treat-insecure-origin-as-secure=http://web:1235'
     ],
