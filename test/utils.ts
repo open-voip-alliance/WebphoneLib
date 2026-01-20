@@ -27,12 +27,12 @@ testProp('jitter is in range', [fc.nat(), fc.nat(100)], (interval, percentage) =
 });
 
 test('increaseTimeout doubles interval', t => {
-  const retry = increaseTimeout({ interval: 1, limit: 10 });
+  const retry = increaseTimeout({ interval: 1, limit: 10, timeout: 1000 });
   t.is(retry.interval, 2);
   t.true(retry.timeout > 1);
 });
 
 test('increaseTimeout honors limit', t => {
-  const retry = increaseTimeout({ interval: 8, limit: 10 });
+  const retry = increaseTimeout({ interval: 8, limit: 10, timeout: 1000 });
   t.is(retry.interval, 10);
 });

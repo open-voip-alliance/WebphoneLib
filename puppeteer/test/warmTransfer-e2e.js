@@ -84,6 +84,8 @@ describe('Warm Transfer', () => {
     expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;
 
     page.bringToFront();
+    // Wait for User A's session to also be active before initiating transfer
+    expect(await waitForText(page, SESSION_STATUS, 'active')).to.be.true;
     await click(page, SESSION_TRANSFER_BUTTON);
     // Wait for hold operation to complete before proceeding
     expect(await waitForText(page, SESSION_STATUS, 'on_hold')).to.be.true;

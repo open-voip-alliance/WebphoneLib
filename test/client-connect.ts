@@ -1,6 +1,6 @@
 import test from 'ava';
 import * as sinon from 'sinon';
-import { Core, UA as UABase } from 'sip.js';
+import { Core } from 'sip.js';
 
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
@@ -55,16 +55,15 @@ test.serial('return true when already connected', async t => {
   t.true(await connected);
 });
 
-test.serial.cb('emits connecting status after connect is called', t => {
+test.serial('emits connecting status after connect is called', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const ua = sinon.createStubInstance(UserAgent, {
     start: Promise.resolve()
   });
 
-  (ua as any).transport = sinon.createStubInstance(WrappedTransport, {
-    on: sinon.fake() as any
-  });
+  (ua as any).transport = sinon.createStubInstance(WrappedTransport);
+  (ua as any).transport.on = sinon.fake() as any;
 
   const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
@@ -79,17 +78,19 @@ test.serial.cb('emits connecting status after connect is called', t => {
     });
   };
 
-  t.plan(3);
-  client.on('statusUpdate', status => {
-    // Shortly after calling connect ClientStatus should be CONNECTING.
-    t.is(status, ClientStatus.CONNECTING);
-    t.is((client as any).transport.status, ClientStatus.CONNECTING);
-    t.end();
-  });
-
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 
+  const statusPromise = new Promise<void>(resolve => {
+    client.on('statusUpdate', status => {
+      // Shortly after calling connect ClientStatus should be CONNECTING.
+      t.is(status, ClientStatus.CONNECTING);
+      t.is((client as any).transport.status, ClientStatus.CONNECTING);
+      resolve();
+    });
+  });
+
   client.connect();
+  await statusPromise;
 });
 
 test.serial('emits connected status after register is emitted', async t => {
@@ -199,7 +200,8 @@ test.serial("rejects when transport doesn't connect within timeout", async t => 
 test.serial('ua.start called on first connect', t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const ua = sinon.createStubInstance(UserAgent, { start: Promise.resolve() });
-  (ua as any).transport = sinon.createStubInstance(WrappedTransport, { on: sinon.fake() as any });
+  (ua as any).transport = sinon.createStubInstance(WrappedTransport);
+  (ua as any).transport.on = sinon.fake() as any;
 
   const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 

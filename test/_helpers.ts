@@ -1,6 +1,5 @@
 import test from 'ava';
 import * as sinon from 'sinon';
-import { UA as UABase } from 'sip.js';
 
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';

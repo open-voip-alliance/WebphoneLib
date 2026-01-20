@@ -1,7 +1,7 @@
 import test from 'ava';
 import pTimeout from 'p-timeout';
 import * as sinon from 'sinon';
-import { Subscription, UA as UABase } from 'sip.js';
+import { Subscription } from 'sip.js';
 
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
