@@ -21,11 +21,14 @@ jobs:
         env:
           USER_A: ${{ secrets.USER_A }}
           USER_B: ${{ secrets.USER_B }}
+          USER_C: ${{ secrets.USER_C }}
           PASSWORD_A: ${{ secrets.PASSWORD_A }}
           PASSWORD_B: ${{ secrets.PASSWORD_B }}
+          PASSWORD_C: ${{ secrets.PASSWORD_C }}
           NUMBER_A: ${{ secrets.NUMBER_A }}
           NUMBER_B: ${{ secrets.NUMBER_B }}
+          NUMBER_C: ${{ secrets.NUMBER_C }}
           WEBSOCKET_URL: ${{ secrets.WEBSOCKET_URL }}
           REALM: ${{ secrets.REALM }}
         run: |
-          docker-compose -f docker-compose.yml up --abort-on-container-exit e2e
+          docker compose -f docker-compose.yml up --abort-on-container-exit e2e

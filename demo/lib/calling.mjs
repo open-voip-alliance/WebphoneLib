@@ -36,7 +36,7 @@ function onBeforeInvite(invitation) {
 
 export function setTransport(websocketUrl) {
   transport = {
-    wsServers: websocketUrl,
+    server: websocketUrl,
     iceServers: [],
     delegate: {
       onBeforeInvite

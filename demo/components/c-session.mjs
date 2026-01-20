@@ -1,9 +1,8 @@
-import './c-transfer.mjs';
-
 import * as sipClient from '../lib/calling.mjs';
 import { empty } from '../lib/dom.mjs';
 import { Logger } from '../lib/logging.mjs';
 import { ActionsProxy, NodesProxy } from '../utils/elementProxies.mjs';
+import './c-transfer.mjs';
 
 const logger = new Logger('c-session');
 
@@ -52,7 +51,23 @@ window.customElements.define(
             this.session && (await this.session.reject());
             break;
           case 'cancel':
-            this.session && (await this.session.cancel());
+            if (this.session) {
+              // Cancel can only be used on outgoing calls in early states (trying/ringing)
+              // Once established, use terminate() instead
+              if (this.session.isIncoming) {
+                logger.warn('Cannot cancel an incoming call. Use reject instead.');
+              } else if (this.session.status === 'active' || this.session.status === 'on_hold') {
+                logger.warn('Cannot cancel an established call. Using terminate instead.');
+                await this.session.terminate();
+              } else {
+                try {
+                  await this.session.cancel();
+                } catch (error) {
+                  logger.warn(`Failed to cancel: ${error.message}. Using terminate instead.`);
+                  await this.session.terminate();
+                }
+              }
+            }
             break;
           case 'toggleTransfer':
             if (!this.querySelectorAll('c-transfer').length > 0) {
@@ -93,7 +108,17 @@ window.customElements.define(
         }
       } else if (dataset.key) {
         logger.info(`Pressed: ${dataset.key}`);
-        this.session && this.session.dtmf(dataset.key);
+        if (this.session && this.session.status === 'active') {
+          try {
+            this.session.dtmf(dataset.key);
+          } catch (error) {
+            logger.warn(`Failed to send DTMF: ${error.message}`);
+          }
+        } else {
+          const sessionStatus =
+            this.session && this.session.status ? this.session.status : 'undefined';
+          logger.warn(`Cannot send DTMF: session is not active (status: ${sessionStatus})`);
+        }
       }
     }
 

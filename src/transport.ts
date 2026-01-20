@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
-
-import pRetry from 'p-retry';
+import pRetry, { AbortError } from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Web } from 'sip.js';
 import { Invitation } from 'sip.js/lib/api/invitation';
@@ -10,10 +9,11 @@ import { PublisherOptions } from 'sip.js/lib/api/publisher-options';
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
 import { Subscriber } from 'sip.js/lib/api/subscriber';
+import { TransportState } from 'sip.js/lib/api/transport-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
-import { UserAgentOptions, SIPExtension } from 'sip.js/lib/api/user-agent-options';
+import { SIPExtension, UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
 import { IncomingInviteRequest, IncomingRequestMessage, TransportError } from 'sip.js/lib/core';
-
+import * as Modifiers from 'sip.js/lib/platform/web/modifiers';
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { HealthChecker } from './health-checker';
@@ -67,18 +67,20 @@ export type TransportFactory = (uaFactory: UAFactory, options: IClientOptions) =
  */
 export class WrappedTransport extends Web.Transport {
   /**
-   * Disconnect socket. It could happen that the user switches network
-   * interfaces while calling. If this happens, closing a websocket will
-   * cause it to be blocked. To make sure that UA gets to the proper internal
-   * state so that it is ready to 'switch over' to the new network interface
-   * with a new websocket, we call the function that normally causes the
-   * disconnectPromise to be resolved after a timeout.
+   * Disconnect socket with timeout handling.
    */
-  protected disconnectPromise(options: any = {}): Promise<any> {
-    return pTimeout(super.disconnectPromise(), 1000, () => {
-      log.debug('Fake-closing the the socket by ourselves.', this.constructor.name);
-      (this as any).onClose({ code: 'fake', reason: 'Artificial timeout' });
-    }).then(() => ({ overrideEvent: true })); // overrideEvent to avoid sip.js emitting disconnected.
+  public disconnect(): Promise<void> {
+    return pTimeout(super.disconnect(), {
+      milliseconds: 1000,
+      fallback: () => {
+        log.debug('Fake-closing the socket due to timeout.', this.constructor.name);
+        // This ensures we don't hang if the websocket doesn't close properly
+        return Promise.resolve();
+      }
+    }).catch(error => {
+      log.warn(`Disconnect timeout or error: ${error}, continuing anyway`, this.constructor.name);
+      return Promise.resolve();
+    });
   }
 }
 
@@ -119,8 +121,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
   private retry: IRetry = { interval: 2000, limit: 30000, timeout: 250 };
   private registerer: Registerer;
   private unregisterer: Registerer;
-  private boundOnWindowOffline: EventListenerOrEventListenerObject;
-  private boundOnWindowOnline: EventListenerOrEventListenerObject;
+  private boundOnWindowOffline: EventListener;
+  private boundOnWindowOnline: EventListener;
   private wasWindowOffline = false;
   private healthChecker: HealthChecker;
 
@@ -141,14 +143,12 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     const { account, transport, userAgentString } = options;
     const uri = UserAgent.makeURI(account.uri);
 
-    const modifiers = [Web.Modifiers.stripVideo];
+    const modifiers = [Modifiers.stripVideo];
     if (Features.isSafari) {
-      modifiers.push(Web.Modifiers.stripG722);
+      modifiers.push(Modifiers.stripG722);
     }
 
     this.uaOptions = {
-      autoStart: false,
-      autoStop: false,
       noAnswerTimeout: 60,
       authorizationUsername: account.user,
       authorizationPassword: account.password,
@@ -167,9 +167,8 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       },
       transportConstructor: WrappedTransport,
       transportOptions: {
-        maxReconnectionAttempts: 0,
         traceSip: true,
-        wsServers: transport.wsServers
+        server: transport.server
       },
       uri,
       userAgentString
@@ -207,9 +206,12 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return this.registeredPromise;
     }
 
-    await pTimeout(this.userAgent.start(), this.wsTimeout, () => {
-      log.info('Could not connect to the websocket in time.', this.constructor.name);
-      return Promise.reject(new Error('Could not connect to the websocket in time.'));
+    await pTimeout(this.userAgent.start(), {
+      milliseconds: this.wsTimeout,
+      fallback: () => {
+        log.info('Could not connect to the websocket in time.', this.constructor.name);
+        return Promise.reject(new Error('Could not connect to the websocket in time.'));
+      }
     });
 
     this.createHealthChecker();
@@ -241,7 +243,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // - by the server during a call
     // - by a network node during a call
     // - by the client during a call (browser accidentally killing ws)
-    if (hasRegistered) {
+    if (hasRegistered && this.registerer) {
       this.unregisteredPromise = this.createUnregisteredPromise();
 
       log.info('Trying to unregister.', this.constructor.name);
@@ -262,8 +264,6 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     this.updateStatus(ClientStatus.DISCONNECTED);
 
     log.info('Disconnected.', this.constructor.name);
-
-    this.userAgent.transport.removeAllListeners();
 
     delete this.userAgent;
     delete this.unregisteredPromise;
@@ -358,7 +358,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
   private isOnlinePromise(mode: ReconnectionMode) {
     return new Promise((resolve, reject) => {
-      const checkSocket = new WebSocket(this.uaOptions.transportOptions.wsServers, 'sip');
+      const checkSocket = new WebSocket((this.uaOptions.transportOptions as any).server, 'sip');
 
       const handlers = {
         onError: e => {
@@ -425,7 +425,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
 
         incomingInviteRequest.delegate = {
           onCancel: (cancel: IncomingRequestMessage): void => {
-            invitation.onCancel(cancel);
+            (invitation as any)._onCancel(cancel);
           },
           onTransportError: (error: TransportError): void => {
             // A server transaction MUST NOT discard transaction state based only on
@@ -504,7 +504,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
             if (!targetSession) {
               throw new Error('Session does not exist.');
             }
-            invitation.replacee = targetSession;
+            (invitation as any)._replacee = targetSession;
           }
         }
 
@@ -538,28 +538,37 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       log.error('UserAgent does not seem to have a UserAgentCore', this.constructor.name);
     }
 
-    this.userAgent.transport.on('disconnected', this.onTransportDisconnected.bind(this));
+    if (this.userAgent.transport && this.userAgent.transport.stateChange) {
+      this.userAgent.transport.stateChange.addListener((state: TransportState) => {
+        if (state === TransportState.Disconnected) {
+          this.onTransportDisconnected();
+        }
+      });
+    }
   }
 
   private isOnline(mode: ReconnectionMode): Promise<any> {
     const hasConfiguredWsServer =
       this.uaOptions &&
       this.uaOptions.transportOptions &&
-      this.uaOptions.transportOptions.wsServers;
+      (this.uaOptions.transportOptions as any).server;
 
     if (!hasConfiguredWsServer) {
       return Promise.resolve(false);
     }
 
     const tryOpeningSocketWithTimeout = () =>
-      pTimeout(this.isOnlinePromise(mode), 5000, () => {
-        // In the case that mode is BURST, throw an error which can be
-        // caught by pRetry.
-        if (mode === ReconnectionMode.BURST) {
-          throw new Error('Cannot open socket. Probably DNS failure.');
-        }
+      pTimeout(this.isOnlinePromise(mode), {
+        milliseconds: 5000,
+        fallback: () => {
+          // In the case that mode is BURST, throw an error which can be
+          // caught by pRetry.
+          if (mode === ReconnectionMode.BURST) {
+            throw new Error('Cannot open socket. Probably DNS failure.');
+          }
 
-        return Promise.resolve(false);
+          return Promise.resolve(false);
+        }
       });
 
     // In the case that mode is ONCE, a new socket is created once, also with
@@ -573,12 +582,12 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // In the case that mode is BURST, a new socket is created roughly every
     // 500 ms to be able to quickly revive our connection once that succeeds.
     const retryOptions = {
-      forever: true,
+      retries: Infinity,
       maxTimeout: 100, // Note: this is time between retries, not time before operation times out
       minTimeout: 100,
-      onFailedAttempt: error => {
+      onFailedAttempt: context => {
         log.debug(
-          `Connection attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+          `Connection attempt ${context.attemptNumber} failed. There are ${context.retriesLeft} retries left.`,
           this.constructor.name
         );
       }
@@ -588,19 +597,22 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       // It could happen that this function timed out. Because this is a
       // async function we check the client status to stop this loop.
       if (this.status === ClientStatus.DISCONNECTED) {
-        throw new pRetry.AbortError("It's no use. Stop trying to recover");
+        throw new AbortError("It's no use. Stop trying to recover");
       }
 
       return tryOpeningSocketWithTimeout();
     }, retryOptions);
 
-    return pTimeout(retryForever, this.dyingCounter, () => {
-      log.info(
-        'We could not recover the session(s) within 1 minute. ' +
-          'After this time the SIP server has terminated the session(s).',
-        this.constructor.name
-      );
-      return Promise.resolve(false);
+    return pTimeout(retryForever, {
+      milliseconds: this.dyingCounter,
+      fallback: () => {
+        log.info(
+          'We could not recover the session(s) within 1 minute. ' +
+            'After this time the SIP server has terminated the session(s).',
+          this.constructor.name
+        );
+        return Promise.resolve(false);
+      }
     });
   }
 
@@ -656,7 +668,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     if (this.registerer) {
       // Remove from UA's collection, not using this.registerer.dispose to
       // avoid unregistering.
-      delete this.userAgent.registerers[(this.registerer as any).id];
+      delete (this.userAgent as any)._registerers[(this.registerer as any).id];
     }
 
     this.registerer = new Registerer(this.userAgent, {});
@@ -686,7 +698,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     if (this.unregisterer) {
       // Remove from UA's collection, not using this.registerer.dispose to
       // avoid unregistering.
-      delete this.userAgent.registerers[(this.unregisterer as any).id];
+      delete (this.userAgent as any)._registerers[(this.unregisterer as any).id];
     }
 
     this.unregisterer = new Registerer(this.userAgent);

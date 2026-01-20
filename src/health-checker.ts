@@ -1,9 +1,9 @@
 import pTimeout from 'p-timeout';
-import { C, Core } from 'sip.js';
+import { Core } from 'sip.js';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 
 export class HealthChecker {
-  private optionsTimeout: NodeJS.Timeout;
+  private optionsTimeout: ReturnType<typeof setTimeout>;
   private logger: Core.Logger;
 
   constructor(private userAgent: UserAgent) {
@@ -20,7 +20,7 @@ export class HealthChecker {
    */
   public start(): any {
     return pTimeout(
-      new Promise(resolve => {
+      new Promise<void>(resolve => {
         clearTimeout(this.optionsTimeout);
         this.userAgent.userAgentCore.request(this.createOptionsMessage(), {
           onAccept: () => {
@@ -31,11 +31,15 @@ export class HealthChecker {
           }
         });
       }),
-      2000, // if there is no response after 2 seconds, emit disconnected.
-      () => {
-        this.logger.error('No response after OPTIONS message to sip server.');
-        clearTimeout(this.optionsTimeout);
-        this.userAgent.transport.emit('disconnected');
+      {
+        milliseconds: 2000, // if there is no response after 2 seconds, trigger disconnect.
+        fallback: () => {
+          this.logger.error('No response after OPTIONS message to sip server.');
+          clearTimeout(this.optionsTimeout);
+          this.userAgent.transport.disconnect().catch(error => {
+            this.logger.error('Error disconnecting transport after health check failure: ' + error);
+          });
+        }
       }
     );
   }
@@ -63,7 +67,7 @@ export class HealthChecker {
     }
 
     return this.userAgent.userAgentCore.makeOutgoingRequestMessage(
-      C.OPTIONS,
+      'OPTIONS',
       settings.registrar,
       settings.params.fromUri,
       settings.params.toUri ? settings.params.toUri : settings.registrar,

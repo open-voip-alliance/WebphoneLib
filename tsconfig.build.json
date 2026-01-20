@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "allowImportingTsExtensions": false
+  },
+  "include": ["src"],
+  "exclude": ["test"]
+}

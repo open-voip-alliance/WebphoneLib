@@ -1,6 +1,6 @@
 import test from 'ava';
 import * as sinon from 'sinon';
-import { Core, UA as UABase } from 'sip.js';
+import { Core } from 'sip.js';
 
 import { Registerer } from 'sip.js/lib/api/registerer';
 import { RegistererState } from 'sip.js/lib/api/registerer-state';
@@ -20,6 +20,10 @@ import {
 } from '../src/transport';
 
 import { createClientImpl, defaultTransportFactory, defaultUAFactory } from './_helpers';
+
+test.afterEach(() => {
+  sinon.restore();
+});
 
 test.serial('client connect', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
@@ -55,16 +59,16 @@ test.serial('return true when already connected', async t => {
   t.true(await connected);
 });
 
-test.serial.cb('emits connecting status after connect is called', t => {
+test.serial('emits connecting status after connect is called', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
   const ua = sinon.createStubInstance(UserAgent, {
     start: Promise.resolve()
   });
 
-  (ua as any).transport = sinon.createStubInstance(WrappedTransport, {
-    on: sinon.fake() as any
-  });
+  const transportStub = sinon.createStubInstance(WrappedTransport);
+  Object.assign(transportStub, { on: sinon.fake() });
+  (ua as any).transport = transportStub;
 
   const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
@@ -79,17 +83,19 @@ test.serial.cb('emits connecting status after connect is called', t => {
     });
   };
 
-  t.plan(3);
-  client.on('statusUpdate', status => {
-    // Shortly after calling connect ClientStatus should be CONNECTING.
-    t.is(status, ClientStatus.CONNECTING);
-    t.is((client as any).transport.status, ClientStatus.CONNECTING);
-    t.end();
-  });
-
   t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 
+  const statusPromise = new Promise<void>(resolve => {
+    client.on('statusUpdate', status => {
+      // Shortly after calling connect ClientStatus should be CONNECTING.
+      t.is(status, ClientStatus.CONNECTING);
+      t.is((client as any).transport.status, ClientStatus.CONNECTING);
+      resolve();
+    });
+  });
+
   client.connect();
+  await statusPromise;
 });
 
 test.serial('emits connected status after register is emitted', async t => {
@@ -196,10 +202,15 @@ test.serial("rejects when transport doesn't connect within timeout", async t => 
   t.is(error.message, 'Could not connect to the websocket in time.');
 });
 
-test.serial('ua.start called on first connect', t => {
+test.serial('ua.start called on first connect', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const ua = sinon.createStubInstance(UserAgent, { start: Promise.resolve() });
-  (ua as any).transport = sinon.createStubInstance(WrappedTransport, { on: sinon.fake() as any });
+  const transportStub = sinon.createStubInstance(WrappedTransport);
+  transportStub.on = sinon.fake() as any;
+  sinon.stub(transportStub, 'stateChange').get(() => ({
+    addListener: sinon.fake()
+  }));
+  (ua as any).transport = transportStub;
 
   const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
@@ -214,7 +225,7 @@ test.serial('ua.start called on first connect', t => {
     });
   };
 
-  client.connect();
+  await client.connect();
 
   t.true(ua.start.called);
 });

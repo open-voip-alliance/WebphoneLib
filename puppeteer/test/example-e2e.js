@@ -1,16 +1,11 @@
-const puppeteer = require('puppeteer');
-const expect = require('chai').expect;
-const { describe, beforeEach, afterEach, it } = require('mocha');
+import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'mocha';
+import puppeteer from 'puppeteer';
 
-const { click } = require('../helpers/utils');
-const {
-  REGISTER_BUTTON,
-  DEMO_URL,
-  LAUNCH_OPTIONS,
-  CLIENT_STATUS
-} = require('../helpers/constants');
+import { DEMO_URL, LAUNCH_OPTIONS, REGISTER_BUTTON } from '../helpers/constants.js';
+import { click, delay } from '../helpers/utils.js';
 
-describe.skip('examples', () => {
+describe('examples', () => {
   let browser;
   let page;
 
@@ -32,7 +27,7 @@ describe.skip('examples', () => {
     // Click on Register
     await click(page, REGISTER_BUTTON);
 
-    await page.waitForTimeout(2000);
+    await delay(2000);
   });
 
   it('Should be possible to launch two browser pages', async function() {

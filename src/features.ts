@@ -21,13 +21,11 @@ export const isChrome = browserUa.indexOf('chrome') !== -1 && !isSafari && !isFi
 
 export const isLocalhost = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
 
-const required = [
-  webrtc.peerConnection,
-  webaudio.mediaDevices,
-  webaudio.getUserMedia,
-  webaudio.audioContext
-];
-
 export function checkRequired(): boolean {
-  return required.every(x => x);
+  const mediaDevices = 'mediaDevices' in window.navigator;
+  const peerConnection = 'RTCPeerConnection' in window;
+  const getUserMedia = mediaDevices && 'getUserMedia' in window.navigator.mediaDevices;
+  const audioContext = 'AudioContext' in window || 'webkitAudioContext' in window;
+
+  return peerConnection && mediaDevices && getUserMedia && audioContext;
 }

@@ -4,14 +4,16 @@
   "description": "Webphone Lib End to End",
   "author": "Open VoIP Alliance",
   "license": "MIT",
+  "type": "module",
   "main": "dist/index.mjs",
   "scripts": {
-    "test:e2e": "mocha --timeout=20000 ./test/*.js"
+    "test:e2e": "mocha --timeout=30000 ./test/*.js"
   },
   "devDependencies": {
-    "chai": "^4.3.6",
-    "dotenv": "^16.0.2",
-    "mocha": "^10.0.0",
-    "puppeteer": "^18.0.4"
+    "chai": "^6.2.1",
+    "dotenv": "^17.2.3",
+    "mocha": "^11.7.5",
+    "puppeteer": "^24.15.0",
+    "sinon": "^7.5.0"
   }
 }

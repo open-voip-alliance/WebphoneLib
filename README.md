@@ -29,10 +29,10 @@ $ touch demo/config.mjs
 Add the following to `demo/config.mjs`
 
 ```javascript
-export const authorizationUserId = <your-voip-account-id>;
-export const password = '<your-voip-password>';
-export const realm = '<realm>';
-export const websocketUrl = '<websocketUrl>';
+export const AUTHORIZATION_USER_ID = <your-voip-account-id>;
+export const PASSWORD = '<your-voip-password>';
+export const REALM = '<realm>';
+export const WEBSOCKET_URL = '<websocketUrl>';
 ```
 
 Run the demo-server:
@@ -58,7 +58,7 @@ const account = {
 };
 
 const transport = {
-  wsServers: '<websocket-url>', // or replace with your
+  server: '<websocket-url>', // WebSocket server URL
   iceServers: [] // depending on if your provider needs STUN/TURN.
 };
 

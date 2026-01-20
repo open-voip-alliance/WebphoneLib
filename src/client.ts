@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-
 import { Core } from 'sip.js';
 import { Notification } from 'sip.js/lib/api/notification';
 import { Publisher } from 'sip.js/lib/api/publisher';
@@ -8,7 +7,6 @@ import { Subscriber } from 'sip.js/lib/api/subscriber';
 import { SubscriptionState } from 'sip.js/lib/api/subscription-state';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 import { UserAgentOptions } from 'sip.js/lib/api/user-agent-options';
-
 import { ClientStatus, ReconnectionMode } from './enums';
 import * as Features from './features';
 import { Invitation } from './invitation';
@@ -259,7 +257,7 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
       };
 
-      this.subscriptions[uri].stateChange.on((newState: SubscriptionState) => {
+      this.subscriptions[uri].stateChange.addListener((newState: SubscriptionState) => {
         switch (newState) {
           case SubscriptionState.Subscribed:
             log.debug(`[blf] Already subscribed to ${uri}`, this.constructor.name);
@@ -273,25 +271,26 @@ export class ClientImpl extends EventEmitter implements IClient {
         }
       });
 
-      this.subscriptions[uri].on('failed', (response: Core.IncomingResponseMessage) => {
-        if (!response) {
-          log.error(`[blf] subscription failed for ${uri}`, this.constructor.name);
-          this.removeSubscription({ uri });
-          reject();
-          return;
-        }
+      this.subscriptions[uri].subscribe().catch((error: any) => {
+        // Extract response if available (could be IncomingResponseMessage)
+        const response = error && error.message ? error.message : error;
 
+        log.error(`[blf] subscription failed for ${uri}`, this.constructor.name);
+
+        // Check for Retry-After header if this is a response object
         let waitTime = 100;
-
-        const retryAfter = response.getHeader('Retry-After');
-        if (retryAfter) {
-          log.info(
-            `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
-            this.constructor.name
-          );
-          waitTime = Number(retryAfter) * second;
+        if (response && typeof response.getHeader === 'function') {
+          const retryAfter = response.getHeader('Retry-After');
+          if (retryAfter) {
+            log.info(
+              `Subscription rate-limited. Retrying after ${retryAfter} seconds.`,
+              this.constructor.name
+            );
+            waitTime = Number(retryAfter) * second;
+          }
         }
 
+        // Retry after timeout
         setTimeout(() => {
           this.removeSubscription({ uri });
           this.subscribe(uri)
@@ -299,8 +298,6 @@ export class ClientImpl extends EventEmitter implements IClient {
             .catch(reject);
         }, waitTime);
       });
-
-      this.subscriptions[uri].subscribe();
     });
   }
 
@@ -459,7 +456,7 @@ export class ClientImpl extends EventEmitter implements IClient {
       return;
     }
 
-    this.subscriptions[uri].removeAllListeners();
+    // The stateChange emitter will be cleaned up when the subscription is disposed
 
     if (unsubscribe) {
       this.subscriptions[uri].unsubscribe();
@@ -513,7 +510,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
   };
 
   const impl = new ClientImpl(uaFactory, transportFactory, clientOptions);
-  createFrozenProxy(this, impl, [
+  return createFrozenProxy(this, impl, [
     'attendedTransfer',
     'connect',
     'createPublisher',

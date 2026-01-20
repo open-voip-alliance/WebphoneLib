@@ -1,11 +1,17 @@
 {
   "compilerOptions": {
     "target": "es2019",
-    "moduleResolution": "node",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "outDir": "build/",
-    "declaration": true
+    "declaration": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true
   },
-  "include": ["src"],
+  "include": ["src", "test"],
   "typedocOptions": {
     "mode": "file",
     "name": "Webphone Lib",
