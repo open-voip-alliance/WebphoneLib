@@ -510,7 +510,7 @@ export const Client: ClientCtor = (function(clientOptions: IClientOptions) {
   };
 
   const impl = new ClientImpl(uaFactory, transportFactory, clientOptions);
-  createFrozenProxy(this, impl, [
+  return createFrozenProxy(this, impl, [
     'attendedTransfer',
     'connect',
     'createPublisher',

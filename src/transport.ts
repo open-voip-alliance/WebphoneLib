@@ -243,7 +243,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // - by the server during a call
     // - by a network node during a call
     // - by the client during a call (browser accidentally killing ws)
-    if (hasRegistered) {
+    if (hasRegistered && this.registerer) {
       this.unregisteredPromise = this.createUnregisteredPromise();
 
       log.info('Trying to unregister.', this.constructor.name);
@@ -538,11 +538,13 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       log.error('UserAgent does not seem to have a UserAgentCore', this.constructor.name);
     }
 
-    this.userAgent.transport.stateChange.addListener((state: TransportState) => {
-      if (state === TransportState.Disconnected) {
-        this.onTransportDisconnected();
-      }
-    });
+    if (this.userAgent.transport && this.userAgent.transport.stateChange) {
+      this.userAgent.transport.stateChange.addListener((state: TransportState) => {
+        if (state === TransportState.Disconnected) {
+          this.onTransportDisconnected();
+        }
+      });
+    }
   }
 
   private isOnline(mode: ReconnectionMode): Promise<any> {

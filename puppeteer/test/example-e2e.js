@@ -1,11 +1,11 @@
-import puppeteer from 'puppeteer';
 import { expect } from 'chai';
-import { describe, beforeEach, afterEach, it } from 'mocha';
+import { afterEach, beforeEach, describe, it } from 'mocha';
+import puppeteer from 'puppeteer';
 
+import { DEMO_URL, LAUNCH_OPTIONS, REGISTER_BUTTON } from '../helpers/constants.js';
 import { click, delay } from '../helpers/utils.js';
-import { REGISTER_BUTTON, DEMO_URL, LAUNCH_OPTIONS, CLIENT_STATUS } from '../helpers/constants.js';
 
-describe.skip('examples', () => {
+describe('examples', () => {
   let browser;
   let page;
 

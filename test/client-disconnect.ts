@@ -15,6 +15,10 @@ import { ReconnectableTransport, TransportFactory, UAFactory } from '../src/tran
 
 import { createClientImpl, defaultTransportFactory, defaultUAFactory } from './_helpers';
 
+test.afterEach(() => {
+  sinon.restore();
+});
+
 test.serial('remove subscriptions', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const transport = sinon.createStubInstance(ReconnectableTransport);
@@ -102,20 +106,22 @@ test.serial('disconnected does not resolve until unregistered', async t => {
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
-  // Wait for 100 ms and catch the error thrown because it never resolves.
-  await t.throwsAsync(pTimeout(client.disconnect(), { milliseconds: 100 }));
+  // When the registerer was never actually registered, disconnect should complete immediately
+  await client.disconnect();
 
-  t.is(status.length, 1);
+  t.is(status.length, 2);
   t.is(status[0], ClientStatus.DISCONNECTING);
-  t.is((client as any).transport.status, ClientStatus.DISCONNECTING);
+  t.is(status[1], ClientStatus.DISCONNECTED);
+  t.is((client as any).transport.status, ClientStatus.DISCONNECTED);
 });
 
-test.serial('ua.stop is not called without unregistered event', async t => {
+test.serial('ua.stop is called even without registered registerer', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
+  const stopFake = sinon.fake();
   const ua = (options: UserAgentOptions) => {
     const userAgent = new UserAgent(options);
-    userAgent.stop = sinon.fake();
+    userAgent.stop = stopFake;
     userAgent.transport.disconnect = () => Promise.resolve();
     return userAgent;
   };
@@ -125,12 +131,11 @@ test.serial('ua.stop is not called without unregistered event', async t => {
   (client as any).transport.configureUA((client as any).transport.uaOptions);
   (client as any).transport.status = ClientStatus.CONNECTED;
 
-  // calling ua.unregister will not cause ua to emit an unregistered event.
-  // ua.disconnected will never be called as it waits for the unregistered
-  // event.
-  await t.throwsAsync(pTimeout(client.disconnect(), { milliseconds: 100 }));
+  // When the registerer was never actually registered, disconnect should skip
+  // the unregistration step and proceed to call ua.stop
+  await client.disconnect();
 
-  t.false((client as any).transport.userAgent.stop.called);
+  t.true(stopFake.called);
 });
 
 test.serial('ua is removed after ua.disconnect', async t => {

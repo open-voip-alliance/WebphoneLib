@@ -21,6 +21,10 @@ import {
 
 import { createClientImpl, defaultTransportFactory, defaultUAFactory } from './_helpers';
 
+test.afterEach(() => {
+  sinon.restore();
+});
+
 test.serial('client connect', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
 
@@ -62,8 +66,9 @@ test.serial('emits connecting status after connect is called', async t => {
     start: Promise.resolve()
   });
 
-  (ua as any).transport = sinon.createStubInstance(WrappedTransport);
-  (ua as any).transport.on = sinon.fake() as any;
+  const transportStub = sinon.createStubInstance(WrappedTransport);
+  Object.assign(transportStub, { on: sinon.fake() });
+  (ua as any).transport = transportStub;
 
   const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
@@ -197,11 +202,15 @@ test.serial("rejects when transport doesn't connect within timeout", async t => 
   t.is(error.message, 'Could not connect to the websocket in time.');
 });
 
-test.serial('ua.start called on first connect', t => {
+test.serial('ua.start called on first connect', async t => {
   sinon.stub(Features, 'checkRequired').returns(true);
   const ua = sinon.createStubInstance(UserAgent, { start: Promise.resolve() });
-  (ua as any).transport = sinon.createStubInstance(WrappedTransport);
-  (ua as any).transport.on = sinon.fake() as any;
+  const transportStub = sinon.createStubInstance(WrappedTransport);
+  transportStub.on = sinon.fake() as any;
+  sinon.stub(transportStub, 'stateChange').get(() => ({
+    addListener: sinon.fake()
+  }));
+  (ua as any).transport = transportStub;
 
   const client = createClientImpl(() => (ua as unknown) as UserAgent, defaultTransportFactory());
 
@@ -216,7 +225,7 @@ test.serial('ua.start called on first connect', t => {
     });
   };
 
-  client.connect();
+  await client.connect();
 
   t.true(ua.start.called);
 });
