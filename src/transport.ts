@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import pRetry from 'p-retry';
+import pRetry, { AbortError } from 'p-retry';
 import pTimeout from 'p-timeout';
 import { Core, Web } from 'sip.js';
 import { Invitation } from 'sip.js/lib/api/invitation';
@@ -70,10 +70,13 @@ export class WrappedTransport extends Web.Transport {
    * Disconnect socket with timeout handling.
    */
   public disconnect(): Promise<void> {
-    return pTimeout(super.disconnect(), 1000, () => {
-      log.debug('Fake-closing the socket due to timeout.', this.constructor.name);
-      // This ensures we don't hang if the websocket doesn't close properly
-      return Promise.resolve();
+    return pTimeout(super.disconnect(), {
+      milliseconds: 1000,
+      fallback: () => {
+        log.debug('Fake-closing the socket due to timeout.', this.constructor.name);
+        // This ensures we don't hang if the websocket doesn't close properly
+        return Promise.resolve();
+      }
     }).catch(error => {
       log.warn(`Disconnect timeout or error: ${error}, continuing anyway`, this.constructor.name);
       return Promise.resolve();
@@ -203,9 +206,12 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       return this.registeredPromise;
     }
 
-    await pTimeout(this.userAgent.start(), this.wsTimeout, () => {
-      log.info('Could not connect to the websocket in time.', this.constructor.name);
-      return Promise.reject(new Error('Could not connect to the websocket in time.'));
+    await pTimeout(this.userAgent.start(), {
+      milliseconds: this.wsTimeout,
+      fallback: () => {
+        log.info('Could not connect to the websocket in time.', this.constructor.name);
+        return Promise.reject(new Error('Could not connect to the websocket in time.'));
+      }
     });
 
     this.createHealthChecker();
@@ -550,14 +556,17 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     }
 
     const tryOpeningSocketWithTimeout = () =>
-      pTimeout(this.isOnlinePromise(mode), 5000, () => {
-        // In the case that mode is BURST, throw an error which can be
-        // caught by pRetry.
-        if (mode === ReconnectionMode.BURST) {
-          throw new Error('Cannot open socket. Probably DNS failure.');
-        }
+      pTimeout(this.isOnlinePromise(mode), {
+        milliseconds: 5000,
+        fallback: () => {
+          // In the case that mode is BURST, throw an error which can be
+          // caught by pRetry.
+          if (mode === ReconnectionMode.BURST) {
+            throw new Error('Cannot open socket. Probably DNS failure.');
+          }
 
-        return Promise.resolve(false);
+          return Promise.resolve(false);
+        }
       });
 
     // In the case that mode is ONCE, a new socket is created once, also with
@@ -571,12 +580,12 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
     // In the case that mode is BURST, a new socket is created roughly every
     // 500 ms to be able to quickly revive our connection once that succeeds.
     const retryOptions = {
-      forever: true,
+      retries: Infinity,
       maxTimeout: 100, // Note: this is time between retries, not time before operation times out
       minTimeout: 100,
-      onFailedAttempt: error => {
+      onFailedAttempt: context => {
         log.debug(
-          `Connection attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+          `Connection attempt ${context.attemptNumber} failed. There are ${context.retriesLeft} retries left.`,
           this.constructor.name
         );
       }
@@ -586,19 +595,22 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       // It could happen that this function timed out. Because this is a
       // async function we check the client status to stop this loop.
       if (this.status === ClientStatus.DISCONNECTED) {
-        throw new pRetry.AbortError("It's no use. Stop trying to recover");
+        throw new AbortError("It's no use. Stop trying to recover");
       }
 
       return tryOpeningSocketWithTimeout();
     }, retryOptions);
 
-    return pTimeout(retryForever, this.dyingCounter, () => {
-      log.info(
-        'We could not recover the session(s) within 1 minute. ' +
-          'After this time the SIP server has terminated the session(s).',
-        this.constructor.name
-      );
-      return Promise.resolve(false);
+    return pTimeout(retryForever, {
+      milliseconds: this.dyingCounter,
+      fallback: () => {
+        log.info(
+          'We could not recover the session(s) within 1 minute. ' +
+            'After this time the SIP server has terminated the session(s).',
+          this.constructor.name
+        );
+        return Promise.resolve(false);
+      }
     });
   }
 

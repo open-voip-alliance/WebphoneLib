@@ -534,9 +534,12 @@ export class SessionImpl extends EventEmitter implements ISession {
    * @returns {Promise<boolean>} Promise that resolves when the transfer is made.
    */
   private async transfer(target: Core.URI | UserAgentSession): Promise<boolean> {
-    return pTimeout(this.isTransferredPromise(target), 20000, () => {
-      log.error('Could not transfer the call', this.constructor.name);
-      return Promise.resolve(false);
+    return pTimeout(this.isTransferredPromise(target), {
+      milliseconds: 20000,
+      fallback: () => {
+        log.error('Could not transfer the call', this.constructor.name);
+        return Promise.resolve(false);
+      }
     });
   }
 

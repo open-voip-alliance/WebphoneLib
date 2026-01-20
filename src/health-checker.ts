@@ -31,13 +31,15 @@ export class HealthChecker {
           }
         });
       }),
-      2000, // if there is no response after 2 seconds, trigger disconnect.
-      () => {
-        this.logger.error('No response after OPTIONS message to sip server.');
-        clearTimeout(this.optionsTimeout);
-        this.userAgent.transport.disconnect().catch(error => {
-          this.logger.error('Error disconnecting transport after health check failure: ' + error);
-        });
+      {
+        milliseconds: 2000, // if there is no response after 2 seconds, trigger disconnect.
+        fallback: () => {
+          this.logger.error('No response after OPTIONS message to sip server.');
+          clearTimeout(this.optionsTimeout);
+          this.userAgent.transport.disconnect().catch(error => {
+            this.logger.error('Error disconnecting transport after health check failure: ' + error);
+          });
+        }
       }
     );
   }

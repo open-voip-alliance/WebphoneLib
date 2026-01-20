@@ -103,7 +103,7 @@ test.serial('disconnected does not resolve until unregistered', async t => {
   (client as any).transport.status = ClientStatus.CONNECTED;
 
   // Wait for 100 ms and catch the error thrown because it never resolves.
-  await t.throwsAsync(pTimeout(client.disconnect(), 100));
+  await t.throwsAsync(pTimeout(client.disconnect(), { milliseconds: 100 }));
 
   t.is(status.length, 1);
   t.is(status[0], ClientStatus.DISCONNECTING);
@@ -128,7 +128,7 @@ test.serial('ua.stop is not called without unregistered event', async t => {
   // calling ua.unregister will not cause ua to emit an unregistered event.
   // ua.disconnected will never be called as it waits for the unregistered
   // event.
-  await t.throwsAsync(pTimeout(client.disconnect(), 100));
+  await t.throwsAsync(pTimeout(client.disconnect(), { milliseconds: 100 }));
 
   t.false((client as any).transport.userAgent.stop.called);
 });
