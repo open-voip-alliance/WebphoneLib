@@ -3,7 +3,7 @@ import { Core } from 'sip.js';
 import { UserAgent } from 'sip.js/lib/api/user-agent';
 
 export class HealthChecker {
-  private optionsTimeout: NodeJS.Timeout;
+  private optionsTimeout: ReturnType<typeof setTimeout>;
   private logger: Core.Logger;
 
   constructor(private userAgent: UserAgent) {

@@ -1,8 +1,8 @@
 import builtins from 'rollup-plugin-node-builtins';
-import resolve from 'rollup-plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
-import json from 'rollup-plugin-json';
-import typescript from 'rollup-plugin-typescript2';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
+import typescript from '@rollup/plugin-typescript';
 
 function onwarn(warning) {
   console.log(warning.toString());
@@ -21,6 +21,13 @@ export default {
     commonjs(),
     builtins(),
     json(),
-    typescript({ tsconfig: './tsconfig.build.json' })
+    typescript({
+      tsconfig: './tsconfig.build.json',
+      compilerOptions: {
+        outDir: 'dist',
+        declaration: true,
+        declarationDir: 'dist'
+      }
+    })
   ]
 };
