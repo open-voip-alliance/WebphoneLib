@@ -20,8 +20,9 @@ export function stripPrivateIps(
 
 export function sessionDescriptionHandlerFactory(session, options): SessionDescriptionHandler {
   // Create a custom media stream factory that uses our audio context
-  const mediaStreamFactory = async (constraints: MediaStreamConstraints): Promise<MediaStream> => {
+  const mediaStreamFactory = async (_constraints: MediaStreamConstraints): Promise<MediaStream> => {
     // Initialize our custom audio context streams on the session
+    // Note: _constraints is intentionally unused as we use custom audio routing via audioContext
     if (!(session as any).__streams) {
       (session as any).__streams = {
         localStream: audioContext.createMediaStreamDestination(),

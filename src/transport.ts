@@ -72,11 +72,10 @@ export class WrappedTransport extends Web.Transport {
   public disconnect(): Promise<void> {
     return pTimeout(super.disconnect(), 1000, () => {
       log.debug('Fake-closing the socket due to timeout.', this.constructor.name);
-      // Force close by calling the protected _disconnect method via any cast
       // This ensures we don't hang if the websocket doesn't close properly
       return Promise.resolve();
     }).catch(error => {
-      log.warn('Disconnect timeout or error, continuing anyway', this.constructor.name);
+      log.warn(`Disconnect timeout or error: ${error}, continuing anyway`, this.constructor.name);
       return Promise.resolve();
     });
   }
@@ -533,7 +532,7 @@ export class ReconnectableTransport extends EventEmitter implements ITransport {
       log.error('UserAgent does not seem to have a UserAgentCore', this.constructor.name);
     }
 
-    this.userAgent.transport.stateChange.on((state: TransportState) => {
+    this.userAgent.transport.stateChange.addListener((state: TransportState) => {
       if (state === TransportState.Disconnected) {
         this.onTransportDisconnected();
       }

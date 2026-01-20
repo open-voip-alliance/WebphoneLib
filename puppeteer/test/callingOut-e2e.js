@@ -1,10 +1,10 @@
-const puppeteer = require('puppeteer');
-const { expect } = require('chai');
-const { describe, beforeEach, afterEach, it } = require('mocha');
+import puppeteer from 'puppeteer';
+import { expect } from 'chai';
+import { describe, beforeEach, afterEach, it } from 'mocha';
 
-const { callNumber, click, waitForText, registerUser } = require('../helpers/utils');
-const { USER_A, USER_B, PASSWORD_A, PASSWORD_B, NUMBER_A, NUMBER_B } = require('../config');
-const {
+import { callNumber, click, waitForText, registerUser, delay } from '../helpers/utils.js';
+import { USER_A, USER_B, PASSWORD_A, PASSWORD_B, NUMBER_A, NUMBER_B } from '../config.js';
+import {
   NON_EXISTING_NUMBER,
   DEMO_URL,
   SESSIONS,
@@ -15,7 +15,7 @@ const {
   SESSION_STATUS,
   CLIENT_STATUS,
   LAUNCH_OPTIONS
-} = require('../helpers/constants');
+} from '../helpers/constants.js';
 
 describe('Calling out', () => {
   let browser;
@@ -78,7 +78,7 @@ describe('Calling out', () => {
     await page2.goto(DEMO_URL);
 
     await registerUser(page2, USER_B, PASSWORD_B);
-    expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
+    expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
 
     // setup a call from page2 to the other one
     await callNumber(page2, NUMBER_A);
@@ -90,6 +90,8 @@ describe('Calling out', () => {
 
     // end the call from the second page
     page2.bringToFront();
+    // Wait for page2's session to also be active before hanging up
+    expect(await waitForText(page2, SESSION_STATUS, 'active')).to.be.true;
     await click(page2, SESSION_HANGUP_BUTTON);
   });
 
@@ -109,14 +111,18 @@ describe('Calling out', () => {
     await page2.goto(DEMO_URL);
 
     await registerUser(page2, USER_B, PASSWORD_B);
-    expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
+    expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
 
     // setup a call from the second page
     await callNumber(page2, NUMBER_A);
 
+    // Wait for the session element to appear with session status
+    await page2.waitForSelector(SESSION_STATUS, { timeout: 10000 });
+    await delay(200); // Small delay to ensure cancel button is ready
+
     // and end the call when we can
     await click(page2, SESSION_CANCEL_BUTTON);
-    await page2.waitForTimeout(100);
+    await delay(100);
   });
 
   it('calling out while other party rejects the call', async function() {
@@ -135,13 +141,16 @@ describe('Calling out', () => {
     await page2.goto(DEMO_URL);
 
     await registerUser(page2, USER_B, PASSWORD_B);
-    expect(await waitForText(page, CLIENT_STATUS, 'connected')).to.be.true;
+    expect(await waitForText(page2, CLIENT_STATUS, 'connected')).to.be.true;
 
     // setup a call from the second page
     await callNumber(page2, NUMBER_A);
 
     // Reject the call from the first page
     page.bringToFront();
+    // Wait for the incoming session element to appear
+    await page.waitForSelector(SESSIONS, { timeout: 10000 });
+    await delay(100); // Small delay to ensure button is clickable
     await click(page, SESSION_REJECT_BUTTON);
   });
 
@@ -159,7 +168,16 @@ describe('Calling out', () => {
     // setup a call to the non-logged in account
     await callNumber(page, NUMBER_B);
 
-    await page.waitForTimeout(500);
+    // Wait for the session to be cleaned up after unavailable response
+    await page.waitForFunction(
+      selector => {
+        const sessions = document.querySelectorAll(selector);
+        return sessions.length === 0;
+      },
+      { timeout: 10000 },
+      SESSIONS
+    );
+
     expect(await page.$$(SESSIONS)).to.have.length(0);
   });
 
@@ -177,7 +195,16 @@ describe('Calling out', () => {
     // Setup a call to an internal number we know does not exist
     await callNumber(page, NON_EXISTING_NUMBER);
 
-    await page.waitForTimeout(5000);
+    // Wait for the session to be cleaned up after not found response
+    await page.waitForFunction(
+      selector => {
+        const sessions = document.querySelectorAll(selector);
+        return sessions.length === 0;
+      },
+      { timeout: 10000 },
+      SESSIONS
+    );
+
     expect(await page.$$(SESSIONS)).to.have.length(0);
   });
 });

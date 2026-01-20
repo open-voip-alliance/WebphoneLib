@@ -115,11 +115,9 @@ window.customElements.define(
             logger.warn(`Failed to send DTMF: ${error.message}`);
           }
         } else {
-          logger.warn(
-            `Cannot send DTMF: session is not active (status: ${
-              this.session && this.session.status !== undefined ? this.session.status : 'undefined'
-            })`
-          );
+          const sessionStatus =
+            this.session && this.session.status ? this.session.status : 'undefined';
+          logger.warn(`Cannot send DTMF: session is not active (status: ${sessionStatus})`);
         }
       }
     }

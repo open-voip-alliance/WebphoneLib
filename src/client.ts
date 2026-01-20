@@ -273,7 +273,7 @@ export class ClientImpl extends EventEmitter implements IClient {
 
       this.subscriptions[uri].subscribe().catch((error: any) => {
         // Extract response if available (could be IncomingResponseMessage)
-        const response = error ? error.message || error : error;
+        const response = error && error.message ? error.message : error;
 
         log.error(`[blf] subscription failed for ${uri}`, this.constructor.name);
 
