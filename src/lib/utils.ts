@@ -3,7 +3,7 @@ import { audioContext } from '../audio-context';
 /**
  * Generic class type T. For example: `Type<Session>`
  */
-export type Type<T> = new (...args: any[]) => T;
+export type Type<T> = new (...args: unknown[]) => T;
 
 export function eqSet<T>(a: Set<T>, b: Set<T>): boolean {
   return a.size === b.size && [...a].every(b.has.bind(b));
@@ -14,7 +14,7 @@ export function isPrivateIP(ip: string): boolean {
   const parts = ip.split('.');
   return (
     parts[0] === '10' ||
-    (parts[0] === '172' && (parseInt(parts[1], 10) >= 16 && parseInt(parts[1], 10) <= 31)) ||
+    (parts[0] === '172' && parseInt(parts[1], 10) >= 16 && parseInt(parts[1], 10) <= 31) ||
     (parts[0] === '192' && parts[1] === '168')
   );
 }
@@ -46,12 +46,18 @@ export function jitter(interval: number, percentage: number): number {
   return Math.floor(min + Math.random() * (max - min));
 }
 
+interface RetryConfig {
+  interval: number;
+  limit: number;
+  timeout: number;
+}
+
 /**
  * This doubles the retry interval in each run and adds jitter.
- * @param {any} retry - The reference retry object.
- * @returns {any & { interval: number } } The updated retry object.
+ * @param {RetryConfig} retry - The reference retry object.
+ * @returns {RetryConfig} The updated retry object.
  */
-export function increaseTimeout(retry: any): any & { interval: number } {
+export function increaseTimeout(retry: RetryConfig): RetryConfig {
   // Make sure that interval doesn't go past the limit.
   if (retry.interval * 2 < retry.limit) {
     retry.interval = retry.interval * 2;
